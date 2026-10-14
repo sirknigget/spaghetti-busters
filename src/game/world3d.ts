@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Simulation, type Particle, type TimeoutHazard } from './simulation';
 import { createCodeMesh, disposeObject } from './code-mesh';
 import { createEnvironment, createSpecialist, createCannon, createBullet, createSpecial, createPickup } from './models3d';
+import { createRobot, animateRobot } from './robot3d';
 
 const WIDTH=1280, HEIGHT=720;
 type Entity={id:number;x:number;y:number};
@@ -10,6 +11,7 @@ export class WorldRenderer {
   readonly scene=new THREE.Scene();
   readonly camera=new THREE.PerspectiveCamera(2*Math.atan(360/1400)*180/Math.PI,16/9,1,4000);
   readonly blocks=new Map<number,THREE.Group>();
+  readonly robotMeshes=new Map<number,THREE.Group>();
   private readonly specialist=createSpecialist();
   private readonly cannon=createCannon();
   private readonly bulletMeshes=new Map<number,THREE.Group>();
@@ -23,6 +25,9 @@ export class WorldRenderer {
   private readonly explosionLight=new THREE.PointLight('#ffc777',0,700,2);
   private readonly reticle=new THREE.Group();
   private readonly stun=new THREE.Group();
+  private readonly reviewEffect=new THREE.Group();
+  private readonly lintEffect=new THREE.Group();
+  private readonly reviewBeam=new THREE.Mesh(new THREE.CylinderGeometry(5,11,1,12),new THREE.MeshBasicMaterial({color:'#c0f3ff',transparent:true,opacity:.6,depthWrite:false}));
   private readonly stunLabel:THREE.Sprite;
   private readonly dangerMaterial=new THREE.MeshBasicMaterial({color:'#8faf76'});
   private readonly reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -36,7 +41,7 @@ export class WorldRenderer {
     this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     this.renderer.domElement.style.display='block';
     this.renderer.domElement.style.touchAction='none';
-    this.renderer.domElement.setAttribute('aria-label','3D arcade playfield. Move to aim, left click or Space to shoot. Right click launches special weapons. Press 1 for homing missiles or 2 for recycle grenades.');
+    this.renderer.domElement.setAttribute('aria-label','3D arcade playfield. Move to aim, left click or Space to shoot. Right click launches special weapons. Select with 1 for homing, 2 for grenades, 3 for code review, or 4 for lint bombs.');
     this.renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();this.renderer.domElement.dispatchEvent(new Event('game-context-lost'));});
     parent.appendChild(this.renderer.domElement);
     this.scene.background=new THREE.Color('#b8d3c2');
@@ -71,6 +76,15 @@ export class WorldRenderer {
     const labelTexture=new THREE.CanvasTexture(labelCanvas);labelTexture.colorSpace=THREE.SRGBColorSpace;
     this.stunLabel=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTexture,depthTest:false}));this.stunLabel.scale.set(128,32,1);this.stunLabel.position.set(0,130,0);this.stun.add(this.stunLabel);
     this.scene.add(this.stun);
+    for(const [effect,color] of [[this.reviewEffect,'#a4efff'],[this.lintEffect,'#d8acff']] as const) {
+      for(let i=0;i<3;i++){
+        const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.009,6,96),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.8,depthWrite:false}));
+        ring.rotation.set(i===1?.28:0,i===2?.3:0,0);ring.userData.ring=i;effect.add(ring);
+      }
+      effect.position.set(640,360,55);effect.visible=false;this.scene.add(effect);
+    }
+    this.reviewEffect.name='code-review-freeze-wave';this.lintEffect.name='lint-bomb-screen-wave';
+    this.reviewBeam.name='code-review-freeze-beam';this.reviewBeam.visible=false;this.scene.add(this.reviewBeam);
     this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(parent);this.resize();
   }
 
@@ -120,13 +134,25 @@ export class WorldRenderer {
       if(!mesh){mesh=createCodeMesh(block);this.blocks.set(block.id,mesh);this.scene.add(mesh);}
       const tumble=block.generation>0 ? .45 : .18;
       const phase=block.id*.81+block.age*(block.generation>0?1.65:.65);
-      mesh.position.set(block.x,720-block.y,0);
+      const rattle=block.angry&&sim.freezeRemaining<=0&&!this.reducedMotion?Math.sin(block.age*47)*2:0;
+      mesh.position.set(block.x+rattle,720-block.y+Math.cos(block.age*39)*Math.abs(rattle)*.45,0);
       mesh.rotation.set(Math.sin(phase)*tumble,Math.cos(phase*.83)*tumble,-block.angle,'ZYX');
+      mesh.userData.frozen=sim.freezeRemaining>0;
+      mesh.getObjectByName('frozen-code-outline')!.visible=sim.freezeRemaining>0;
+      const solid=mesh.getObjectByName('perforated-extruded-code') as THREE.Mesh;
+      (solid.material as THREE.MeshToonMaterial[]).forEach((material,index)=>{material.emissive.set(sim.freezeRemaining>0?'#286b97':block.angry&&index===1?'#6a0f22':'#000000');material.emissiveIntensity=sim.freezeRemaining>0?.42:.3;});
     }
+    this.sync(sim.robots,this.robotMeshes,r=>createRobot(r.brand),(mesh,r)=>animateRobot(mesh,r,sim.freezeRemaining>0));
     this.sync(sim.bullets,this.bulletMeshes,()=>createBullet(),(mesh,b)=>{mesh.rotation.z=-Math.atan2(b.vy,b.vx);});
     this.sync(sim.pickups,this.pickupMeshes,p=>createPickup(p.type),(mesh,p)=>{mesh.rotation.set(Math.sin(p.age*2)*.28,Math.sin(p.age*2.6)*.5,Math.sin(p.age*3)*.13);});
     this.sync(sim.specials,this.specialMeshes,p=>createSpecial(p.type),(mesh,p)=>{mesh.rotation.set(p.type==='grenade'?t*4:.12,p.type==='grenade'?t*3:.24,-p.angle);});
     this.sync(sim.hazards,this.hazardMeshes,h=>this.hazard(h),(mesh,h)=>{mesh.rotation.set(Math.sin(h.age*8)*.12,Math.sin(h.age*6)*.16,Math.atan2(h.vy,-h.vx)*.12);});
+    for(const [effect,remaining,duration] of [[this.reviewEffect,sim.reviewPulse,.65],[this.lintEffect,sim.lintPulse,.8]] as const) {
+      effect.visible=remaining>0;
+      if(remaining>0){const progress=1-remaining/duration;effect.children.forEach((child,index)=>{const ring=child as THREE.Mesh;ring.scale.setScalar(30+progress*1100-index*24);(ring.material as THREE.MeshBasicMaterial).opacity=(1-progress)*.85;});}
+    }
+    this.reviewBeam.visible=sim.reviewPulse>.35;
+    if(this.reviewBeam.visible){const a=new THREE.Vector3(170,720-sim.playerY,35),b=new THREE.Vector3(sim.aimX,720-sim.aimY,40),direction=b.clone().sub(a);this.reviewBeam.position.copy(a.add(b).multiplyScalar(.5));this.reviewBeam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.clone().normalize());this.reviewBeam.scale.y=direction.length();(this.reviewBeam.material as THREE.MeshBasicMaterial).opacity=Math.min(.7,(sim.reviewPulse-.35)*3);}
     const particles=sim.particles.slice(-220);const livingParticles=new Set(particles);
     for(const [particle,mesh] of this.particleMeshes)if(!livingParticles.has(particle)){
       mesh.geometry.dispose();(mesh.material as THREE.Material).dispose();mesh.removeFromParent();this.particleMeshes.delete(particle);
@@ -155,9 +181,10 @@ export class WorldRenderer {
   }
 
   reset() {
-    for(const cache of [this.blocks,this.bulletMeshes,this.pickupMeshes,this.specialMeshes,this.hazardMeshes]){cache.forEach(disposeObject);cache.clear();}
+    for(const cache of [this.blocks,this.robotMeshes,this.bulletMeshes,this.pickupMeshes,this.specialMeshes,this.hazardMeshes]){cache.forEach(disposeObject);cache.clear();}
     this.particleMeshes.forEach(mesh=>{mesh.geometry.dispose();(mesh.material as THREE.Material).dispose();mesh.removeFromParent();});this.particleMeshes.clear();
     this.explosionMeshes.forEach(mesh=>mesh.visible=false);this.muzzleLight.intensity=this.explosionLight.intensity=0;
+    this.reviewEffect.visible=this.lintEffect.visible=this.reviewBeam.visible=false;
   }
 
   dispose() {

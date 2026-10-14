@@ -11,11 +11,11 @@ export function createCodeMesh(block: Block): THREE.Group {
   canvas.width = Math.ceil(w * scale); canvas.height = Math.ceil((h + 26) * scale);
   const context = canvas.getContext('2d')!;
   context.scale(scale, scale); context.translate(w / 2, top);
-  context.fillStyle = '#122d40'; context.fillRect(-w / 2, -top, w, h + 26);
-  context.fillStyle = '#35556b'; context.fillRect(-w / 2, -top, w, 26);
-  context.fillStyle = '#8ebebf'; context.fillRect(-w / 2, -top, w, 1.5);
+  context.fillStyle = block.angry ? '#421b2a' : block.exception ? '#382335' : '#122d40'; context.fillRect(-w / 2, -top, w, h + 26);
+  context.fillStyle = block.angry ? '#a23646' : block.exception ? '#73506a' : '#35556b'; context.fillRect(-w / 2, -top, w, 26);
+  context.fillStyle = block.angry ? '#ff9e8c' : '#8ebebf'; context.fillRect(-w / 2, -top, w, 1.5);
   context.font = '9px monospace'; context.textBaseline = 'middle';
-  context.fillStyle = '#e4efe1'; context.fillText(block.title, -w / 2 + 34, -h / 2 - 13, Math.max(15,w - 66));
+  context.fillStyle = '#e4efe1'; context.fillText(block.title, -w / 2 + 34, -h / 2 - 13, Math.max(15,w - (block.angry?110:66)));
   ['#ff8b69', '#ffd96a', '#aee5a3'].forEach((color, i) => {
     context.fillStyle = color; context.beginPath(); context.arc(-w/2+10+i*9,-h/2-13,2.4,0,Math.PI*2); context.fill();
   });
@@ -32,7 +32,7 @@ export function createCodeMesh(block: Block): THREE.Group {
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   const front = new THREE.MeshToonMaterial({ map: texture, color: '#ffffff' });
-  const side = new THREE.MeshToonMaterial({ color: '#547e92' });
+  const side = new THREE.MeshToonMaterial({ color: block.angry?'#e95860':block.exception?'#9d6387':'#547e92', emissive:block.angry?'#6a0f22':'#000000',emissiveIntensity:.3 });
   const rects: [number, number, number, number][] = [];
   const dead = block.cells.filter(cell => !cell.alive);
   // Sweep horizontal bands around holes, avoiding overlapping Shape holes and keeping two draw calls per slab.
@@ -68,8 +68,23 @@ export function createCodeMesh(block: Block): THREE.Group {
   geometry.computeBoundingSphere();
   const mesh = new THREE.Mesh(geometry,[front,side]); mesh.castShadow=true;mesh.receiveShadow=true;
   mesh.name='perforated-extruded-code';group.add(mesh);
+  if(block.angry) {
+    const face=new THREE.Group();face.name='angry-code-face';face.position.set(w/2-29,h/2+13,z+3);group.add(face);
+    const eyeMaterial=new THREE.MeshBasicMaterial({color:'#fff4ba'}),browMaterial=new THREE.MeshToonMaterial({color:'#44122a'});
+    for(const side of [-1,1]) {
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(3.5,10,8),eyeMaterial);eye.scale.set(1,.8,.5);eye.position.set(side*9,-1,0);face.add(eye);
+      const brow=new THREE.Mesh(new THREE.BoxGeometry(13,3.5,3),browMaterial);brow.position.set(side*9,5,1);brow.rotation.z=side*.35;face.add(brow);
+    }
+  }
+  const ice=new THREE.Group();ice.name='frozen-code-outline';ice.visible=false;
+  const outlineGeometry=new THREE.BoxGeometry(w+5,h+31,z*2+5);
+  const outline=new THREE.LineSegments(new THREE.EdgesGeometry(outlineGeometry),new THREE.LineBasicMaterial({color:'#9eeaff',transparent:true,opacity:.8}));outlineGeometry.dispose();outline.position.y=13;ice.add(outline);
+  const crystalMaterial=new THREE.MeshToonMaterial({color:'#b6eeff',emissive:'#2885ac',emissiveIntensity:.35,transparent:true,opacity:.85});
+  for(const x of [-w/2,w/2])for(const y of [-h/2,h/2+26]){const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(7),crystalMaterial);crystal.position.set(x,y,z+3);crystal.scale.set(.7,1.4,.8);ice.add(crystal);}
+  group.add(ice);
   group.userData.hits=block.hits;group.userData.cellCount=block.cells.length;
   group.userData.solidDepth=z*2;group.userData.removedCells=dead.length;
+  group.userData.angry=block.angry;group.userData.exception=block.exception;
   return group;
 }
 

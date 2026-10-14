@@ -145,6 +145,43 @@ export class AudioEngine {
         this.tone(380, time, 0.18, 'triangle', 0.20, bus, 105);
         this.noise(time, 0.055, 0.08, 900, bus);
         break;
+      case 'robot':
+        // An irregular boot sequence gives the visiting agent a mechanical voice.
+        [52, 64, 59, 76].forEach((note, i) => {
+          this.tone(this.frequency(note), time + [0, 0.07, 0.21, 0.34][i]!, 0.13, 'square', 0.055, bus);
+        });
+        break;
+      case 'generate':
+        [48, 55, 62, 70, 79, 86].forEach((note, i) => {
+          this.tone(this.frequency(note), time + i * i * 0.014, 0.16, 'triangle', 0.075, bus);
+        });
+        this.noise(time + 0.3, 0.17, 0.09, 2300, bus, true);
+        break;
+      case 'exception':
+        this.tone(970 + Math.random() * 220, time, 0.13, 'square', 0.045, bus, 340);
+        this.tone(470, time + 0.055, 0.09, 'triangle', 0.09, bus, 690);
+        break;
+      case 'absorb':
+        this.tone(170 + Math.random() * 55, time, 0.09, 'sine', 0.09, bus, 80);
+        this.noise(time, 0.045, 0.045, 2800, bus, true);
+        break;
+      case 'review':
+        [86, 81, 74, 67].forEach((note, i) => {
+          this.tone(this.frequency(note), time + i * 0.085, 0.6, 'sine', 0.085, bus);
+          this.tone(this.frequency(note + 7), time + i * 0.085, 0.43, 'triangle', 0.025, bus);
+        });
+        break;
+      case 'lint':
+        this.noise(time, 0.34, 0.13, 3600, bus, true);
+        [57, 69, 76, 81, 88].forEach((note, i) => {
+          this.tone(this.frequency(note), time + i * 0.045, 0.25, 'triangle', 0.09, bus);
+        });
+        break;
+      case 'bonus':
+        [79, 86, 83, 91].forEach((note, i) => {
+          this.tone(this.frequency(note), time + i * 0.07, 0.19, 'sine', 0.07, bus);
+        });
+        break;
       case 'explosion':
         this.noise(time, 0.52, 0.30, 1500, bus);
         this.tone(150, time, 0.45, 'triangle', 0.25, bus, 35);

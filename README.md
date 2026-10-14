@@ -27,6 +27,8 @@ Open **http://localhost:3000**. The server binds to all interfaces on port 3000.
 | Primary fire | Left click, hold, or Space |
 | Select homing backspace missiles | 1 or the Backspace slot |
 | Select recycle-bin grenades | 2 or the Recycle Bin slot |
+| Select code review freeze gun | 3 or the Code Review slot |
+| Select lint bomb | 4 or the Lint Bomb slot |
 | Launch selected special | Right click / hold, or the touch FIRE button |
 | Move vertically | Arrow Up/Down or W/S |
 | Pause / resume | P, Escape, or the pause button |
@@ -34,7 +36,13 @@ Open **http://localhost:3000**. The server binds to all interfaces on port 3000.
 
 Landscape orientation gives touch devices the biggest battlefield.
 
-Shoot the rare highlighted `DOUBLE_SHOT` or `TRIPLE_SHOT` variable to release a floating weapon. **Shoot that weapon again** to equip it. Upgraded rounds and special ammunition are scarce; `AMMO_CACHE` grants a small refill. The basic cannon always has unlimited shots. Backspace missiles acquire and chase code; recycle-bin grenades arc toward your aim and damage all code in their blast radius. Your best score is saved in your browser.
+Shoot highlighted `DOUBLE_SHOT` / `TRIPLE_SHOT` variables or the rarer `QUAD_SHOT` / `QUINT_SHOT` variables to release floating guns. **Shoot that weapon again** to equip it. Double/triple guns grant **30 / 24 rounds**; rare four/five-shot guns grant **16 / 12 rounds**. Repeated pickups of the same gun stack up to two magazines; `AMMO_CACHE` grants a small refill. The basic cannon always has unlimited shots. Backspace missiles acquire and chase code; recycle-bin grenades arc toward your aim and damage all code in their blast radius. Code Review freezes every enemy and its attacks for **2 seconds**, giving you time to keep firing. Lint Bomb splits **every visible code block in half**, including exceptions, without destroying its letters.
+
+All four specials are available as shootable floating bonuses. Natural supply drops favor special ammo; hit `HOMING_MISSILE`, `RECYCLE_GRENADE`, `CODE_REVIEW`, or `LINT_BOMB` variables for more. Your best score is saved in your browser.
+
+**Invulnerable AI robots** occasionally run in, stop in the middle to think, and generate enormous, armored spaghetti code before leaving. Their shields absorb cannon shots, missiles, and grenades. Shoot around them or freeze them with Code Review. Each carries one of eight logos: OpenAI, Anthropic, Google, X, Moonshot, Z.ai, DeepSeek, or Meta.
+
+**Angry code** is red, rattles, and regularly throws smaller `Error`, `TypeError`, `RangeError`, and rejected-promise blocks. Destroy or split the angry parent to stop its attacks, then clean up every exception too.
 
 Fast red `await setTimeout(milliseconds);` hazards target the specialist. Shoot them down or dodge vertically. A collision paralyzes movement, the primary cannon, and special weapons for the displayed duration. The battlefield keeps moving while you are frozen.
 
@@ -52,13 +60,13 @@ npm run test:e2e
 
 `preview` serves the production build on port 3000; stop the development server first. Browser tests reuse a running development server or start one automatically. They run one browser at a time to keep software WebGL rendering responsive in CI. On headless Linux without a GPU, Mesa/EGL libraries (`libegl1`, `libegl-mesa0`, and `mesa-vulkan-drivers`) provide the real WebGL 2 context used by the tests.
 
-The deterministic simulation tests cover damage, splitting, impulses and bounces, difficulty progression, two-stage pickups, scarce ammunition, homing and area weapons, timeout collisions, stun and recovery, loss conditions, and reset. Playwright exercises the actual rendered game, separate left/right fire, number-key selection, touch special controls, paralysis and recovery, pause/resume, help, sound controls, restart, score persistence, real mesh depth and rotation, physical damage holes, GPU-resource disposal, and graphics context recovery.
+The deterministic simulation tests cover damage, splitting, impulses and bounces, difficulty progression, two-stage pickups, scarce ammunition, homing and area weapons, timeout collisions, stun and recovery, loss conditions, and reset. Playwright exercises the actual rendered game, separate left/right fire, number-key selection, touch special controls, paralysis and recovery, pause/resume, help, sound controls, restart, score persistence, real mesh depth and rotation, physical damage holes, GPU-resource disposal, graphics context recovery, robot shields/generation, angry exception attacks, and four-special controls.
 
 ## Project
 
 - `src/game/simulation.ts`: renderer-independent gameplay and collision simulation, with small fixed substeps.
 - `src/game/scene.ts`: native pointer/keyboard input, frame loop, and simulation-to-renderer adapter.
-- `src/game/world3d.ts`, `models3d.ts`, `code-mesh.ts`: Three.js scene, perspective camera, solid procedural models, perforated code geometry, shadows, and GPU resource cleanup.
+- `src/game/world3d.ts`, `models3d.ts`, `robot3d.ts`, `code-mesh.ts`: Three.js scene, perspective camera, solid procedural models, perforated code geometry, shadows, and GPU resource cleanup.
 - `src/game/audio.ts`: original Web Audio music and effects; opening theme, seamless menu/game transitions, and four crossfading scores.
 - `src/main.ts` and `src/style.css`: responsive menus, HUD, dialogs, and accessibility.
 - `public/assets`: original cartoon SVG artwork and a locally bundled opening-screen photograph.
@@ -66,5 +74,7 @@ The deterministic simulation tests cover damage, splitting, impulses and bounces
 The Three.js renderer loads when the player starts. A browser supporting WebGL 2 is required. Graphics context loss pauses play and allows resuming after restoration. All game assets and fonts are bundled locally, so gameplay has no external service dependency. Development builds expose `window.__spaghetti` for deterministic browser tests; production builds do not.
 
 ## Credits
+
+Robot brand marks are bundled from [Lobe Icons](https://github.com/lobehub/lobe-icons) (MIT) and [Simple Icons](https://github.com/simple-icons/simple-icons) (CC0). Source details and the license are in `public/assets/brands/`.
 
 Cartoon artwork, original chiptune music, and sound effects were created for this game. The opening backdrop is [a technology photograph from Unsplash](https://images.unsplash.com/photo-1550751827-4bd374c3f58b), used under the [Unsplash license](https://unsplash.com/license). Barlow Condensed and Space Grotesk are bundled under their SIL Open Font Licenses in `public/fonts/`.

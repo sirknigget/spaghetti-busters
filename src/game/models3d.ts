@@ -115,7 +115,8 @@ export function createCannon(): THREE.Group {
   group.userData.kind = 'cannon'; return group;
 }
 
-export function createSpecial(type: 'homing' | 'grenade'): THREE.Group {
+export function createSpecial(type: 'homing' | 'grenade' | 'review' | 'lint'): THREE.Group {
+  if(type==='review'||type==='lint') return createToolPickup(type);
   const group = new THREE.Group(); group.name = `sculpted-${type}`; const a = atelier();
   if (type === 'homing') {
     // Backspace arrow has a solid extruded body and raised cross on its front face.
@@ -139,18 +140,51 @@ export function createSpecial(type: 'homing' | 'grenade'): THREE.Group {
   group.userData.kind = type; return group;
 }
 
-export function createPickup(type: 'double' | 'triple'): THREE.Group {
+export function createPickup(type: 'double' | 'triple' | 'quad' | 'quint' | 'homing' | 'grenade' | 'review' | 'lint'): THREE.Group {
+  if(type==='homing'||type==='grenade') {
+    const group=createSpecial(type);group.name=`${type}-bonus`;group.scale.setScalar(1.15);
+    const halo=new THREE.Mesh(new THREE.TorusGeometry(34,1.7,8,40),new THREE.MeshStandardMaterial({color:'#fff0a4',emissive:'#b28524',emissiveIntensity:.4}));group.add(halo);
+    group.userData.kind='pickup';return group;
+  }
+  if(type==='review'||type==='lint') return createToolPickup(type);
   const group = new THREE.Group(); group.name = `${type}-weapon-upgrade`; const a = atelier();
-  a.box(group, '#e6b93c', 0, 0, 0, 45, 41, 18);
-  a.box(group, '#ffe9a0', 0, 0, 10, 37, 33, 6);
-  const count = type === 'double' ? 2 : 3;
+  const rare=type==='quad'||type==='quint';
+  a.box(group, rare?'#8964ce':'#e6b93c', 0, 0, 0, 45, 41, 18);
+  a.box(group, rare?'#e1ceff':'#ffe9a0', 0, 0, 10, 37, 33, 6);
+  const count = {double:2,triple:3,quad:4,quint:5}[type];
   for (let i = 0; i < count; i++) {
-    const x = (i - (count - 1) / 2) * 10;
-    a.box(group, '#285c4e', x, 0, 15, 5, 19, 4).rotation.z = type === 'triple' ? -(i - 1) * .18 : 0;
+    const x = (i - (count - 1) / 2) * (count>3?6:10);
+    a.box(group, rare?'#56378d':'#285c4e', x, 0, 15, count>3?3.6:5, 19, 4).rotation.z = -(i-(count-1)/2)*.14;
     a.ball(group, '#fff7d1', x, 9, 18, 2.4);
   }
   const halo = new THREE.Mesh(new THREE.TorusGeometry(32, 1.3, 6, 36), a.material('#fbd668', .3, .25)); group.add(halo); halo.rotation.x = .25;
   group.userData.kind = 'pickup'; return group;
+}
+
+/** Distinct solid pickups: a review freeze ray and a spherical lint-clearing bomb. */
+function createToolPickup(type:'review'|'lint'):THREE.Group {
+  const group=new THREE.Group();group.name=`${type}-bonus`;const a=atelier();
+  if(type==='review') {
+    a.box(group,'#67c9f3',0,0,0,34,22,19);
+    a.box(group,'#245879',-10,-16,0,11,23,12).rotation.z=-.22;
+    const barrel=a.cylinder(group,'#c1f4ff',22,1,0,8,22);barrel.rotation.z=Math.PI/2;
+    const nozzle=new THREE.Mesh(new THREE.TorusGeometry(8,2.5,8,20),a.material('#3b83aa',.35,.3));nozzle.rotation.y=Math.PI/2;nozzle.position.set(34,1,0);group.add(nozzle);
+    a.box(group,'#f1fdff',-3,3,12,18,18,3);
+    a.box(group,'#369ac0',-7,2,15,7,2.8,2).rotation.z=-.7;
+    a.box(group,'#369ac0',-1,4,15,12,2.8,2).rotation.z=.8;
+    for(let i=0;i<3;i++){const crystal=a.mesh(group,new THREE.OctahedronGeometry(4),'#b9f5ff',-11+i*10,20,0);crystal.rotation.z=.4;}
+  } else {
+    a.ball(group,'#7c5baa',0,-2,0,23,24,21);
+    a.box(group,'#bda0f0',0,19,0,15,10,13);
+    a.link(group,'#ebca78',new THREE.Vector3(0,23,0),new THREE.Vector3(10,33,0),2.5);
+    a.ball(group,'#ffe7a3',12,34,0,5);
+    a.box(group,'#ffedac',0,-1,20,25,20,3);
+    a.box(group,'#6c4b94',-4,-1,23,3,11,2);
+    a.box(group,'#6c4b94',1,-5,23,9,3,2);
+    for(let i=0;i<3;i++)a.box(group,'#8964ae',4+i*3,4-i*4,24,2,3,2);
+  }
+  const halo=new THREE.Mesh(new THREE.TorusGeometry(35,1.5,8,40),a.material(type==='review'?'#a6edff':'#d4b3ff',.2,.3));halo.rotation.x=.2;group.add(halo);
+  group.userData.kind='pickup';return group;
 }
 
 export function createBullet(): THREE.Group {

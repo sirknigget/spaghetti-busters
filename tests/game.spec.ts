@@ -34,6 +34,8 @@ test('opening screen, help popup and sound control',async({page})=>{
   await page.getByRole('button',{name:'Help: how to play'}).click();
   await expect(page.locator('dialog')).toBeVisible();
   await expect(page.locator('dialog')).toContainText('TRIPLE_SHOT');
+  await expect(page.locator('dialog')).toContainText('Invulnerable AI robots');
+  await expect(page.locator('dialog')).toContainText('lint splits every block in half');
   await page.keyboard.press('Escape');
   await expect(page.locator('dialog')).not.toBeVisible();
   await page.locator('#menu [data-sound]').click();
@@ -75,6 +77,7 @@ test('magic variable releases a weapon and another hit equips it',async({page})=
   await point(page,600,350);await page.mouse.down();
   await expect(page.locator('#weapon')).toHaveText('TRIPLE SHOT');await page.mouse.up();
   await expect(page.locator('#ammo')).toContainText('ROUNDS REMAINING');
+  expect(await page.evaluate(()=>(window as any).__spaghetti.simulation.ammo)).toBeGreaterThan(12);
 });
 
 test('escaped chunk ends run, saves best score and restart resets play',async({page})=>{
@@ -110,6 +113,15 @@ test('touch landscape is playable and menu fits a phone',async({browser})=>{
   await expect(page.locator('#select-grenade')).toHaveAttribute('aria-pressed','true');
   await page.locator('#fire-special').tap();
   await expect(page.locator('#grenade-ammo')).toHaveText('1');
+  for(const selector of ['#select-homing','#select-grenade','#select-review','#select-lint','#fire-special']) {
+    await expect(page.locator(selector)).toBeInViewport();
+  }
+  await page.waitForFunction(()=>(window as any).__spaghetti.simulation.specialCooldown===0);
+  await page.locator('#select-review').tap();
+  await expect(page.locator('#select-review')).toHaveAttribute('aria-pressed','true');
+  await page.locator('#fire-special').tap();
+  await expect(page.locator('#review-ammo')).toHaveText('0');
+  await expect(page.locator('#combo')).toContainText('ENEMIES FROZEN');
   await page.locator('#pause').click();await expect(page.locator('#resume')).toBeInViewport();
   await context.close();
 });
@@ -144,4 +156,42 @@ test('timeout collision paralyzes movement and all weapons, then recovers',async
   await expect(page.locator('#game-screen')).not.toHaveClass(/stunned/);
   await page.mouse.click(1000,650);
   await expect.poll(()=>page.evaluate(()=>(window as any).__spaghetti.simulation.shotsFired)).toBeGreaterThan(before.shots);
+});
+
+test('review and lint use keys 3 and 4, freeze enemies, then split all visible code',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await start(page);
+  await page.evaluate(()=>{
+    const s=(window as any).__spaghetti.simulation;
+    s.blocks=[];s.pendingBlocks=0;
+    for(const [x,y] of [[640,270],[1000,460]]) {
+      s.spawnBlock({x,y,vx:-80,vy:10,angle:0,code:[
+        'const redundant = values.map(value => ({ ...value }));',
+        'if (true === Boolean(redundant.length !== 0)) {',
+        '  return redundant.filter(item => Boolean(!!item));',
+        '}',
+      ]});
+    }
+  });
+  await page.keyboard.press('Digit3');
+  await expect(page.locator('#select-review')).toHaveAttribute('aria-pressed','true');
+  await point(page,900,350);await page.mouse.down({button:'right'});await page.mouse.up({button:'right'});
+  await expect(page.locator('#review-ammo')).toHaveText('0');
+  await expect(page.locator('#game-screen')).toHaveClass(/reviewing/);
+  await expect(page.locator('#combo')).toContainText('ENEMIES FROZEN');
+  const positions=await page.evaluate(()=>(window as any).__spaghetti.simulation.blocks.map((b:any)=>({id:b.id,x:b.x,y:b.y})));
+  await page.waitForTimeout(160);
+  expect(await page.evaluate(()=>(window as any).__spaghetti.simulation.blocks.map((b:any)=>({id:b.id,x:b.x,y:b.y})))).toEqual(positions);
+  await page.waitForFunction(()=>(window as any).__spaghetti.simulation.specialCooldown===0);
+  await page.keyboard.press('Digit4');
+  await expect(page.locator('#select-lint')).toHaveAttribute('aria-pressed','true');
+  await page.mouse.down({button:'right'});await page.mouse.up({button:'right'});
+  await expect(page.locator('#lint-ammo')).toHaveText('0');
+  expect(await page.evaluate(()=>(window as any).__spaghetti.simulation.blocks.length)).toBe(4);
+  expect(await page.evaluate(()=>(window as any).__spaghetti.simulation.shotsFired)).toBe(0);
+  await page.keyboard.press('Numpad3');
+  await expect(page.locator('#select-review')).toHaveAttribute('aria-pressed','true');
+  await page.keyboard.press('Numpad4');
+  await expect(page.locator('#select-lint')).toHaveAttribute('aria-pressed','true');
+  expect(errors).toEqual([]);
 });

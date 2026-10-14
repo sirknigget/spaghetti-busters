@@ -1,10 +1,10 @@
-import { Simulation } from './simulation';
+import { Simulation, type SpecialWeapon } from './simulation';
 import { WorldRenderer } from './world3d';
 
 export interface GameController {
   reset():void;
   setPaused(value:boolean):void;
-  selectSpecial(type:'homing'|'grenade'):void;
+  selectSpecial(type:SpecialWeapon):void;
   fireSpecial():void;
 }
 interface Callbacks {
@@ -30,7 +30,7 @@ export async function createGame(parent:string, callbacks:Callbacks):Promise<Gam
 
     constructor() {
       const canvas=this.world.renderer.domElement;
-      canvas.setAttribute('aria-label','3D arcade playfield. Move to aim, left click or Space to shoot. Right click launches special weapons. Press 1 for homing backspace missiles or 2 for recycle grenades.');
+      canvas.setAttribute('aria-label','3D arcade playfield. Move to aim, left click or Space to shoot. Right click launches special weapons. Press 1 for homing backspace missiles, 2 for recycle grenades, 3 for the code review freeze gun, or 4 for the lint bomb.');
       const point=(event:PointerEvent)=>{
         const box=canvas.getBoundingClientRect();
         if(box.width<=0||box.height<=0)return;
@@ -54,6 +54,8 @@ export async function createGame(parent:string, callbacks:Callbacks):Promise<Gam
         if(['Space','ArrowUp','ArrowDown','KeyW','KeyS'].includes(event.code)){event.preventDefault();this.keys.add(event.code);}
         if(event.code==='Digit1'||event.code==='Numpad1')this.selectSpecial('homing');
         if(event.code==='Digit2'||event.code==='Numpad2')this.selectSpecial('grenade');
+        if(event.code==='Digit3'||event.code==='Numpad3')this.selectSpecial('review');
+        if(event.code==='Digit4'||event.code==='Numpad4')this.selectSpecial('lint');
       });
       window.addEventListener('keyup',event=>this.keys.delete(event.code));
       window.addEventListener('blur',()=>this.release());
@@ -71,7 +73,7 @@ export async function createGame(parent:string, callbacks:Callbacks):Promise<Gam
     release(){this.holding=this.holdingSpecial=false;this.keys.clear();}
     reset(){this.sim.reset();this.world.reset();this.release();this.muzzle=this.impact=0;callbacks.onState(this.sim);this.draw();}
     setPaused(value:boolean){this.paused=value;this.release();this.lastFrame=performance.now();if(!value){this.world.resize();this.draw();}}
-    selectSpecial(type:'homing'|'grenade'){if(!this.paused){this.sim.selectSpecial(type);callbacks.onState(this.sim);}}
+    selectSpecial(type:SpecialWeapon){if(!this.paused){this.sim.selectSpecial(type);callbacks.onState(this.sim);}}
     fireSpecial(){if(!this.paused)this.sim.fireSpecial();}
     draw(){this.world.render(this.sim,this.muzzle,this.impact);}
 
@@ -86,10 +88,11 @@ export async function createGame(parent:string, callbacks:Callbacks):Promise<Gam
       if(this.holdingSpecial)this.sim.fireSpecial();
       this.sim.update(dt);
       for(const event of this.sim.events.splice(0)){
-        if(event==='shot'||event==='missile'||event==='grenade')this.muzzle=.065;
+        if(event==='shot'||event==='missile'||event==='grenade'||event==='review'||event==='lint')this.muzzle=.065;
         if(event==='hit')this.impact=3;
         if(event==='split'||event==='destroy')this.impact=5;
-        if(event==='explosion')this.impact=8;
+        if(event==='explosion'||event==='lint')this.impact=8;
+        if(event==='generate')this.impact=3;
         if(event==='stun')this.impact=7;
         callbacks.onEvent(event);
       }
