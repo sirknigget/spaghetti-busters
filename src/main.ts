@@ -1,0 +1,154 @@
+import './style.css';
+import { AudioEngine } from './game/audio';
+import type { GameController } from './game/scene';
+
+const bolt = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m14 2-9 12h6l-1 8 9-13h-6l1-7Z" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/></svg>';
+const audioIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M15 8c3 2 3 6 0 8m3-11c5 4 5 10 0 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+let best = 0;
+try { best = Number(localStorage.getItem('spaghetti-best')) || 0; } catch { /* Private browsing remains playable. */ }
+
+document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+  <main id="menu" class="menu-screen">
+    <div class="photo-backdrop"></div><div class="menu-grain"></div>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Spaghetti Busters home"><span class="brand-symbol">{${bolt}}</span><span>SPAGHETTI<br>BUSTERS<span class="brand-dot">®</span></span></a>
+      <div class="header-right"><span class="edition">AN ARCADE INTERVENTION</span><button class="sound-button" data-sound aria-label="Turn sound off">${audioIcon}<span>SOUND ON</span></button></div>
+    </header>
+    <div class="hero-art" aria-hidden="true"></div>
+    <div class="orbit-label" aria-hidden="true"><span class="live-dot"></span> TECH DEBT DETECTED <span>↙</span></div>
+    <section class="hero-copy">
+      <div class="eyebrow"><span class="tiny-star">✳</span> LESS MESS. MORE MAYHEM.</div>
+      <h1><span>SPAGHETTI</span><span class="title-second">BUSTERS<span class="title-period">.</span></span></h1>
+      <div class="tagline">Clean code. <span>Dirty work.</span></div>
+      <p class="hero-description">The codebase is out of control.<br>You're the specialist. Bring a bigger cannon.</p>
+      <div class="menu-actions"><button id="start" class="primary-button"><span>LET’S BUST SOME CODE</span><span class="button-arrow">↗</span></button><button id="help" class="help-button" aria-label="Help: how to play">HOW TO PLAY <span>?</span></button></div>
+      <div class="hero-meta"><span><i class="live-dot"></i> INFINITE BAD CODE. ONE GOOD DEVELOPER.</span><span>BEST <b id="menu-best">${String(best).padStart(6,'0')}</b></span></div>
+    </section>
+    <div class="art-caption" aria-hidden="true"><span>MEET YOUR CODE QUALITY SPECIALIST</span><span>WHITE SUIT. ZERO MERCY. ↗</span></div>
+    <footer class="menu-footer"><span class="footer-pill">THE MISSION</span><span>BLAST THE BLOAT.</span><i>✳</i><span>BREAK THE BLOCKS.</span><i>✳</i><span>SHIP CLEAN.</span><span class="footer-version">v1.0 <span> / </span> BUILT TO BREAK THINGS</span></footer>
+  </main>
+  <section id="game-screen" class="game-screen" hidden aria-label="Spaghetti Busters game">
+    <div id="game-canvas"></div>
+    <div class="orientation-hint"><span>↻</span><div>MORE ROOM FOR MAYHEM<small>Rotate your phone to landscape.</small></div></div>
+    <header class="game-hud"><div class="hud-brand">{${bolt}}<span>SPAGHETTI<br>BUSTERS</span></div><div class="score-group"><span class="hud-label">CLEANUP SCORE</span><strong id="score">000000</strong><span id="combo" class="combo">READY TO REFACTOR</span></div><div class="wave-group"><span class="hud-label">CURRENT WAVE</span><strong id="wave">01 <small>/ THE LEGACY BEGINS</small></strong></div><div class="hud-actions"><button data-sound class="icon-button" aria-label="Turn sound off">${audioIcon}</button><button id="pause" class="icon-button" aria-label="Pause game"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg></button></div></header>
+    <div class="weapon-hud"><div class="weapon-icon">${bolt}</div><div><span class="hud-label">ACTIVE WEAPON</span><strong id="weapon">SINGLE SHOT</strong><span id="ammo">∞ UNLIMITED AMMO</span></div></div>
+    <div class="game-instruction">MOVE TO AIM <span>·</span> HOLD TO FIRE <span>·</span> <kbd>P</kbd> PAUSE</div>
+    <div id="toast" class="game-toast" role="status"></div>
+    <div id="game-overlay" class="game-overlay" hidden><div class="overlay-card"><span class="eyebrow" id="overlay-eyebrow">TAKE A BREATHER</span><h2 id="overlay-title">REFACTOR<br>PAUSED.</h2><p id="overlay-description">The spaghetti can wait. For a moment.</p><div id="results" hidden></div><button id="resume" class="primary-button">BACK TO BUSTING <span>↗</span></button><button id="restart" class="secondary-button">START A FRESH RUN ↻</button><button id="quit" class="text-button">BACK TO MAIN MENU</button></div></div>
+  </section>
+  <dialog id="help-dialog"><button id="close-help" class="close-button" aria-label="Close help">×</button><span class="eyebrow">A QUICK FIELD GUIDE</span><h2>MAKE A MESS.<br>CLEAN THE CODE.</h2><p class="help-intro">Keep every last chunk from escaping through the left edge.</p><div class="help-steps"><div><span>01</span><p><b>POINT. HOLD. OBLITERATE.</b>Move your mouse to aim and hold to fire. On touchscreens, drag and hold. <kbd>↑</kbd> <kbd>↓</kbd> + <kbd>SPACE</kbd> work too.</p></div><div><span>02</span><p><b>CHIP IT. SPLIT IT. FINISH IT.</b>Shots tear out letters and send code tumbling. Split the big blocks, then finish every fragment.</p></div><div><span>03</span><p><b>HUNT THE MAGIC VARIABLES.</b>Hit <code>DOUBLE_SHOT</code> or <code>TRIPLE_SHOT</code>, then shoot the floating weapon to equip it. Hit <code>AMMO</code> to reload.</p></div></div><div class="help-bottom"><span>Waves get faster. Your standards stay high.</span><button id="help-play" class="primary-button">GOT IT. LET’S GO ↗</button></div></dialog>
+`;
+
+const $ = <T extends HTMLElement = HTMLElement>(s:string) => document.querySelector<T>(s)!;
+const audio = new AudioEngine();
+let controller: GameController | undefined;
+let starting = false;
+let paused = false;
+let finished = false;
+let toastTimeout: ReturnType<typeof setTimeout>;
+
+function showToast(message:string) {
+  $('#toast').textContent = message;
+  $('#toast').classList.add('visible');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => $('#toast').classList.remove('visible'), 2500);
+}
+
+async function start() {
+  if(starting) return;
+  starting = true;
+  $<HTMLDialogElement>('#help-dialog').close();
+  $('#start').setAttribute('disabled','');
+  $('#start span').textContent = 'LOADING THE CANNON…';
+  audio.start();
+  try {
+    const { createGame } = await import('./game/scene');
+    if(!controller) controller = await createGame('game-canvas', {
+      onState: s => {
+        $('#score').textContent = String(s.score).padStart(6,'0');
+        const waveNames = ['THE LEGACY BEGINS','CALLBACK CATASTROPHE','DEPENDENCY HELL','ENTERPRISE EDITION','PRODUCTION IS ON FIRE'];
+        $('#wave').innerHTML = `${String(s.wave).padStart(2,'0')} <small>/ ${waveNames[Math.min(s.wave-1,4)]}</small>`;
+        $('#combo').textContent = s.combo > 1 ? `${s.combo}× COMBO · KEEP IT CLEAN` : 'READY TO REFACTOR';
+        $('#weapon').textContent = `${s.weapon.toUpperCase()} SHOT`;
+        $('#ammo').textContent = s.weapon === 'single' ? '∞ UNLIMITED AMMO' : `${s.ammo} ROUNDS REMAINING`;
+      },
+      onEvent: event => {
+        if(event !== 'gameover') audio.play(event === 'shoot' ? 'shot' : event);
+        if(event === 'wave') showToast('NEW WAVE // MORE CODE. LESS MERCY.');
+        if(event === 'pickup') showToast('WEAPON EQUIPPED // LET IT RIP!');
+        if(event === 'ammo') showToast('AMMO LOADED // BACK TO WORK');
+      },
+      onGameOver: (score,wave) => endRun(score,wave),
+    });
+    $('#menu').hidden = true;
+    $('#game-screen').hidden = false;
+    $('#game-overlay').hidden = true;
+    controller.reset();
+    controller.setPaused(false);
+    paused = finished = false;
+    audio.resume();
+    showToast('DON’T LET THE SPAGHETTI ESCAPE.');
+  } catch(error) {
+    console.error(error);
+    $('#start span').textContent = 'RETRY START ↗';
+  } finally {
+    starting = false;
+    $('#start').removeAttribute('disabled');
+  }
+}
+
+function setPause(value:boolean) {
+  if(!controller || finished || $('#game-screen').hidden) return;
+  paused = value;
+  controller.setPaused(value);
+  $('#game-overlay').hidden = !value;
+  $('#overlay-eyebrow').textContent = 'TAKE A BREATHER';
+  $('#overlay-title').innerHTML = 'REFACTOR<br>PAUSED.';
+  $('#overlay-description').textContent = 'The spaghetti can wait. For a moment.';
+  $('#results').hidden = true;
+  $('#resume').hidden = false;
+  if(value) { audio.pause(); $('#resume').focus(); } else audio.resume();
+}
+
+function endRun(score:number,wave:number) {
+  finished = true;
+  controller?.setPaused(true);
+  audio.finish();
+  if(score>best) { best=score; try { localStorage.setItem('spaghetti-best',String(best)); } catch {} }
+  $('#menu-best').textContent = String(best).padStart(6,'0');
+  $('#overlay-eyebrow').textContent = 'THE TECH DEBT GOT THROUGH';
+  $('#overlay-title').innerHTML = 'BUILD<br>FAILED.';
+  $('#overlay-description').textContent = 'A little spaghetti escaped. A fresh run awaits.';
+  $('#results').innerHTML = `<div><span>CLEANUP SCORE</span><b>${String(score).padStart(6,'0')}</b></div><div><span>WAVE REACHED</span><b>${String(wave).padStart(2,'0')}</b></div>`;
+  $('#results').hidden = false;
+  $('#resume').hidden = true;
+  $('#game-overlay').hidden = false;
+  $('#restart').focus();
+}
+
+$('#start').addEventListener('click',start);
+$('#help-play').addEventListener('click',start);
+$('#help').addEventListener('click',()=> $<HTMLDialogElement>('#help-dialog').showModal());
+$('#close-help').addEventListener('click',()=> $<HTMLDialogElement>('#help-dialog').close());
+$<HTMLDialogElement>('#help-dialog').addEventListener('click',e=> { if(e.target === $<HTMLDialogElement>('#help-dialog')) $<HTMLDialogElement>('#help-dialog').close(); });
+$('#pause').addEventListener('click',()=>setPause(!paused));
+$('#resume').addEventListener('click',()=>setPause(false));
+$('#restart').addEventListener('click',start);
+$('#quit').addEventListener('click',()=>{
+  controller?.setPaused(true); audio.pause();
+  $('#game-screen').hidden = true; $('#menu').hidden = false;
+  $('#start span').textContent = 'LET’S BUST SOME CODE';
+  $('#start').focus();
+});
+document.querySelectorAll<HTMLButtonElement>('[data-sound]').forEach(button=>button.addEventListener('click',()=>{
+  audio.setEnabled(!audio.enabled);
+  document.querySelectorAll('[data-sound]').forEach(b=>{
+    b.setAttribute('aria-label',audio.enabled?'Turn sound off':'Turn sound on');
+    b.classList.toggle('muted',!audio.enabled);
+    const label=b.querySelector('span'); if(label)label.textContent=audio.enabled?'SOUND ON':'SOUND OFF';
+  });
+}));
+document.addEventListener('keydown',e=>{
+  if(e.code==='Escape'||e.code==='KeyP') { if($<HTMLDialogElement>('#help-dialog').open)return; e.preventDefault(); setPause(!paused); }
+});
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) setPause(true); });
