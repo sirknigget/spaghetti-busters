@@ -9,11 +9,12 @@ let best = 0;
 try { best = Number(localStorage.getItem('spaghetti-best')) || 0; } catch { /* Private browsing remains playable. */ }
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <main id="menu" class="menu-screen">
+  <section id="prelude" class="prelude-screen" aria-label="Enter Spaghetti Busters"><button id="enter" class="entry-button" autofocus>Click to play</button></section>
+  <main id="menu" class="menu-screen" hidden>
     <div class="photo-backdrop"></div><div class="menu-grain"></div>
     <header class="site-header">
       <a class="brand" href="/" aria-label="Spaghetti Busters home"><span class="brand-symbol">{${bolt}}</span><span>SPAGHETTI<br>BUSTERS<span class="brand-dot">®</span></span></a>
-      <div class="header-right"><span class="edition">AN ARCADE INTERVENTION</span><button class="sound-button" data-sound aria-label="Turn sound off">${audioIcon}<span>SOUND ON</span></button></div>
+      <div class="header-right"><span class="edition" id="opening-audio-status">♫ OPENING THEME · SOUND ON</span><button class="sound-button" data-sound aria-label="Turn sound off">${audioIcon}<span>SOUND ON</span></button></div>
     </header>
     <div class="hero-art" aria-hidden="true"></div>
     <div class="orbit-label" aria-hidden="true"><span class="live-dot"></span> TECH DEBT DETECTED <span>↙</span></div>
@@ -48,7 +49,21 @@ let controller: GameController | undefined;
 let starting = false;
 let paused = false;
 let finished = false;
+let menuSoundUnlocked = false;
 let toastTimeout: ReturnType<typeof setTimeout>;
+
+$('#enter').addEventListener('click',()=>{
+  audio.enterMenu();
+  menuSoundUnlocked=true;
+  $('#prelude').hidden=true;
+  $('#menu').hidden=false;
+  $('#opening-audio-status').textContent='♫ OPENING THEME · SOUND ON';
+  $('#start').focus();
+});
+document.querySelectorAll<HTMLButtonElement>('#menu button, #help-dialog button').forEach(button=>{
+  button.addEventListener('pointerenter',()=>{if(menuSoundUnlocked)audio.play('menu-hover');});
+  button.addEventListener('click',()=>{if(menuSoundUnlocked)audio.play('menu-click');});
+});
 
 function showToast(message:string) {
   $('#toast').textContent = message;
@@ -63,7 +78,7 @@ async function start() {
   $<HTMLDialogElement>('#help-dialog').close();
   $('#start').setAttribute('disabled','');
   $('#start span').textContent = 'LOADING THE CANNON…';
-  audio.start();
+  audio.enterGame();
   try {
     const { createGame } = await import('./game/scene');
     if(!controller) controller = await createGame('game-canvas', {
@@ -110,6 +125,8 @@ async function start() {
   } catch(error) {
     console.error(error);
     $('#start span').textContent = 'RETRY START ↗';
+    $('#opening-audio-status').textContent = '3D COULD NOT START · CHECK WEBGL SUPPORT';
+    audio.enterMenu();
   } finally {
     starting = false;
     $('#start').removeAttribute('disabled');
@@ -157,13 +174,15 @@ $('#select-homing').addEventListener('click',()=>controller?.selectSpecial('homi
 $('#select-grenade').addEventListener('click',()=>controller?.selectSpecial('grenade'));
 $('#fire-special').addEventListener('click',()=>controller?.fireSpecial());
 $('#quit').addEventListener('click',()=>{
-  controller?.setPaused(true); audio.pause();
+  controller?.setPaused(true);
   $('#game-screen').hidden = true; $('#menu').hidden = false;
+  audio.enterMenu();
   $('#start span').textContent = 'LET’S BUST SOME CODE';
   $('#start').focus();
 });
 document.querySelectorAll<HTMLButtonElement>('[data-sound]').forEach(button=>button.addEventListener('click',()=>{
   audio.setEnabled(!audio.enabled);
+  $('#opening-audio-status').textContent=audio.enabled?'♫ OPENING THEME · SOUND ON':'SOUND OFF';
   document.querySelectorAll('[data-sound]').forEach(b=>{
     b.setAttribute('aria-label',audio.enabled?'Turn sound off':'Turn sound on');
     b.classList.toggle('muted',!audio.enabled);
@@ -173,4 +192,16 @@ document.querySelectorAll<HTMLButtonElement>('[data-sound]').forEach(button=>but
 document.addEventListener('keydown',e=>{
   if(e.code==='Escape'||e.code==='KeyP') { if($<HTMLDialogElement>('#help-dialog').open)return; e.preventDefault(); setPause(!paused); }
 });
-document.addEventListener('visibilitychange',()=>{ if(document.hidden) setPause(true); });
+$('#game-canvas').addEventListener('game-context-lost',()=>{
+  setPause(true);
+  $('#overlay-description').textContent='Graphics paused while the 3D view reconnects.';
+  $<HTMLButtonElement>('#resume').disabled=true;
+});
+$('#game-canvas').addEventListener('game-context-restored',()=>{
+  $('#overlay-description').textContent='The 3D view is ready. Back to busting.';
+  $<HTMLButtonElement>('#resume').disabled=false;
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){audio.pause();setPause(true);}
+  else if(!$('#menu').hidden&&menuSoundUnlocked)audio.enterMenu();
+});

@@ -27,8 +27,25 @@ export class AudioEngine {
   private decks: MusicDeck[] = [];
   private wave = 1;
   private trackIndex = 0;
+  private scene: 'menu' | 'game' = 'game';
 
   get trackName(): string { return MUSIC_TRACKS[this.trackIndex]!.name; }
+
+  /** Unlock the title score from a browser gesture, or return to it after a run. */
+  enterMenu(): void {
+    const opening = !this.started;
+    this.scene = 'menu';
+    this.start();
+    this.fadeMusic();
+    if (opening) this.play('menu-open');
+  }
+
+  /** Keep the same musical transport while the title arrangement blooms into gameplay. */
+  enterGame(): void {
+    this.scene = 'game';
+    this.start();
+    this.fadeMusic();
+  }
 
   /** Repeated HUD calls are harmless; a new run resets the score to its opening cue. */
   setWave(wave: number): void {
@@ -104,10 +121,22 @@ export class AudioEngine {
     if (!context || !this.effects || !this.enabled || this.paused || !this.started) return;
     const time = context.currentTime;
     const previous = this.lastEffects.get(event) ?? -Infinity;
-    if (time - previous < (event === 'hit' ? 0.032 : event === 'shot' ? 0.035 : 0.065)) return;
+    if (time - previous < (event === 'menu-hover' ? 0.1 : event === 'hit' ? 0.032 : event === 'shot' ? 0.035 : 0.065)) return;
     this.lastEffects.set(event, time);
     const bus = this.effects;
     switch (event) {
+      case 'menu-open':
+        [67, 74, 79, 83].forEach((note, i) => {
+          this.tone(this.frequency(note), time + i * 0.13, 0.65, 'sine', 0.065, bus);
+        });
+        break;
+      case 'menu-hover':
+        this.tone(this.frequency(83), time, 0.08, 'sine', 0.04, bus);
+        break;
+      case 'menu-click':
+        this.tone(this.frequency(76), time, 0.12, 'triangle', 0.065, bus);
+        this.tone(this.frequency(88), time + 0.055, 0.18, 'sine', 0.05, bus);
+        break;
       case 'missile':
         this.noise(time, 0.26, 0.10, 2100, bus, true);
         this.tone(160, time, 0.26, 'sawtooth', 0.07, bus, 1100);
@@ -193,7 +222,7 @@ export class AudioEngine {
       this.master.connect(limiter);
       limiter.connect(context.destination);
       this.music = context.createGain();
-      this.music.gain.value = 0.34;
+      this.music.gain.value = this.scene === 'menu' ? 0.23 : 0.34;
       // A quiet stereo dotted-eighth echo gives the chip palette space, without drums.
       for (const [delayTime, pan] of [[0.28, -0.72], [0.43, 0.72]]) {
         const delay = context.createDelay(1);
@@ -229,10 +258,17 @@ export class AudioEngine {
     if (!this.context || !this.enabled || this.paused || this.timer !== null) return;
     this.anchor = this.context.currentTime;
     this.master!.gain.setTargetAtTime(0.7, this.anchor, 0.015);
-    this.music!.gain.setValueAtTime(0.34, this.anchor);
+    this.music!.gain.setValueAtTime(this.scene === 'menu' ? 0.23 : 0.34, this.anchor);
     if (this.decks.length === 0) this.addDeck(this.trackIndex, this.transport);
     this.schedule();
     this.timer = setInterval(() => this.schedule(), 25);
+  }
+
+  private fadeMusic(): void {
+    if (!this.context || !this.music || !this.enabled || this.paused) return;
+    const now = this.context.currentTime;
+    this.music.gain.cancelScheduledValues(now);
+    this.music.gain.setTargetAtTime(this.scene === 'menu' ? 0.23 : 0.34, now, 0.18);
   }
 
   private advanceTransport(): void {
@@ -307,23 +343,25 @@ export class AudioEngine {
     const chord = track.chords[bar % track.chords.length]!;
     // Middle eight thins to floating chords and a few response notes, then blooms again.
     const quiet = bar >= 8 && bar < 12;
+    const title = this.scene === 'menu';
     const phrase = track.phrases[bar % track.phrases.length]!;
     if (beat === 0) {
-      chord.forEach((note, i) => this.pad(note, time + i * 0.03, sixteenth * 18, quiet ? 0.034 : 0.028, deck.bus));
+      chord.forEach((note, i) => this.pad(note, time + i * (title ? 0.09 : 0.03), sixteenth * 18,
+        title ? 0.024 : quiet ? 0.034 : 0.028, deck.bus));
     }
     const note = phrase[beat]!;
-    if (note > 0 && (!quiet || beat === 0 || beat === 8 || (bar === 11 && beat >= 12))) {
+    if (note > 0 && (!title || beat % 4 === 0 || beat === 7) && (!quiet || beat === 0 || beat === 8 || (bar === 11 && beat >= 12))) {
       const variation = bar >= 12 && beat >= 8 ? 12 : 0;
-      this.melodicTone(note + variation, time, sixteenth * (quiet ? 3.4 : 2.1), track.lead,
-        quiet ? 0.07 : 0.1, deck.bus, bar % 2 ? 0.24 : -0.24);
+      this.melodicTone(note + variation, time, sixteenth * (title ? 4.2 : quiet ? 3.4 : 2.1), title ? 'sine' : track.lead,
+        title ? 0.085 : quiet ? 0.07 : 0.1, deck.bus, bar % 2 ? 0.24 : -0.24);
       // Bell-like overtones distinguish the nocturnal and glassy compositions.
       if (deck.track === 1 || deck.track === 2) {
         this.melodicTone(note + variation + 12, time, sixteenth * 1.4, 'sine', 0.02, deck.bus, 0.35);
       }
     }
     const arpeggio = track.arpeggio[(beat + (bar % 2 ? 3 : 0)) % 16]!;
-    if (!quiet && arpeggio >= 0) {
-      this.melodicTone(chord[arpeggio]! + 12, time, sixteenth * 1.7, 'triangle', 0.055, deck.bus, -0.4);
+    if (!quiet && arpeggio >= 0 && (!title || beat % 3 === 0)) {
+      this.melodicTone(chord[arpeggio]! + 12, time, sixteenth * (title ? 3 : 1.7), 'triangle', title ? 0.035 : 0.055, deck.bus, -0.4);
     }
   }
 

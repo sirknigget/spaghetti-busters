@@ -1,5 +1,70 @@
 import { expect, test } from '@playwright/test';
 
+test('title music unlocks on a gesture, transitions into the run, and returns without duplicate schedulers', async ({ page }) => {
+  await page.goto('/');
+  const initial = await page.evaluate(async () => {
+    const { AudioEngine } = await new Function('return import("/src/game/audio.ts")')();
+    const audio = new AudioEngine();
+    (window as any).__menuAudioTest = audio;
+    document.addEventListener('pointerdown', () => audio.enterMenu(), { once: true });
+    return { started: audio.started, context: audio.context };
+  });
+  expect(initial).toEqual({ started: false, context: null });
+  await page.mouse.click(10, 10);
+  await page.waitForTimeout(250);
+  const menu = await page.evaluate(() => {
+    const a = (window as any).__menuAudioTest;
+    const timer = a.timer;
+    a.enterMenu(); a.enterMenu();
+    a.play('menu-hover');
+    const hoverVoices = a.sources.size;
+    a.play('menu-hover');
+    return { state: a.context.state, scene: a.scene, singleTimer: timer === a.timer,
+      voices: a.sources.size, hoverLimited: a.sources.size === hoverVoices, gain: a.music.gain.value };
+  });
+  expect(menu.state).toBe('running');
+  expect(menu.scene).toBe('menu');
+  expect(menu.singleTimer).toBe(true);
+  expect(menu.hoverLimited).toBe(true);
+  expect(menu.voices).toBeGreaterThan(0);
+  expect(menu.gain).toBeCloseTo(0.23, 2);
+  const run = await page.evaluate(() => {
+    const a = (window as any).__menuAudioTest;
+    const timer = a.timer;
+    const transport = a.transport;
+    a.enterGame();
+    a.play('menu-click');
+    return { scene: a.scene, sameTimer: a.timer === timer, sameTransport: a.transport === transport };
+  });
+  expect(run).toEqual({ scene: 'game', sameTimer: true, sameTransport: true });
+  await page.waitForTimeout(700);
+  expect(await page.evaluate(() => (window as any).__menuAudioTest.music.gain.value)).toBeGreaterThan(0.33);
+  const returned = await page.evaluate(() => {
+    const a = (window as any).__menuAudioTest;
+    a.finish(); a.enterMenu();
+    a.pause(); a.resume();
+    return { scene: a.scene, timer: a.timer !== null, paused: a.paused, voices: a.sources.size };
+  });
+  expect(returned.scene).toBe('menu');
+  expect(returned.timer).toBe(true);
+  expect(returned.paused).toBe(false);
+  const muted = await page.evaluate(() => {
+    const a = (window as any).__menuAudioTest;
+    a.setEnabled(false); a.enterMenu(); a.play('menu-click'); a.play('menu-hover');
+    return { timer: a.timer, voices: a.sources.size };
+  });
+  expect(muted).toEqual({ timer: null, voices: 0 });
+  const unmuted = await page.evaluate(() => {
+    const a = (window as any).__menuAudioTest;
+    a.setEnabled(true);
+    const result = { timer: a.timer !== null, scene: a.scene };
+    a.pause();
+    void a.context.close();
+    return result;
+  });
+  expect(unmuted).toEqual({ timer: true, scene: 'menu' });
+});
+
 test('real audio context crossfades scores and preserves transport through pause and mute', async ({ page }) => {
   await page.goto('/');
   await page.mouse.click(10, 10);
