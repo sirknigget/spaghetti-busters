@@ -1,4 +1,14 @@
-/** Original, asset-free arcade soundtrack and sound effects. Starts on a user gesture. */
+import { MUSIC_CROSSFADE_SECONDS, MUSIC_TRACKS, trackDuration } from './music';
+
+interface MusicDeck {
+  track: number;
+  start: number;
+  nextStep: number;
+  bus: GainNode;
+  retireAt?: number;
+}
+
+/** Original, asset-free melodic soundtrack and arcade effects. Starts on a user gesture. */
 export class AudioEngine {
   enabled = true;
 
@@ -12,9 +22,28 @@ export class AudioEngine {
   private lastEffects = new Map<string, number>();
   private started = false;
   private paused = false;
-  private nextBeat = 0;
-  private step = 0;
-  private readonly sixteenth = 60 / 156 / 4;
+  private transport = 0;
+  private anchor = 0;
+  private decks: MusicDeck[] = [];
+  private wave = 1;
+  private trackIndex = 0;
+
+  get trackName(): string { return MUSIC_TRACKS[this.trackIndex]!.name; }
+
+  /** Repeated HUD calls are harmless; a new run resets the score to its opening cue. */
+  setWave(wave: number): void {
+    const next = Math.max(1, Math.floor(wave));
+    if (next === this.wave) return;
+    const newRun = next === 1 && this.wave > 1;
+    this.wave = next;
+    if (newRun) {
+      this.stopSounds();
+      this.clearDecks();
+      this.transport = 0;
+      this.trackIndex = 0;
+      if (this.started && !this.paused && this.enabled) this.startMusic();
+    }
+  }
 
   /** Call from Start, pointerdown, or another trusted browser gesture. */
   start(): void {
@@ -34,7 +63,7 @@ export class AudioEngine {
     const context = this.context;
     if (context && this.master) {
       this.master.gain.cancelScheduledValues(context.currentTime);
-      this.master.gain.setTargetAtTime(enabled ? 0.7 : 0, context.currentTime, 0.015);
+      this.master.gain.setTargetAtTime(enabled && !this.paused ? 0.7 : 0, context.currentTime, 0.015);
     }
     if (!enabled) this.stopSounds();
     else if (this.started && !this.paused) {
@@ -46,6 +75,7 @@ export class AudioEngine {
   pause(): void {
     this.paused = true;
     this.stopSounds();
+    if (this.context && this.master) this.master.gain.setValueAtTime(0, this.context.currentTime);
   }
 
   /** Stop the groove but let the final descending sting finish naturally. */
@@ -53,6 +83,9 @@ export class AudioEngine {
     this.stopSounds();
     this.play('gameover');
     this.paused = true;
+    this.clearDecks();
+    this.transport = 0;
+    this.trackIndex = 0;
   }
 
   resume(): void {
@@ -75,6 +108,29 @@ export class AudioEngine {
     this.lastEffects.set(event, time);
     const bus = this.effects;
     switch (event) {
+      case 'missile':
+        this.noise(time, 0.26, 0.10, 2100, bus, true);
+        this.tone(160, time, 0.26, 'sawtooth', 0.07, bus, 1100);
+        break;
+      case 'grenade':
+        this.tone(380, time, 0.18, 'triangle', 0.20, bus, 105);
+        this.noise(time, 0.055, 0.08, 900, bus);
+        break;
+      case 'explosion':
+        this.noise(time, 0.52, 0.30, 1500, bus);
+        this.tone(150, time, 0.45, 'triangle', 0.25, bus, 35);
+        this.tone(540, time + 0.035, 0.22, 'sawtooth', 0.035, bus, 95);
+        break;
+      case 'hazard':
+        [83, 77].forEach((note, i) => this.tone(this.frequency(note), time + i * 0.09, 0.085, 'triangle', 0.1, bus));
+        break;
+      case 'stun':
+        [94, 87, 82, 75, 70].forEach((note, i) => this.tone(this.frequency(note), time + i * 0.045, 0.11, 'square', 0.075, bus));
+        this.noise(time, 0.28, 0.08, 4000, bus, true);
+        break;
+      case 'recover':
+        [67, 74, 79, 86].forEach((note, i) => this.tone(this.frequency(note), time + i * 0.05, 0.13, 'sine', 0.15, bus));
+        break;
       case 'shot':
         this.tone(720, time, 0.085, 'square', 0.1, bus, 135);
         this.noise(time, 0.035, 0.045, 1800, bus);
@@ -137,7 +193,20 @@ export class AudioEngine {
       this.master.connect(limiter);
       limiter.connect(context.destination);
       this.music = context.createGain();
-      this.music.gain.value = 0.28;
+      this.music.gain.value = 0.34;
+      // A quiet stereo dotted-eighth echo gives the chip palette space, without drums.
+      for (const [delayTime, pan] of [[0.28, -0.72], [0.43, 0.72]]) {
+        const delay = context.createDelay(1);
+        delay.delayTime.value = delayTime!;
+        const echo = context.createGain();
+        echo.gain.value = 0.17;
+        const panner = context.createStereoPanner();
+        panner.pan.value = pan!;
+        this.music.connect(delay);
+        delay.connect(echo);
+        echo.connect(panner);
+        panner.connect(this.master);
+      }
       this.music.connect(this.master);
       this.effects = context.createGain();
       this.effects.gain.value = 0.65;
@@ -158,14 +227,26 @@ export class AudioEngine {
 
   private startMusic(): void {
     if (!this.context || !this.enabled || this.paused || this.timer !== null) return;
-    this.nextBeat = this.context.currentTime + 0.04;
+    this.anchor = this.context.currentTime;
+    this.master!.gain.setTargetAtTime(0.7, this.anchor, 0.015);
+    this.music!.gain.setValueAtTime(0.34, this.anchor);
+    if (this.decks.length === 0) this.addDeck(this.trackIndex, this.transport);
     this.schedule();
     this.timer = setInterval(() => this.schedule(), 25);
   }
 
+  private advanceTransport(): void {
+    if (this.timer === null || !this.context) return;
+    const now = this.context.currentTime;
+    this.transport += Math.max(0, now - this.anchor);
+    this.anchor = now;
+  }
+
   private stopSounds(): void {
+    this.advanceTransport();
     if (this.timer !== null) clearInterval(this.timer);
     this.timer = null;
+    if (this.context && this.music) this.music.gain.setValueAtTime(0, this.context.currentTime);
     for (const source of this.sources) {
       try { source.stop(); } catch { /* The source may have ended between frames. */ }
     }
@@ -173,57 +254,109 @@ export class AudioEngine {
     this.lastEffects.clear();
   }
 
+  private clearDecks(): void {
+    for (const deck of this.decks) deck.bus.disconnect();
+    this.decks = [];
+  }
+
+  private addDeck(track: number, start: number): void {
+    const bus = this.context!.createGain();
+    bus.gain.value = this.decks.length ? 0 : 1;
+    bus.connect(this.music!);
+    this.decks.push({ track, start, nextStep: 0, bus });
+    this.trackIndex = track;
+  }
+
   private schedule(): void {
     if (!this.context || !this.music || !this.enabled || this.paused) return;
+    this.advanceTransport();
     const now = this.context.currentTime;
-    // Hidden tabs may stall timers. Resume at the next note, without a burst of old notes.
-    if (this.nextBeat < now - 0.2) this.nextBeat = now + 0.025;
-    while (this.nextBeat < now + 0.14) {
-      this.musicStep(this.step, this.nextBeat);
-      this.step = (this.step + 1) % 64;
-      this.nextBeat += this.sixteenth;
+    const current = this.decks[this.decks.length - 1];
+    if (current && this.transport >= current.start + trackDuration(MUSIC_TRACKS[current.track]!)) {
+      // Two independent arrangements overlap during a smooth, equal-power crossfade.
+      current.retireAt = this.transport + MUSIC_CROSSFADE_SECONDS;
+      this.addDeck((current.track + 1) % MUSIC_TRACKS.length, this.transport);
+    }
+    this.decks = this.decks.filter(deck => {
+      if (deck.retireAt !== undefined && this.transport >= deck.retireAt) {
+        deck.bus.disconnect();
+        return false;
+      }
+      const track = MUSIC_TRACKS[deck.track]!;
+      const sixteenth = 60 / track.bpm / 4;
+      const age = this.transport - deck.start;
+      const fade = deck.retireAt !== undefined
+        ? Math.cos(Math.min(1, (this.transport - (deck.retireAt - MUSIC_CROSSFADE_SECONDS)) / MUSIC_CROSSFADE_SECONDS) * Math.PI / 2)
+        : Math.sin(Math.min(1, age / MUSIC_CROSSFADE_SECONDS) * Math.PI / 2);
+      deck.bus.gain.setTargetAtTime(fade, now, 0.035);
+      // Skip stale notes after hidden-tab throttling; never emit a catch-up burst.
+      if (deck.nextStep * sixteenth < age - 0.18) deck.nextStep = Math.ceil(age / sixteenth);
+      while (deck.nextStep * sixteenth < age + 0.14) {
+        this.musicStep(deck, deck.nextStep, now + Math.max(0, deck.nextStep * sixteenth - age));
+        deck.nextStep++;
+      }
+      return true;
+    });
+  }
+
+  private musicStep(deck: MusicDeck, step: number, time: number): void {
+    const track = MUSIC_TRACKS[deck.track]!;
+    const sixteenth = 60 / track.bpm / 4;
+    const beat = step % 16;
+    const bar = Math.floor(step / 16) % track.bars;
+    const chord = track.chords[bar % track.chords.length]!;
+    // Middle eight thins to floating chords and a few response notes, then blooms again.
+    const quiet = bar >= 8 && bar < 12;
+    const phrase = track.phrases[bar % track.phrases.length]!;
+    if (beat === 0) {
+      chord.forEach((note, i) => this.pad(note, time + i * 0.03, sixteenth * 18, quiet ? 0.034 : 0.028, deck.bus));
+    }
+    const note = phrase[beat]!;
+    if (note > 0 && (!quiet || beat === 0 || beat === 8 || (bar === 11 && beat >= 12))) {
+      const variation = bar >= 12 && beat >= 8 ? 12 : 0;
+      this.melodicTone(note + variation, time, sixteenth * (quiet ? 3.4 : 2.1), track.lead,
+        quiet ? 0.07 : 0.1, deck.bus, bar % 2 ? 0.24 : -0.24);
+      // Bell-like overtones distinguish the nocturnal and glassy compositions.
+      if (deck.track === 1 || deck.track === 2) {
+        this.melodicTone(note + variation + 12, time, sixteenth * 1.4, 'sine', 0.02, deck.bus, 0.35);
+      }
+    }
+    const arpeggio = track.arpeggio[(beat + (bar % 2 ? 3 : 0)) % 16]!;
+    if (!quiet && arpeggio >= 0) {
+      this.melodicTone(chord[arpeggio]! + 12, time, sixteenth * 1.7, 'triangle', 0.055, deck.bus, -0.4);
     }
   }
 
-  private musicStep(step: number, time: number): void {
-    const bus = this.music!;
-    const beat = step % 16;
-    const bar = Math.floor(step / 16);
-    const root = [33, 29, 36, 31][bar]!;
-    if (beat % 4 === 0) {
-      this.tone(145, time, 0.17, 'sine', 0.65, bus, 40);
-      this.noise(time, 0.018, 0.035, 1700, bus);
-    }
-    if (beat === 4 || beat === 12) {
-      this.noise(time, 0.105, 0.23, 2400, bus);
-      this.tone(175, time, 0.065, 'triangle', 0.14, bus, 95);
-    }
-    if (beat % 2 === 0 || beat === 15) {
-      this.noise(time, beat === 14 ? 0.08 : 0.033, beat % 4 === 2 ? 0.09 : 0.045, 7800, bus, true);
-    }
-    if (beat % 2 === 0) {
-      const bass = root + ([0, 0, 12, 0, 7, 0, 12, 7][beat / 2] ?? 0);
-      this.tone(this.frequency(bass), time, 0.14, 'triangle', 0.42, bus);
-      this.tone(this.frequency(bass + 12), time, 0.09, 'square', 0.045, bus);
-    }
-    const melodies = [
-      [76, -1, 81, 79, -1, 76, 72, -1, 74, -1, 76, -1, 79, 76, 72, 74],
-      [77, -1, 81, -1, 84, 81, -1, 77, 76, -1, 72, 76, -1, 77, 76, 72],
-      [76, -1, 79, 84, -1, 79, 76, -1, 74, 76, -1, 79, 84, -1, 83, 79],
-      [74, -1, 79, -1, 83, 79, 74, -1, 76, -1, 79, 76, 74, 71, 74, 76],
-    ];
-    const note = melodies[bar]![beat]!;
-    if (note > 0) {
-      this.tone(this.frequency(note), time, 0.115, 'square', beat % 4 === 0 ? 0.075 : 0.055, bus);
-      // A quiet octave echo gives the chip lead a wider, contemporary tail.
-      this.tone(this.frequency(note - 12), time + this.sixteenth * 1.5, 0.09, 'triangle', 0.055, bus);
-    }
+  private pad(note: number, time: number, duration: number, volume: number, bus: AudioNode): void {
+    const context = this.context!;
+    const oscillator = context.createOscillator();
+    const envelope = context.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = this.frequency(note);
+    oscillator.detune.value = note % 2 ? -4 : 4;
+    envelope.gain.setValueAtTime(0, time);
+    envelope.gain.linearRampToValueAtTime(volume, time + duration * 0.2);
+    envelope.gain.linearRampToValueAtTime(volume * 0.72, time + duration * 0.65);
+    envelope.gain.linearRampToValueAtTime(0, time + duration);
+    oscillator.connect(envelope);
+    envelope.connect(bus);
+    this.track(oscillator, () => envelope.disconnect());
+    oscillator.start(time);
+    oscillator.stop(time + duration + 0.01);
+  }
+
+  private melodicTone(note: number, time: number, duration: number, type: OscillatorType,
+    volume: number, bus: AudioNode, pan: number): void {
+    const panner = this.context!.createStereoPanner();
+    panner.pan.value = pan;
+    panner.connect(bus);
+    this.tone(this.frequency(note), time, duration, type, volume, panner, undefined, () => panner.disconnect());
   }
 
   private frequency(midi: number): number { return 440 * 2 ** ((midi - 69) / 12); }
 
   private tone(frequency: number, time: number, duration: number, type: OscillatorType,
-    volume: number, destination: AudioNode, endFrequency?: number): void {
+    volume: number, destination: AudioNode, endFrequency?: number, cleanup?: () => void): void {
     const context = this.context!;
     const oscillator = context.createOscillator();
     const envelope = context.createGain();
@@ -235,7 +368,7 @@ export class AudioEngine {
     envelope.gain.exponentialRampToValueAtTime(0.0001, time + duration);
     oscillator.connect(envelope);
     envelope.connect(destination);
-    this.track(oscillator, () => envelope.disconnect());
+    this.track(oscillator, () => { envelope.disconnect(); cleanup?.(); });
     oscillator.start(time);
     oscillator.stop(time + duration + 0.01);
   }

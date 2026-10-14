@@ -53,10 +53,10 @@ test('pause freezes the simulation, resume and keyboard controls work',async({pa
 
 test('magic variable releases a weapon and another hit equips it',async({page})=>{
   await start(page);
-  await page.evaluate(()=>{const s=(window as any).__spaghetti.simulation;s.blocks=[];s.spawnBlock({x:650,y:330,vx:0,vy:0,angle:0,code:['const TRIPLE_SHOT = true;']});});
-  await point(page,650,328);await page.mouse.down();
+  await page.evaluate(()=>{const s=(window as any).__spaghetti.simulation;s.blocks=[];s.spawnBlock({x:650,y:330,vx:0,vy:0,angle:0,code:['TRIPLE_SHOT = true;']});});
+  await point(page,650,328);await page.mouse.down();await page.mouse.up();
   await expect.poll(()=>page.evaluate(()=>(window as any).__spaghetti.simulation.pickups.length)).toBeGreaterThan(0);
-  await page.mouse.up();
+  await expect(page.locator('#weapon')).toHaveText('SINGLE SHOT');
   await page.evaluate(()=>{const p=(window as any).__spaghetti.simulation.pickups[0];p.x=600;p.y=350;p.vx=0;p.vy=0;});
   await point(page,600,350);await page.mouse.down();
   await expect(page.locator('#weapon')).toHaveText('TRIPLE SHOT');await page.mouse.up();
@@ -90,6 +90,42 @@ test('touch landscape is playable and menu fits a phone',async({browser})=>{
   const box=await page.locator('canvas').boundingBox();
   await page.touchscreen.tap(box!.x+box!.width*.7,box!.y+box!.height*.45);
   await expect.poll(()=>page.evaluate(()=>(window as any).__spaghetti.simulation.shotsFired)).toBeGreaterThan(0);
+  await page.locator('#select-grenade').tap();
+  await expect(page.locator('#select-grenade')).toHaveAttribute('aria-pressed','true');
+  await page.locator('#fire-special').tap();
+  await expect(page.locator('#grenade-ammo')).toHaveText('1');
   await page.locator('#pause').click();await expect(page.locator('#resume')).toBeInViewport();
   await context.close();
+});
+
+test('right click launches selected special and never fires the primary cannon',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await start(page);await point(page,900,350);
+  await page.mouse.click(1000,440,{button:'right'});
+  await expect(page.locator('#homing-ammo')).toHaveText('2');
+  expect(await page.evaluate(()=>(window as any).__spaghetti.simulation.shotsFired)).toBe(0);
+  await page.keyboard.press('Digit2');
+  await expect(page.locator('#select-grenade')).toHaveAttribute('aria-pressed','true');
+  await page.waitForFunction(()=>(window as any).__spaghetti.simulation.specialCooldown===0);
+  await page.mouse.click(1000,440,{button:'right'});
+  await expect(page.locator('#grenade-ammo')).toHaveText('1');
+  expect(await page.evaluate(()=>(window as any).__spaghetti.simulation.shotsFired)).toBe(0);
+  await page.keyboard.press('Digit1');
+  await expect(page.locator('#select-homing')).toHaveAttribute('aria-pressed','true');
+  expect(errors).toEqual([]);
+});
+
+test('timeout collision paralyzes movement and all weapons, then recovers',async({page})=>{
+  await start(page);
+  await page.evaluate(()=>{const s=(window as any).__spaghetti.simulation;s.spawnHazard({x:100,y:s.playerY,durationMs:2000,vx:0,vy:0});});
+  await expect(page.locator('#game-screen')).toHaveClass(/stunned/);
+  await expect(page.locator('#combo')).toContainText('EVENT LOOP BLOCKED');
+  const before=await page.evaluate(()=>{const s=(window as any).__spaghetti.simulation;return{y:s.playerY,shots:s.shotsFired,ammo:s.specialAmmo.homing};});
+  await point(page,900,570);await page.mouse.down();await page.waitForTimeout(250);await page.mouse.up();
+  await page.mouse.click(1000,650,{button:'right'});
+  const after=await page.evaluate(()=>{const s=(window as any).__spaghetti.simulation;return{y:s.playerY,shots:s.shotsFired,ammo:s.specialAmmo.homing};});
+  expect(after).toEqual(before);
+  await expect(page.locator('#game-screen')).not.toHaveClass(/stunned/);
+  await page.mouse.click(1000,650);
+  await expect.poll(()=>page.evaluate(()=>(window as any).__spaghetti.simulation.shotsFired)).toBeGreaterThan(before.shots);
 });

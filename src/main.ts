@@ -4,6 +4,7 @@ import type { GameController } from './game/scene';
 
 const bolt = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m14 2-9 12h6l-1 8 9-13h-6l1-7Z" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/></svg>';
 const audioIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M15 8c3 2 3 6 0 8m3-11c5 4 5 10 0 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+const recycleIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M9 3h6l1 3H8l1-3ZM6 6l1 15h10l1-15M10 10v7m4-7v7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 let best = 0;
 try { best = Number(localStorage.getItem('spaghetti-best')) || 0; } catch { /* Private browsing remains playable. */ }
 
@@ -25,18 +26,20 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <div class="hero-meta"><span><i class="live-dot"></i> INFINITE BAD CODE. ONE GOOD DEVELOPER.</span><span>BEST <b id="menu-best">${String(best).padStart(6,'0')}</b></span></div>
     </section>
     <div class="art-caption" aria-hidden="true"><span>MEET YOUR CODE QUALITY SPECIALIST</span><span>WHITE SUIT. ZERO MERCY. ↗</span></div>
-    <footer class="menu-footer"><span class="footer-pill">THE MISSION</span><span>BLAST THE BLOAT.</span><i>✳</i><span>BREAK THE BLOCKS.</span><i>✳</i><span>SHIP CLEAN.</span><span class="footer-version">v1.0 <span> / </span> BUILT TO BREAK THINGS</span></footer>
+    <footer class="menu-footer"><span class="footer-pill">THE MISSION</span><span>BLAST THE BLOAT.</span><i>✳</i><span>BREAK THE BLOCKS.</span><i>✳</i><span>SHIP CLEAN.</span><span class="footer-version">v2.0 <span> / </span> BUILT TO BREAK THINGS</span></footer>
   </main>
   <section id="game-screen" class="game-screen" hidden aria-label="Spaghetti Busters game">
     <div id="game-canvas"></div>
     <div class="orientation-hint"><span>↻</span><div>MORE ROOM FOR MAYHEM<small>Rotate your phone to landscape.</small></div></div>
     <header class="game-hud"><div class="hud-brand">{${bolt}}<span>SPAGHETTI<br>BUSTERS</span></div><div class="score-group"><span class="hud-label">CLEANUP SCORE</span><strong id="score">000000</strong><span id="combo" class="combo">READY TO REFACTOR</span></div><div class="wave-group"><span class="hud-label">CURRENT WAVE</span><strong id="wave">01 <small>/ THE LEGACY BEGINS</small></strong></div><div class="hud-actions"><button data-sound class="icon-button" aria-label="Turn sound off">${audioIcon}</button><button id="pause" class="icon-button" aria-label="Pause game"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg></button></div></header>
     <div class="weapon-hud"><div class="weapon-icon">${bolt}</div><div><span class="hud-label">ACTIVE WEAPON</span><strong id="weapon">SINGLE SHOT</strong><span id="ammo">∞ UNLIMITED AMMO</span></div></div>
-    <div class="game-instruction">MOVE TO AIM <span>·</span> HOLD TO FIRE <span>·</span> <kbd>P</kbd> PAUSE</div>
+    <div class="special-hud" aria-label="Special weapons"><div class="special-caption">RIGHT CLICK TO LAUNCH <span> / </span> <kbd>1</kbd> <kbd>2</kbd> TO SELECT</div><div class="special-slots"><button id="select-homing" class="special-slot selected" aria-label="Select backspace homing missiles" aria-pressed="true"><kbd>1</kbd><span class="backspace-icon">⌫</span><span class="special-name">BACKSPACE<small>HOMING MISSILE</small></span><b id="homing-ammo">3</b></button><button id="select-grenade" class="special-slot" aria-label="Select recycle bin grenades" aria-pressed="false"><kbd>2</kbd>${recycleIcon}<span class="special-name">RECYCLE BIN<small>AREA GRENADE</small></span><b id="grenade-ammo">2</b></button><button id="fire-special" aria-label="Fire selected special weapon">${bolt}<span>FIRE</span></button></div></div>
+    <div class="game-instruction">MOVE TO AIM <span>·</span> LEFT CLICK TO FIRE <span>·</span> <kbd>P</kbd> PAUSE</div>
+    <div class="now-playing">♫ <span id="track-name">PRISM CIRCUIT</span></div>
     <div id="toast" class="game-toast" role="status"></div>
     <div id="game-overlay" class="game-overlay" hidden><div class="overlay-card"><span class="eyebrow" id="overlay-eyebrow">TAKE A BREATHER</span><h2 id="overlay-title">REFACTOR<br>PAUSED.</h2><p id="overlay-description">The spaghetti can wait. For a moment.</p><div id="results" hidden></div><button id="resume" class="primary-button">BACK TO BUSTING <span>↗</span></button><button id="restart" class="secondary-button">START A FRESH RUN ↻</button><button id="quit" class="text-button">BACK TO MAIN MENU</button></div></div>
   </section>
-  <dialog id="help-dialog"><button id="close-help" class="close-button" aria-label="Close help">×</button><span class="eyebrow">A QUICK FIELD GUIDE</span><h2>MAKE A MESS.<br>CLEAN THE CODE.</h2><p class="help-intro">Keep every last chunk from escaping through the left edge.</p><div class="help-steps"><div><span>01</span><p><b>POINT. HOLD. OBLITERATE.</b>Move your mouse to aim and hold to fire. On touchscreens, drag and hold. <kbd>↑</kbd> <kbd>↓</kbd> + <kbd>SPACE</kbd> work too.</p></div><div><span>02</span><p><b>CHIP IT. SPLIT IT. FINISH IT.</b>Shots tear out letters and send code tumbling. Split the big blocks, then finish every fragment.</p></div><div><span>03</span><p><b>HUNT THE MAGIC VARIABLES.</b>Hit <code>DOUBLE_SHOT</code> or <code>TRIPLE_SHOT</code>, then shoot the floating weapon to equip it. Hit <code>AMMO</code> to reload.</p></div></div><div class="help-bottom"><span>Waves get faster. Your standards stay high.</span><button id="help-play" class="primary-button">GOT IT. LET’S GO ↗</button></div></dialog>
+  <dialog id="help-dialog"><button id="close-help" class="close-button" aria-label="Close help">×</button><span class="eyebrow">A QUICK FIELD GUIDE</span><h2>MAKE A MESS.<br>CLEAN THE CODE.</h2><p class="help-intro">Keep every last chunk from escaping through the left edge. Each wave brings more, bigger, tougher code.</p><div class="help-steps"><div><span>01</span><p><b>POINT. HOLD. OBLITERATE.</b>Move your mouse to aim and hold left click to fire. On touchscreens, drag and hold. <kbd>↑</kbd> <kbd>↓</kbd> + <kbd>SPACE</kbd> work too.</p></div><div><span>02</span><p><b>BRING OUT THE HEAVY REFACTORING.</b>Press <kbd>1</kbd> for backspace homing missiles or <kbd>2</kbd> for recycle-bin grenades. <b class="inline-emphasis">Right click</b> launches the selected special. On touchscreens, select a slot and tap FIRE. Missiles chase code; grenades clear an area around your aim.</p></div><div><span>03</span><p><b>MAKE EVERY UPGRADE COUNT.</b>Hit rare <code>DOUBLE_SHOT</code> or <code>TRIPLE_SHOT</code> variables, then shoot the floating weapon to equip it. Ammo is scarce. Hit <code>AMMO_CACHE</code> to reload.</p></div><div><span>04</span><p><b>DON’T BLOCK THE EVENT LOOP.</b>Fast red <code>await setTimeout(…);</code> hazards hunt the specialist. Shoot them down or dodge vertically. A collision freezes movement and every weapon for the shown duration.</p></div></div><div class="help-bottom"><span>Split the blocks. Finish every fragment.</span><button id="help-play" class="primary-button">GOT IT. LET’S GO ↗</button></div></dialog>
 `;
 
 const $ = <T extends HTMLElement = HTMLElement>(s:string) => document.querySelector<T>(s)!;
@@ -71,12 +74,28 @@ async function start() {
         $('#combo').textContent = s.combo > 1 ? `${s.combo}× COMBO · KEEP IT CLEAN` : 'READY TO REFACTOR';
         $('#weapon').textContent = `${s.weapon.toUpperCase()} SHOT`;
         $('#ammo').textContent = s.weapon === 'single' ? '∞ UNLIMITED AMMO' : `${s.ammo} ROUNDS REMAINING`;
+        $('#homing-ammo').textContent = String(s.specialAmmo.homing);
+        $('#grenade-ammo').textContent = String(s.specialAmmo.grenade);
+        for(const type of ['homing','grenade'] as const) {
+          const slot = $(`#select-${type}`);
+          slot.classList.toggle('selected',s.specialWeapon===type);
+          slot.classList.toggle('empty',s.specialAmmo[type]===0);
+          slot.setAttribute('aria-pressed',String(s.specialWeapon===type));
+        }
+        $('#game-screen').classList.toggle('stunned',s.isStunned);
+        if(s.isStunned) $('#combo').textContent = `EVENT LOOP BLOCKED · ${s.stunRemaining.toFixed(1)}s`;
+        $<HTMLButtonElement>('#fire-special').disabled = s.isStunned || s.specialAmmo[s.specialWeapon]===0;
+        audio.setWave(s.wave);
+        $('#track-name').textContent = audio.trackName.toUpperCase();
       },
       onEvent: event => {
         if(event !== 'gameover') audio.play(event === 'shoot' ? 'shot' : event);
         if(event === 'wave') showToast('NEW WAVE // MORE CODE. LESS MERCY.');
         if(event === 'pickup') showToast('WEAPON EQUIPPED // LET IT RIP!');
         if(event === 'ammo') showToast('AMMO LOADED // BACK TO WORK');
+        if(event === 'hazard') showToast('TIMEOUT INCOMING // SHOOT IT OR DODGE!');
+        if(event === 'stun') showToast('EVENT LOOP BLOCKED // CLEANER PARALYZED');
+        if(event === 'recover') showToast('BACK ONLINE // KEEP CLEANING');
       },
       onGameOver: (score,wave) => endRun(score,wave),
     });
@@ -134,6 +153,9 @@ $<HTMLDialogElement>('#help-dialog').addEventListener('click',e=> { if(e.target 
 $('#pause').addEventListener('click',()=>setPause(!paused));
 $('#resume').addEventListener('click',()=>setPause(false));
 $('#restart').addEventListener('click',start);
+$('#select-homing').addEventListener('click',()=>controller?.selectSpecial('homing'));
+$('#select-grenade').addEventListener('click',()=>controller?.selectSpecial('grenade'));
+$('#fire-special').addEventListener('click',()=>controller?.fireSpecial());
 $('#quit').addEventListener('click',()=>{
   controller?.setPaused(true); audio.pause();
   $('#game-screen').hidden = true; $('#menu').hidden = false;

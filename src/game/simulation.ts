@@ -1,11 +1,15 @@
+import { CODE_SLICES } from './code-library';
+export { CODE_SLICES } from './code-library';
+
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 export const CELL_WIDTH = 9;
 export const CELL_HEIGHT = 20;
 
 export type Weapon = 'single' | 'double' | 'triple';
+export type SpecialWeapon = 'homing' | 'grenade';
 export type Magic = 'double' | 'triple' | 'ammo';
-export type GameEvent = 'shot' | 'hit' | 'split' | 'destroy' | 'pickup' | 'ammo' | 'wave' | 'gameover';
+export type GameEvent = 'shot' | 'hit' | 'split' | 'destroy' | 'pickup' | 'ammo' | 'wave' | 'gameover' | 'missile' | 'grenade' | 'explosion' | 'stun' | 'hazard' | 'recover';
 
 export interface Cell {
   x: number;
@@ -13,6 +17,8 @@ export interface Cell {
   char: string;
   color: string;
   alive: boolean;
+  health: number;
+  maxHealth: number;
   magic?: Magic;
   magicId?: string;
 }
@@ -32,6 +38,7 @@ export interface Block {
   hits: number;
   age: number;
   generation: number;
+  toughness: number;
 }
 
 export interface Bullet {
@@ -76,46 +83,16 @@ export interface SpawnBlockOptions {
   code?: string[];
 }
 
-const CODE_SLICES = [
-  [
-    'async function resolveEverything(data: any) {',
-    '  const DOUBLE_SHOT = data.data ?? data;',
-    '  return await Promise.all(data.map(async x =>',
-    '    JSON.parse(JSON.stringify(x)).map((y: any) =>',
-    '      y === y ? eval("y") : resolveEverything(y))',
-    '  )).then(x => x.flat(Infinity));',
-    '} // TODO: rewrite before production',
-  ],
-  [
-    'class AbstractFactoryFactoryFactory {',
-    '  private TRIPLE_SHOT: any = undefined;',
-    '  getValue(value: any): any {',
-    '    return !!value ? this.getValue(!!value)',
-    '      : new Proxy(value || {}, {',
-    '        get: (_, key) => this.getValue(key)',
-    '      }); // it works on my machine',
-    '  }',
-    '}',
-  ],
-  [
-    'const AMMO_CACHE = [null, undefined, NaN];',
-    'function doTheThingButActually(v: any): any {',
-    '  for (let i = 0; i < 999999; i++) {',
-    '    v = v ? (v === true ? !!v : v) : !v;',
-    '    setTimeout(() => doTheThingButActually(v), 0);',
-    '  } return JSON.parse(JSON.stringify(v));',
-    '} // complexity is a feature',
-  ],
-  [
-    'type Recursive<T> = T extends Promise<infer U>',
-    '  ? Recursive<Recursive<U>> : any;',
-    'const DOUBLE_SHOT = new Map<any, any>();',
-    'const AMMO_CACHE = [...Array(42)].reduce(',
-    '  (acc: any, _: any) => ({ ...acc, ...acc }), {}',
-    '); // O(please do not ask)',
-    'export default (() => () => () => null)()()();',
-  ],
-];
+export interface SpecialProjectile {
+  id: number; type: SpecialWeapon; x: number; y: number;
+  vx: number; vy: number; life: number; angle: number; fuse?: number;
+  targetId?: number;
+}
+export interface Explosion { x: number; y: number; radius: number; life: number; maxLife: number; }
+export interface TimeoutHazard {
+  id: number; x: number; y: number; vx: number; vy: number;
+  durationMs: number; life: number; health: number; age: number;
+}
 
 const COLORS = {
   text: '#d6e2f0', keyword: '#bd9bff', string: '#b7e994',
@@ -133,6 +110,12 @@ export class Simulation {
   particles: Particle[] = [];
   pickups: Pickup[] = [];
   events: GameEvent[] = [];
+  specialWeapon: SpecialWeapon = 'homing';
+  specialAmmo = { homing: 3, grenade: 2 };
+  specials: SpecialProjectile[] = [];
+  explosions: Explosion[] = [];
+  hazards: TimeoutHazard[] = [];
+  stunRemaining = 0;
   score = 0;
   wave = 1;
   combo = 0;
@@ -143,6 +126,9 @@ export class Simulation {
   shotsFired = 0;
   blocksDestroyed = 0;
   private nextId = 1;
+  private specialCooldown = 0;
+  private hazardTimer = 9;
+  private ammoCaches = 0;
   private cooldown = 0;
   private spawnTimer = 0;
   private pendingBlocks = 0;
@@ -155,7 +141,9 @@ export class Simulation {
   }
 
   get waveRemaining() { return this.blocks.length + this.pendingBlocks; }
-  get waveTotal() { return this.wave === 1 ? 3 : Math.min(8, 2 + this.wave); }
+  get waveTotal() { return Math.min(16, 4 + Math.floor((this.wave - 1) * 1.4)); }
+  get isStunned() { return this.stunRemaining > 0; }
+  get driftSpeed() { return Math.min(265, 68 + this.wave * 11 + this.wave * this.wave * 1.8); }
   get waveLabel() { return `WAVE ${String(this.wave).padStart(2, '0')}`; }
 
   reset() {
@@ -165,6 +153,13 @@ export class Simulation {
     this.bullets = [];
     this.particles = [];
     this.pickups = [];
+    this.specials = [];
+    this.explosions = [];
+    this.hazards = [];
+    this.specialWeapon = 'homing';
+    this.specialAmmo = { homing: 3, grenade: 2 };
+    this.stunRemaining = this.specialCooldown = this.ammoCaches = 0;
+    this.hazardTimer = 9;
     this.events = [];
     this.score = this.combo = this.ammo = this.elapsed = 0;
     this.shotsFired = this.blocksDestroyed = 0;
@@ -174,14 +169,24 @@ export class Simulation {
     this.nextId = 1;
     this.cooldown = this.comboTimer = this.waveTimer = 0;
     this.triggeredMagics.clear();
-    this.pendingBlocks = 2;
-    this.spawnTimer = 4.4;
-    this.spawnBlock({ x: 1050, y: 330, vx: -43, vy: 12, angle: -0.035 });
+    this.pendingBlocks = this.waveTotal - 1;
+    this.spawnTimer = 3.2;
+    this.spawnBlock({ x: 1050, y: 330, vx: -this.driftSpeed, vy: 22, angle: -0.035 });
   }
 
   spawnBlock(options: SpawnBlockOptions = {}): Block {
     const id = this.nextId++;
-    const code = options.code ?? CODE_SLICES[(this.wave + id - 2) % CODE_SLICES.length]!;
+    const base = CODE_SLICES[(this.wave * 7 + id - 8) % CODE_SLICES.length]!;
+    const extra = Math.min(5, Math.floor((this.wave - 1) / 2));
+    const code = options.code ?? [...base,
+      ...Array.from({ length: extra }, (_, i) => [
+        'const retry = () => retry(retry as any);',
+        'await Promise.resolve(JSON.stringify(this));',
+        'if (true !== false) { eval("undefined"); }',
+        'queueMicrotask(() => queueMicrotask(retry));',
+        '// TODO: ticket closed as cannot reproduce',
+      ][i]!)];
+    const toughness = Math.min(3, 1 + Math.floor((this.wave - 1) / 3));
     const width = Math.max(...code.map(line => line.length)) * CELL_WIDTH + 28;
     const height = code.length * CELL_HEIGHT + 28;
     const cells: Cell[] = [];
@@ -208,6 +213,7 @@ export class Simulation {
           x: column * CELL_WIDTH - width / 2 + 18,
           y: row * CELL_HEIGHT - height / 2 + 22,
           char, color: magic ? COLORS.magic : colorAt[column]!, alive: true,
+          health: toughness, maxHealth: toughness,
           magic: magic?.type, magicId: magic?.id,
         });
       });
@@ -216,18 +222,18 @@ export class Simulation {
       id, title: ['legacy-service.ts', 'factory-factory.ts', 'utils-final-v9.ts', 'types-of-doom.ts'][(this.wave + id - 2) % 4]!,
       x: options.x ?? GAME_WIDTH + width / 2 + 12,
       y: options.y ?? 235 + this.random() * 270,
-      vx: options.vx ?? -(42 + this.wave * 7 + this.random() * 12),
-      vy: options.vy ?? (this.random() - 0.5) * (40 + this.wave * 5),
+      vx: options.vx ?? -(this.driftSpeed + this.random() * 16),
+      vy: options.vy ?? (this.random() - 0.5) * Math.min(160, 55 + this.wave * 10),
       angle: options.angle ?? (this.random() - 0.5) * 0.13,
       angularVelocity: (this.random() - 0.5) * 0.045,
-      width, height, cells, hits: 0, age: 0, generation: 0,
+      width, height, cells, hits: 0, age: 0, generation: 0, toughness,
     };
     this.blocks.push(block);
     return block;
   }
 
   fire(): boolean {
-    if (this.status !== 'playing' || this.cooldown > 0) return false;
+    if (this.status !== 'playing' || this.isStunned || this.cooldown > 0) return false;
     if (this.weapon !== 'single' && this.ammo <= 0) this.weapon = 'single';
     const angle = Math.atan2(this.aimY - this.playerY, Math.max(80, this.aimX - 158));
     const spreads = this.weapon === 'triple' ? [-0.15, 0, 0.15] : this.weapon === 'double' ? [-0.065, 0.065] : [0];
@@ -241,6 +247,140 @@ export class Simulation {
     this.shotsFired++;
     this.events.push('shot');
     return true;
+  }
+
+  selectSpecial(type: SpecialWeapon) {
+    if (this.status === 'playing' && !this.isStunned && (type === 'homing' || type === 'grenade')) this.specialWeapon = type;
+  }
+
+  fireSpecial(): boolean {
+    const type = this.specialWeapon;
+    if (this.status !== 'playing' || this.isStunned || this.specialCooldown > 0 || this.specialAmmo[type] <= 0) return false;
+    const angle = Math.atan2(this.aimY - this.playerY, Math.max(80, this.aimX - 158));
+    const speed = 600;
+    const fuse = 1.05;
+    this.specials.push({ id: this.nextId++, type, x: 172, y: this.playerY,
+      vx: type === 'grenade' ? (clamp(this.aimX, 220, 1230) - 172) / fuse : Math.cos(angle) * speed,
+      vy: type === 'grenade' ? (clamp(this.aimY, 140, 620) - this.playerY - 0.5 * 255 * fuse * fuse) / fuse : Math.sin(angle) * speed,
+      angle, life: type === 'homing' ? 5 : 2.2, fuse: type === 'grenade' ? fuse : undefined });
+    this.specialAmmo[type]--;
+    this.specialCooldown = type === 'homing' ? 0.6 : 0.85;
+    this.events.push(type === 'homing' ? 'missile' : 'grenade');
+    return true;
+  }
+
+  spawnHazard(options: { x?: number; y?: number; durationMs?: number; vx?: number; vy?: number } = {}): TimeoutHazard {
+    const x = options.x ?? 1420;
+    const y = options.y ?? clamp(this.playerY + (this.random() - 0.5) * 160, 155, 610);
+    const vx = options.vx ?? -Math.min(650, 350 + this.wave * 25);
+    const durationMs = options.durationMs ?? [1200, 1600, 2000, 2400][Math.floor(this.random() * 4)]!;
+    const hazard = { id: this.nextId++, x, y, vx,
+      vy: options.vy ?? (this.playerY - y) / Math.max(0.1, (x - 100) / -vx),
+      durationMs, life: 6, health: 1, age: 0 };
+    this.hazards.push(hazard);
+    this.events.push('hazard');
+    return hazard;
+  }
+
+  private updateHazards(dt: number) {
+    for (const hazard of this.hazards) {
+      if (hazard.life <= 0) continue;
+      const oldX = hazard.x, oldY = hazard.y;
+      hazard.age += dt;
+      hazard.life -= dt;
+      hazard.x += hazard.vx * dt;
+      hazard.y += hazard.vy * dt;
+      if (this.segmentRectangle(oldX - 100, oldY - this.playerY, hazard.x - 100, hazard.y - this.playerY, this.hazardHalfWidth(hazard) + 30, 58)) {
+        this.stunRemaining = Math.max(this.stunRemaining, hazard.durationMs / 1000);
+        hazard.life = 0;
+        this.burst(100, this.playerY, '#ff88bb', 30);
+        this.events.push('stun');
+      }
+      if (hazard.x < -180) hazard.life = 0;
+    }
+    this.hazards = this.hazards.filter(hazard => hazard.life > 0);
+  }
+
+  private updateSpecials(dt: number) {
+    for (const explosion of this.explosions) explosion.life -= dt;
+    this.explosions = this.explosions.filter(explosion => explosion.life > 0);
+    for (const special of this.specials) {
+      special.life -= dt;
+      if (special.life <= 0) continue;
+      const oldX = special.x, oldY = special.y;
+      if (special.type === 'homing') {
+        // Reacquire every substep: splitting or destroying a target never strands a missile.
+        let target: { x: number; y: number; id: number } | undefined;
+        let nearest = Infinity;
+        for (const block of this.blocks) {
+          if (block.x < 150 || block.x > GAME_WIDTH + 150) continue;
+          const centerDistance = Math.hypot(block.x - special.x, block.y - special.y);
+          const closestPossible = Math.max(0, centerDistance - Math.hypot(block.width, block.height) / 2);
+          if (closestPossible * closestPossible > nearest) continue;
+          const cos = Math.cos(block.angle), sin = Math.sin(block.angle);
+          for (const cell of block.cells) {
+            if (!cell.alive) continue;
+            const x = block.x + cell.x * cos - cell.y * sin;
+            const y = block.y + cell.x * sin + cell.y * cos;
+            const distance = (x - special.x) ** 2 + (y - special.y) ** 2;
+            if (distance < nearest) { nearest = distance; target = { x, y, id: block.id }; }
+          }
+        }
+        special.targetId = target?.id;
+        if (target) {
+          const desired = Math.atan2(target.y - special.y, target.x - special.x);
+          const delta = Math.atan2(Math.sin(desired - special.angle), Math.cos(desired - special.angle));
+          special.angle += clamp(delta, -dt * 7, dt * 7);
+        }
+        special.vx = Math.cos(special.angle) * 640;
+        special.vy = Math.sin(special.angle) * 640;
+      } else {
+        special.vy += 255 * dt;
+        special.angle += dt * 5;
+        special.fuse = (special.fuse ?? 0) - dt;
+      }
+      special.x += special.vx * dt;
+      special.y += special.vy * dt;
+      if (special.type === 'grenade' && (special.y < 130 || special.y > 635)) {
+        special.y = clamp(special.y, 130, 635);
+        special.vy *= -0.65;
+      }
+      let collision = false;
+      for (const block of this.blocks) {
+        if (Math.abs(block.x - special.x) > block.width + 40 || Math.abs(block.y - special.y) > block.height + 100) continue;
+        const cos = Math.cos(block.angle), sin = Math.sin(block.angle);
+        const ax = (oldX - block.x) * cos + (oldY - block.y) * sin;
+        const ay = -(oldX - block.x) * sin + (oldY - block.y) * cos;
+        const bx = (special.x - block.x) * cos + (special.y - block.y) * sin;
+        const by = -(special.x - block.x) * sin + (special.y - block.y) * cos;
+        if (block.cells.some(cell => cell.alive && this.segmentDistance(ax, ay, bx, by, cell.x, cell.y) < 17)) {
+          collision = true;
+          break;
+        }
+      }
+      if (collision || (special.type === 'grenade' && (special.fuse ?? 0) <= 0)) {
+        this.explode(special.x, special.y, special.type === 'grenade' ? 205 : 82, special.type === 'grenade' ? 3 : 2);
+        special.life = 0;
+      }
+    }
+    this.specials = this.specials.filter(special => special.life > 0 && special.x > -150 && special.x < 1600 && special.y > 20 && special.y < 760);
+  }
+
+  private explode(x: number, y: number, radius: number, power: number) {
+    this.explosions.push({ x, y, radius, life: 0.42, maxLife: 0.42 });
+    this.events.push('explosion');
+    this.burst(x, y, '#8cf5cd', 38);
+    for (const hazard of this.hazards) {
+      if (Math.hypot(hazard.x - x, hazard.y - y) < radius) hazard.life = 0;
+    }
+    for (const block of [...this.blocks]) {
+      const cos = Math.cos(block.angle), sin = Math.sin(block.angle);
+      const localX = (x - block.x) * cos + (y - block.y) * sin;
+      const localY = -(x - block.x) * sin + (y - block.y) * cos;
+      if (block.cells.some(cell => cell.alive && Math.hypot(cell.x - localX, cell.y - localY) <= radius)) {
+        this.damage(block, localX, localY, { vy: (block.y - y) * 2 }, radius, power);
+      }
+    }
   }
 
   update(dt: number) {
@@ -257,21 +397,30 @@ export class Simulation {
   private step(dt: number) {
     this.elapsed += dt;
     this.cooldown = Math.max(0, this.cooldown - dt);
-    this.playerY += (clamp(this.aimY, 166, 610) - this.playerY) * (1 - Math.exp(-dt * 14));
+    this.specialCooldown = Math.max(0, this.specialCooldown - dt);
+    if (this.stunRemaining > 0) {
+      this.stunRemaining = Math.max(0, this.stunRemaining - dt);
+      if (this.stunRemaining === 0) this.events.push('recover');
+    } else this.playerY += (clamp(this.aimY, 166, 610) - this.playerY) * (1 - Math.exp(-dt * 14));
+    this.hazardTimer -= dt;
+    if (this.hazardTimer <= 0) {
+      this.spawnHazard();
+      this.hazardTimer = Math.max(4.8, 11.5 - this.wave * 0.55) + this.random() * 3;
+    }
     this.comboTimer -= dt;
     if (this.comboTimer <= 0) this.combo = 0;
     this.spawnTimer -= dt;
-    if (this.pendingBlocks > 0 && this.spawnTimer <= 0) {
+    if (this.pendingBlocks > 0 && this.spawnTimer <= 0 && this.blocks.length < 48) {
       this.spawnBlock();
       this.pendingBlocks--;
-      this.spawnTimer = Math.max(1.65, 4.8 - this.wave * 0.25);
+      this.spawnTimer = Math.max(0.95, 3.6 - this.wave * 0.24);
     }
     if (this.blocks.length === 0 && this.pendingBlocks === 0) {
       this.waveTimer += dt;
       if (this.waveTimer > 1.0) {
         this.wave++;
         this.score += 250 * (this.wave - 1);
-        this.pendingBlocks = Math.min(8, 2 + this.wave);
+        this.pendingBlocks = this.waveTotal;
         this.spawnTimer = 0;
         this.waveTimer = 0;
         this.events.push('wave');
@@ -280,12 +429,16 @@ export class Simulation {
 
     for (const block of this.blocks) {
       block.age += dt;
-      block.vx += (-(42 + this.wave * 7) - block.vx) * dt * 0.18;
+      block.vx += (-this.driftSpeed - block.vx) * dt * 0.42;
       block.vy *= Math.exp(-dt * 0.12);
       block.angularVelocity *= Math.exp(-dt * 0.2);
       block.x += block.vx * dt;
       block.y += block.vy * dt;
       block.angle += block.angularVelocity * dt;
+      if (Math.abs(block.angle) > 0.42) {
+        block.angle = clamp(block.angle, -0.42, 0.42);
+        block.angularVelocity *= -0.7;
+      }
       const extent = this.extents(block);
       if (block.y - extent.y < 112) {
         block.y = 112 + extent.y;
@@ -309,6 +462,8 @@ export class Simulation {
       }
     }
     this.collideBlocks();
+    this.updateHazards(dt);
+    this.updateSpecials(dt);
 
     for (const pickup of this.pickups) {
       pickup.age += dt;
@@ -331,10 +486,21 @@ export class Simulation {
       bullet.x += bullet.vx * dt;
       bullet.y += bullet.vy * dt;
       let hit = false;
+      for (const hazard of this.hazards) {
+        if (hazard.life > 0 && this.hitsHazard(oldX, oldY, bullet.x, bullet.y, hazard)) {
+          hazard.life = 0;
+          this.score += 60;
+          this.burst(hazard.x, hazard.y, '#ff8fbd', 18);
+          this.events.push('hit');
+          hit = true;
+          break;
+        }
+      }
       for (const pickup of this.pickups) {
+        if (hit) break;
         if (pickup.life > 0 && pickup.age > 0.18 && this.segmentDistance(oldX, oldY, bullet.x, bullet.y, pickup.x, pickup.y) < 29) {
           this.weapon = pickup.type;
-          this.ammo = Math.min(99, this.ammo + (pickup.type === 'triple' ? 28 : 36));
+          this.ammo = Math.min(18, this.ammo + (pickup.type === 'triple' ? 6 : 10));
           pickup.life = 0;
           this.score += 100;
           this.burst(pickup.x, pickup.y, '#ffe270', 20);
@@ -367,6 +533,7 @@ export class Simulation {
     }
     this.bullets = this.bullets.filter(bullet => bullet.life > 0 && bullet.x < 1340 && bullet.y > 70 && bullet.y < 710);
     this.pickups = this.pickups.filter(pickup => pickup.life > 0);
+    this.hazards = this.hazards.filter(hazard => hazard.life > 0);
     for (const particle of this.particles) {
       particle.life -= dt;
       particle.x += particle.vx * dt;
@@ -378,12 +545,14 @@ export class Simulation {
     this.particles = this.particles.filter(particle => particle.life > 0).slice(-700);
   }
 
-  private damage(block: Block, x: number, y: number, bullet: Bullet) {
+  private damage(block: Block, x: number, y: number, bullet: Pick<Bullet, "vy">, blastRadius?: number, power = 1) {
     const cos = Math.cos(block.angle), sin = Math.sin(block.angle);
-    const radius = block.cells.filter(cell => cell.alive).length < 35 ? 65 : 43;
+    const radius = blastRadius ?? (block.cells.filter(cell => cell.alive).length < 28 ? 43 : 34);
     let removed = 0;
     for (const cell of block.cells) {
       if (!cell.alive || Math.hypot(cell.x - x, cell.y - y) > radius) continue;
+      cell.health -= power;
+      if (cell.health > 0) continue;
       cell.alive = false;
       removed++;
       const worldX = block.x + cell.x * cos - cell.y * sin;
@@ -395,18 +564,23 @@ export class Simulation {
       if (cell.magic && cell.magicId && !this.triggeredMagics.has(cell.magicId)) {
         this.triggeredMagics.add(cell.magicId);
         if (cell.magic === 'ammo') {
-          this.ammo = Math.min(99, this.ammo + 18);
+          this.ammo = Math.min(18, this.ammo + 4);
+          this.ammoCaches++;
+          if (this.ammoCaches % 2 === 0) {
+            const type: SpecialWeapon = this.ammoCaches % 4 === 0 ? 'grenade' : 'homing';
+            this.specialAmmo[type] = Math.min(type === 'homing' ? 5 : 3, this.specialAmmo[type] + 1);
+          }
           this.events.push('ammo');
           this.burst(worldX, worldY, '#83f4bd', 16);
         } else {
           this.pickups.push({ id: this.nextId++, x: worldX, y: worldY,
             vx: -35 - this.random() * 35, vy: (this.random() > 0.5 ? 1 : -1) * 95,
-            type: cell.magic, life: 18, age: 0 });
+            type: cell.magic, life: 12, age: 0 });
         }
       }
     }
     block.hits++;
-    block.vx = Math.min(165, block.vx + 65);
+    block.vx = Math.min(125, block.vx + (blastRadius ? 65 : 28) / Math.sqrt(block.toughness));
     block.vy += bullet.vy * 0.035 + (y / Math.max(block.height, 1)) * 35;
     block.angularVelocity += clamp(y * 0.0013, -0.16, 0.16);
     this.combo = Math.min(99, this.combo + 1);
@@ -420,7 +594,7 @@ export class Simulation {
       this.blocksDestroyed++;
       this.burst(block.x, block.y, '#79e7ff', 15);
       this.events.push('destroy');
-    } else if (block.hits >= 3 && remaining.length > 38) {
+    } else if (block.hits >= 4 + block.toughness && remaining.length > 38 && this.blocks.length < 48) {
       this.split(block, remaining, x, y);
     }
   }
@@ -449,7 +623,7 @@ export class Simulation {
         angle: block.angle + sign * 0.025,
         angularVelocity: block.angularVelocity + sign * (0.12 + Math.abs(hitX) * 0.0006),
         width, height, cells: half.map(cell => ({ ...cell, x: cell.x - centerX, y: cell.y - centerY })),
-        hits: 0, age: 0, generation: block.generation + 1,
+        hits: 0, age: 0, generation: block.generation + 1, toughness: block.toughness,
       });
     });
     this.score += 50;
@@ -492,6 +666,33 @@ export class Simulation {
     const cos = Math.abs(Math.cos(block.angle)), sin = Math.abs(Math.sin(block.angle));
     return { x: cos * block.width / 2 + sin * block.height / 2,
       y: sin * block.width / 2 + cos * block.height / 2 };
+  }
+
+  private hazardHalfWidth(hazard: TimeoutHazard) {
+    return (`await setTimeout(${hazard.durationMs});`.length * 9 + 28) / 2;
+  }
+
+  private hitsHazard(ax: number, ay: number, bx: number, by: number, hazard: TimeoutHazard) {
+    const angle = Math.atan2(hazard.vy, -hazard.vx) * -0.12;
+    const cos = Math.cos(angle), sin = Math.sin(angle);
+    const local = (x: number, y: number) => ({ x: (x - hazard.x) * cos + (y - hazard.y) * sin,
+      y: -(x - hazard.x) * sin + (y - hazard.y) * cos });
+    const a = local(ax, ay), b = local(bx, by);
+    return this.segmentRectangle(a.x, a.y, b.x, b.y, this.hazardHalfWidth(hazard) + 4, 24);
+  }
+
+  private segmentRectangle(ax: number, ay: number, bx: number, by: number, halfWidth: number, halfHeight: number) {
+    let min = 0, max = 1;
+    for (const [start, delta, half] of [[ax, bx - ax, halfWidth], [ay, by - ay, halfHeight]]) {
+      if (Math.abs(delta!) < 0.000001) { if (Math.abs(start!) > half!) return false; }
+      else {
+        const t1 = (-half! - start!) / delta!, t2 = (half! - start!) / delta!;
+        min = Math.max(min, Math.min(t1, t2));
+        max = Math.min(max, Math.max(t1, t2));
+        if (min > max) return false;
+      }
+    }
+    return true;
   }
 
   private segmentDistance(ax: number, ay: number, bx: number, by: number, px: number, py: number) {
