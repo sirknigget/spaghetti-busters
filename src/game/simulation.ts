@@ -355,7 +355,7 @@ export class Simulation {
 
   private interceptRobot(ax: number, ay: number, bx: number, by: number): Robot | undefined {
     return [...this.robots].sort((a, b) => a.x - b.x).find(robot =>
-      this.segmentRectangle(ax - robot.x, ay - robot.y, bx - robot.x, by - robot.y, 41, 64));
+      this.segmentRectangle(ax - robot.x, ay - robot.y, bx - robot.x, by - robot.y, 51, 79));
   }
 
   private updateRobots(dt: number) {
