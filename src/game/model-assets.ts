@@ -118,6 +118,27 @@ function ownedMaterial(
   return copy;
 }
 
+function restoreRenderSettings(object: THREE.Mesh): void {
+  const settings = object.userData.renderSettings;
+  if (settings) {
+    object.castShadow = settings.castShadow;
+    object.receiveShadow = settings.receiveShadow;
+    object.renderOrder = settings.renderOrder;
+  }
+  const instanceMaterials = Array.isArray(object.material)
+    ? object.material
+    : [object.material];
+  for (const [index, material] of instanceMaterials.entries()) {
+    const flags = object.userData.materialSettings?.[index];
+    if (!flags) {
+      continue;
+    }
+    material.depthTest = flags.depthTest;
+    material.depthWrite = flags.depthWrite;
+    material.transparent = flags.transparent;
+  }
+}
+
 /** Instances own their resources; disposing one never invalidates another or the library. */
 function instantiate(name: ModelName): THREE.Object3D {
   const instance = template(name).clone(true);
@@ -146,24 +167,7 @@ function instantiate(name: ModelName): THREE.Object3D {
     } else {
       object.material = ownedMaterial(object.material, materials);
     }
-    const settings = object.userData.renderSettings;
-    if (settings) {
-      object.castShadow = settings.castShadow;
-      object.receiveShadow = settings.receiveShadow;
-      object.renderOrder = settings.renderOrder;
-    }
-    const instanceMaterials = Array.isArray(object.material)
-      ? object.material
-      : [object.material];
-    for (const [index, material] of instanceMaterials.entries()) {
-      const flags = object.userData.materialSettings?.[index];
-      if (!flags) {
-        continue;
-      }
-      material.depthTest = flags.depthTest;
-      material.depthWrite = flags.depthWrite;
-      material.transparent = flags.transparent;
-    }
+    restoreRenderSettings(object);
   });
 
   return instance;

@@ -1,7 +1,15 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "node"],
+    "allowJs": true
   },
-  "include": ["src", "tests", "lint", "*.config.ts"]
+  "include": ["**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "playwright-report",
+    "test-results",
+    ".quality-results"
+  ]
 }

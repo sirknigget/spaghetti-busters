@@ -1,0 +1,166 @@
+import { Simulation, type SpecialWeapon } from "./simulation";
+import type { WorldRenderer } from "./world3d";
+import type { GameController, Callbacks } from "./scene";
+import { INPUT, MUZZLE_EVENTS } from "./scene-config";
+import { bindPointer, bindKeyboard } from "./scene-input";
+import { bindLifecycle } from "./scene-lifecycle";
+
+export class PlayScene implements GameController {
+  sim = new Simulation();
+
+  paused = true;
+  holding = false;
+  holdingSpecial = false;
+  muzzle = 0;
+  impact = 0;
+  lastHud = 0;
+  lastFrame = performance.now();
+  keys = new Set<string>();
+
+  constructor(
+    readonly world: WorldRenderer,
+    readonly callbacks: Callbacks,
+    readonly host: HTMLElement,
+  ) {
+    this.world.renderer.domElement.setAttribute(
+      "aria-label",
+      "3D arcade playfield. Move to aim, left click or Space to shoot. Right click launches special weapons. Press 1 for homing backspace missiles, 2 for recycle grenades, 3 for the code review freeze gun, or 4 for the lint bomb.",
+    );
+    bindPointer(this);
+    bindKeyboard(this);
+    bindLifecycle(this);
+    this.draw();
+    requestAnimationFrame(this.frame);
+  }
+
+  release() {
+    this.holding = this.holdingSpecial = false;
+    this.keys.clear();
+  }
+
+  reset() {
+    this.sim.reset();
+    this.world.reset();
+    this.release();
+    this.muzzle = this.impact = 0;
+    this.callbacks.onState(this.sim);
+    this.draw();
+  }
+
+  setPaused(value: boolean) {
+    this.paused = value;
+    this.release();
+    this.lastFrame = performance.now();
+    if (!value) {
+      this.world.resize();
+      this.draw();
+    }
+  }
+
+  selectSpecial(type: SpecialWeapon) {
+    if (!this.paused) {
+      this.sim.selectSpecial(type);
+      this.callbacks.onState(this.sim);
+    }
+  }
+
+  fireSpecial() {
+    if (!this.paused) {
+      this.sim.fireSpecial();
+    }
+  }
+
+  draw() {
+    this.world.render(this.sim, this.muzzle, this.impact);
+  }
+
+  frame = (now: number) => {
+    const dt = Math.min(
+      Math.max(0, (now - this.lastFrame) / INPUT.millisecondsPerSecond),
+      INPUT.maxFrameSeconds,
+    );
+    this.lastFrame = now;
+    if (!this.paused) {
+      this.update(dt);
+    }
+    requestAnimationFrame(this.frame);
+  };
+
+  update(dt: number) {
+    this.updateInput(dt);
+    this.sim.update(dt);
+    this.consumeEvents();
+    this.muzzle = Math.max(0, this.muzzle - dt);
+    this.impact = Math.max(0, this.impact - dt * INPUT.impactDecay);
+    this.lastHud += dt;
+    if (this.lastHud > INPUT.hudInterval) {
+      this.callbacks.onState(this.sim);
+      this.lastHud = 0;
+    }
+    if (this.sim.progress.status === "gameover") {
+      this.callbacks.onState(this.sim);
+      this.callbacks.onGameOver(
+        this.sim.progress.score,
+        this.sim.progress.wave,
+      );
+    }
+    this.draw();
+  }
+
+  private updateInput(dt: number) {
+    if (this.keys.has("ArrowUp") || this.keys.has("KeyW")) {
+      this.sim.player.aimY = Math.max(
+        INPUT.keyboardMinY,
+        this.sim.player.aimY - dt * INPUT.keyboardSpeed,
+      );
+    }
+    if (this.keys.has("ArrowDown") || this.keys.has("KeyS")) {
+      this.sim.player.aimY = Math.min(
+        INPUT.keyboardMaxY,
+        this.sim.player.aimY + dt * INPUT.keyboardSpeed,
+      );
+    }
+    if (this.holding || this.keys.has("Space")) {
+      this.sim.fire();
+    }
+    if (this.holdingSpecial) {
+      this.sim.fireSpecial();
+    }
+  }
+
+  private consumeEvents() {
+    for (const event of this.sim.world.events.splice(0)) {
+      if (MUZZLE_EVENTS.has(event)) {
+        this.muzzle = 0.065;
+      }
+      if (event === "hit") {
+        this.impact = 3;
+      }
+      if (event === "robot-hit") {
+        this.impact = 2;
+      }
+      if (event === "robot-destroy") {
+        this.impact = 6;
+      }
+      if (event === "split" || event === "destroy") {
+        this.impact = 5;
+      }
+      if (event === "explosion" || event === "lint") {
+        this.impact = 8;
+      }
+      if (event === "generate") {
+        this.impact = 3;
+      }
+      if (event === "boss" || event === "boss-spawn") {
+        this.impact = window.matchMedia("(prefers-reduced-motion: reduce)")
+          .matches
+          ? 0
+          : INPUT.bossImpact;
+      }
+      if (event === "stun") {
+        this.impact = 7;
+      }
+      this.callbacks.onEvent(event);
+    }
+  }
+}
