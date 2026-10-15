@@ -31,6 +31,7 @@ export function musicStep(synth: Synth, options: StepOptions): void {
     chord: track.chords[bar % track.chords.length]!,
     quiet: bar >= ARRANGEMENT.quiet.startBar && bar < ARRANGEMENT.quiet.endBar,
   };
+
   playChord(synth, phrase);
   playLead(synth, phrase);
   playArpeggio(synth, phrase);
@@ -41,9 +42,11 @@ function playChord(synth: Synth, phrase: PhraseStep): void {
   const padVolume = quiet
     ? ARRANGEMENT.chord.quietVolume
     : ARRANGEMENT.chord.volume;
+
   if (beat !== 0) {
     return;
   }
+
   for (const [i, note] of chord.entries()) {
     synth.pad({
       note,
@@ -65,6 +68,7 @@ function playLead(synth: Synth, phrase: PhraseStep): void {
     !title ||
     beat % ARRANGEMENT.lead.titleBeatModulo === 0 ||
     beat === ARRANGEMENT.lead.titleAccentBeat;
+
   if (note > 0 && titleNote && quietLeadBeat(phrase)) {
     playLeadNote(synth, phrase, leadPitch(note, phrase));
   }
@@ -93,6 +97,7 @@ function playLeadNote(synth: Synth, phrase: PhraseStep, note: number): void {
   const leadDuration = quiet
     ? ARRANGEMENT.lead.quietDuration
     : ARRANGEMENT.lead.duration;
+
   synth.melodicTone({
     note,
     time,
@@ -123,6 +128,7 @@ function playLeadOvertone(
   note: number,
 ): void {
   const { time, sixteenth, deck } = phrase;
+
   // Bell-like overtones distinguish the nocturnal and glassy compositions.
   if (deck.track === 1 || deck.track === ARRANGEMENT.lead.glassTrack) {
     synth.melodicTone({
@@ -147,6 +153,7 @@ function playArpeggio(synth: Synth, phrase: PhraseStep): void {
           : 0)) %
         ARRANGEMENT.sixteenthsPerBar
     ]!;
+
   if (
     !quiet &&
     arpeggio >= 0 &&
@@ -162,6 +169,7 @@ function playArpeggioNote(
   arpeggio: number,
 ): void {
   const { title, chord, time, sixteenth, deck } = phrase;
+
   synth.melodicTone({
     note: chord[arpeggio]! + ARRANGEMENT.octave,
     time,

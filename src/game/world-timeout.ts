@@ -18,10 +18,13 @@ function timeoutCanvas(hazard: TimeoutHazard) {
   const { charWidth, widthPadding, height } = TIMEOUT_METRICS;
   const width = text.length * charWidth + widthPadding;
   const canvas = document.createElement("canvas");
+
   // Authored canvas typography uses pixel coordinates and supersampling.
   canvas.width = width * CANVAS_SCALE;
   canvas.height = height * CANVAS_SCALE;
+
   const c = canvas.getContext("2d")!;
+
   drawTimeoutBackground(c, width, height);
   drawTimeoutText(c, hazard, width);
 
@@ -59,10 +62,13 @@ function drawTimeoutText(
   width: number,
 ) {
   const { fontSize, charWidth, height } = TIMEOUT_METRICS;
+
   c.font = `bold ${fontSize}px monospace`;
   c.textBaseline = "middle";
+
   const text = `await setTimeout(${hazard.durationMs});`;
   let x = (width - text.length * charWidth) * HALF;
+
   for (const [word, color] of [
     ["await ", PALETTE.timeout.keyword],
     ["setTimeout", PALETTE.timeout.identifier],
@@ -82,18 +88,23 @@ export function createTimeoutMesh(hazard: TimeoutHazard) {
     `await setTimeout(${hazard.durationMs});`.length * charWidth + widthPadding;
   const canvas = timeoutCanvas(hazard);
   const texture = new THREE.CanvasTexture(canvas);
+
   texture.colorSpace = THREE.SRGBColorSpace;
+
   const face = new THREE.MeshToonMaterial({ map: texture });
   const side = new THREE.MeshToonMaterial({ color: PALETTE.timeout.side });
   const group = new THREE.Group();
+
   group.name = "timeout-solid";
   group.userData.width = width;
   group.userData.height = height;
   group.userData.fontSize = fontSize;
+
   const mesh = new THREE.Mesh(
     loadGeometry("hazard-panel").scale(width, height, depth),
     [side, side, side, side, face, side],
   );
+
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   group.add(mesh);
@@ -111,6 +122,7 @@ function timeoutTrail(width: number) {
       opacity: TRAIL_OPACITY,
     }),
   );
+
   trail.rotation.z = -Math.PI * HALF;
   trail.position.set(width * HALF + HAZARD.trailOffset, 0, HAZARD.trailDepth);
 

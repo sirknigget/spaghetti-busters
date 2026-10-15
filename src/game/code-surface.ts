@@ -37,13 +37,18 @@ export function createCodeCanvas(block: Block) {
   const top = h * HALF + HEADER_HEIGHT;
   const canvas = document.createElement("canvas");
   const scale = DIAMETER;
+
   // Pixel coordinates define the syntax-highlighted canvas texture, including window chrome.
   canvas.width = Math.ceil(w * scale);
   canvas.height = Math.ceil((h + HEADER_HEIGHT) * scale);
+
   const context = canvas.getContext("2d")!;
+
   context.scale(scale, scale);
   context.translate(w * HALF, top);
+
   const palette = codePalette(block);
+
   context.fillStyle = palette.body;
   context.fillRect(-w * HALF, -top, w, h + HEADER_HEIGHT);
   context.fillStyle = palette.header;
@@ -73,10 +78,13 @@ function titleTypography(block: Block) {
 function drawCodeTitle(context: CanvasRenderingContext2D, block: Block) {
   const { width: w, height: h } = block;
   const { font, title } = titleTypography(block);
+
   context.font = font;
   context.textBaseline = "middle";
   context.fillStyle = block.boss ? PALETTE.boss.title : PALETTE.code.title;
+
   const titleInset = block.angry ? ANGRY_TITLE_INSET : NORMAL_TITLE_INSET;
+
   context.fillText(
     title,
     -w * HALF + TITLE_X_INSET,
@@ -90,6 +98,7 @@ function drawCodeTitle(context: CanvasRenderingContext2D, block: Block) {
 
 function drawWindowButtons(context: CanvasRenderingContext2D, block: Block) {
   const { width: w, height: h } = block;
+
   for (const [i, color] of [
     PALETTE.code.close,
     PALETTE.code.minimize,
@@ -115,6 +124,7 @@ function drawCodeCells(context: CanvasRenderingContext2D, block: Block) {
     if (!cell.alive) {
       continue;
     }
+
     if (cell.magic) {
       context.fillStyle = PALETTE.code.magicHighlight;
       context.fillRect(
@@ -124,6 +134,7 @@ function drawCodeCells(context: CanvasRenderingContext2D, block: Block) {
         MAGIC_HEIGHT,
       );
     }
+
     context.fillStyle = cell.color;
     context.fillText(cell.char, cell.x, cell.y);
   }
@@ -139,6 +150,7 @@ export function codePalette(block: Block) {
       emissive: PALETTE.boss.emissive,
     };
   }
+
   if (block.angry) {
     return {
       body: PALETTE.angry.body,
@@ -148,6 +160,7 @@ export function codePalette(block: Block) {
       emissive: PALETTE.angry.emissive,
     };
   }
+
   if (block.exception) {
     return {
       body: PALETTE.exception.body,
@@ -170,8 +183,11 @@ export function codePalette(block: Block) {
 // Canvas crack strokes are authored texture artwork in pixel coordinates.
 export function addDamageScars(visual: FractureVisual, block: Block) {
   const context = visual.canvas.getContext("2d")!;
+
   context.save();
+
   const scale = visual.canvas.width / visual.width;
+
   context.setTransform(
     scale,
     0,
@@ -185,18 +201,22 @@ export function addDamageScars(visual: FractureVisual, block: Block) {
       const x = cell.x + visual.offset.x;
       const y = cell.y - visual.offset.y;
       const key = `${x}:${y}:${cell.health}`;
+
       if (visual.scars.has(key)) {
         continue;
       }
+
       visual.scars.add(key);
       drawCrack(context, x, y);
     }
   }
+
   context.restore();
 }
 
 function drawCrack(context: CanvasRenderingContext2D, x: number, y: number) {
   const [highlight, shadow] = getCrackPaths();
+
   context.save();
   context.translate(x, y);
   context.lineWidth = CRACK_HIGHLIGHT_WIDTH;
@@ -216,6 +236,7 @@ function getCrackPaths() {
       crackArtwork,
       "image/svg+xml",
     );
+
     crackPaths = [...document.querySelectorAll("path")].map(
       (path) => new Path2D(path.getAttribute("d")!),
     );
@@ -230,6 +251,7 @@ export function addRemovedCells(visual: FractureVisual, block: Block) {
       const x = cell.x + visual.offset.x;
       const y = -cell.y + visual.offset.y;
       const key = `${x.toFixed(DECIMAL_PRECISION)}:${y.toFixed(DECIMAL_PRECISION)}`;
+
       if (!visual.holes.has(key)) {
         visual.holes.set(
           key,

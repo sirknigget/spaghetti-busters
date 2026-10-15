@@ -9,31 +9,17 @@ import {
 
 it("lets a damaged armored robot survive and finish generating code before leaving", () => {
   const sim = game();
+
   sim.world.blocks = [];
+
   const robot = sim.spawnRobot({ x: 700, y: 400, brand: "anthropic" });
+
   sim.update(1 / 120);
   expect(robot.state).toBe("thinking");
+
   const score = sim.progress.score;
-  sim.world.bullets.push({
-    id: 9900,
-    x: 650,
-    y: 400,
-    vx: 1080,
-    vy: 0,
-    life: 1,
-    weapon: "single",
-  });
-  sim.world.specials.push({
-    id: 9901,
-    type: "grenade",
-    x: 652,
-    y: 400,
-    vx: 1000,
-    vy: 0,
-    life: 1,
-    angle: 0,
-    fuse: 1,
-  });
+
+  launchRobotAttacks(sim);
   sim.update(0.025);
   expect(sim.world.bullets).toHaveLength(0);
   expect(sim.world.specials).toHaveLength(0);
@@ -60,6 +46,7 @@ it("supports every robot brand and naturally schedules an occasional visitor", (
     "deepseek",
     "meta",
   ];
+
   brands.forEach((brand) =>
     expect(sim.spawnRobot({ brand }).brand).toBe(brand),
   );
@@ -70,13 +57,16 @@ it("supports every robot brand and naturally schedules an occasional visitor", (
     });
     sim.update(0.25);
   }
+
   expect(sim.world.robots).toHaveLength(1);
   expect(sim.world.events).toContain("robot");
 });
 
 it("has angry blocks throw small exception fragments and disables anger after splitting", () => {
   const sim = game();
+
   sim.world.blocks = [];
+
   const angry = sim.spawnBlock({
     x: 1000,
     y: 350,
@@ -85,9 +75,12 @@ it("has angry blocks throw small exception fragments and disables anger after sp
     angle: 0,
     angry: true,
   });
+
   angry.throwTimer = 0.01;
   sim.update(0.025);
+
   const exception = sim.world.blocks.find((block) => block.exception)!;
+
   expect(exception).toBeDefined();
   expect(exception.angry).toBe(false);
   expect(exception.height).toBeLessThan(angry.height);
@@ -100,18 +93,15 @@ it("has angry blocks throw small exception fragments and disables anger after sp
 
 it("freezes enemy movement and attacks for two seconds while allowing fire and bonus motion", () => {
   const sim = game();
-  sim.world.blocks = [];
-  const block = sim.spawnBlock({ x: 1000, y: 350, angry: true });
-  block.throwTimer = 0.1;
-  const robot = sim.spawnRobot({ x: 900, y: 500 });
-  const hazard = sim.spawnHazard({ x: 1000, y: 180, vx: -400, vy: 0 });
-  const bonus = sim.spawnBonus("review", 850, 250);
+  const { block, robot, hazard, bonus } = reviewTargets(sim);
+
   sim.selectSpecial("review");
   expect(sim.fireSpecial()).toBe(true);
   expect(sim.player.specialAmmo.review).toBe(0);
   expect(sim.player.freezeRemaining).toBe(2);
   expect(sim.player.reviewPulse).toBeGreaterThan(0);
   expect(sim.fire()).toBe(true);
+
   const original = {
     x: block.x,
     robotX: robot.x,
@@ -119,9 +109,11 @@ it("freezes enemy movement and attacks for two seconds while allowing fire and b
     timer: block.throwTimer,
     bonusX: bonus.x,
   };
+
   for (let i = 0; i < 7; i++) {
     sim.update(0.25);
   }
+
   expect(block.x).toBe(original.x);
   expect(robot.x).toBe(original.robotX);
   expect(hazard.x).toBe(original.hazardX);
@@ -140,15 +132,10 @@ it("freezes enemy movement and attacks for two seconds while allowing fire and b
 
 it("lint clears small fragments instead of multiplying them and splits only large visible slabs once", () => {
   const sim = game();
+
   sim.world.blocks = [];
-  for (let i = 0; i < 52; i++) {
-    sim.spawnBlock({
-      x: 500 + i * 5,
-      y: 300,
-      exception: i % 2 === 0,
-      code: ["const nested = (((((x: any) => x)))))();"],
-    });
-  }
+  spawnLintFragments(sim);
+
   const large = sim.spawnBlock({
     x: 900,
     y: 450,
@@ -158,11 +145,14 @@ it("lint clears small fragments instead of multiplying them and splits only larg
   });
   const largeCount = large.cells.length;
   const offscreen = sim.spawnBlock({ x: 2200, y: 350 });
+
   sim.selectSpecial("lint");
   expect(sim.fireSpecial()).toBe(true);
   expect(sim.world.blocks).toHaveLength(3);
   expect(sim.world.blocks).toContain(offscreen);
+
   const halves = sim.world.blocks.filter((block) => block !== offscreen);
+
   expect(halves.every((block) => block.generation === 1)).toBe(true);
   expect(halves.reduce((count, block) => count + block.cells.length, 0)).toBe(
     largeCount,
@@ -182,13 +172,16 @@ it("lint uses living glyph count at its boundary, clears worn armor and preserve
     x: 850,
     code: Array(8).fill("const hugeButMostlyMissing = overcomplicate(input);"),
   });
+
   worn.cells.forEach((cell, i) => {
     cell.alive = i < 10;
   });
+
   const magic = sim.spawnBlock({
     x: 600,
     code: ["const QUINT_SHOT = factory();"],
   });
+
   sim.selectSpecial("lint");
   sim.fireSpecial();
   expect(
@@ -209,8 +202,10 @@ it("lint uses living glyph count at its boundary, clears worn armor and preserve
 
 function createWornLintTargets() {
   const sim = game();
+
   sim.progress.wave = 10;
   sim.world.blocks = [];
+
   const small = sim.spawnBlock({
     boss: true,
     x: 650,
@@ -228,14 +223,66 @@ function verifyRobotGeneration(sim: Simulation, robot: Robot) {
   for (let i = 0; i < 8; i++) {
     sim.update(0.25);
   }
+
   expect(robot.state).toBe("leaving");
+
   const generated = sim.world.blocks.find((block) => block.cells.length > 500)!;
+
   expect(generated).toBeDefined();
   expect(generated.height).toBeGreaterThan(250);
   expect(sim.world.events).toContain("generate");
   for (let i = 0; i < 10; i++) {
     sim.update(0.25);
   }
+
   expect(sim.world.robots).toHaveLength(0);
   expect(sim.progress.status).toBe("playing");
+}
+
+function launchRobotAttacks(sim: Simulation) {
+  sim.world.bullets.push({
+    id: 9900,
+    x: 650,
+    y: 400,
+    vx: 1080,
+    vy: 0,
+    life: 1,
+    weapon: "single",
+  });
+  sim.world.specials.push({
+    id: 9901,
+    type: "grenade",
+    x: 652,
+    y: 400,
+    vx: 1000,
+    vy: 0,
+    life: 1,
+    angle: 0,
+    fuse: 1,
+  });
+}
+
+function reviewTargets(sim: Simulation) {
+  sim.world.blocks = [];
+
+  const block = sim.spawnBlock({ x: 1000, y: 350, angry: true });
+
+  block.throwTimer = 0.1;
+
+  const robot = sim.spawnRobot({ x: 900, y: 500 });
+  const hazard = sim.spawnHazard({ x: 1000, y: 180, vx: -400, vy: 0 });
+  const bonus = sim.spawnBonus("review", 850, 250);
+
+  return { block, robot, hazard, bonus };
+}
+
+function spawnLintFragments(sim: Simulation) {
+  for (let i = 0; i < 52; i++) {
+    sim.spawnBlock({
+      x: 500 + i * 5,
+      y: 300,
+      exception: i % 2 === 0,
+      code: ["const nested = (((((x: any) => x)))))();"],
+    });
+  }
 }

@@ -20,8 +20,11 @@ export async function createGame(
   callbacks: Callbacks,
 ): Promise<GameController> {
   const host = document.getElementById(parent)!;
+
   await preloadModels();
+
   const world = new WorldRenderer(host);
+
   try {
     await world.initialize();
   } catch (error) {
@@ -30,6 +33,7 @@ export async function createGame(
   }
 
   const scene = new PlayScene(world, callbacks, host);
+
   if (import.meta.env.DEV || import.meta.env.MODE === "test") {
     Object.assign(window, {
       __spaghetti: {

@@ -71,6 +71,7 @@ export function spawnBlock(
     width,
     height,
   });
+
   sim.world.blocks.push(block);
 
   return block;
@@ -92,6 +93,7 @@ export function blockCode(
   if (options.code) {
     return options.code;
   }
+
   const index =
     (sim.progress.wave * TUNING.wave.codeSequenceStride +
       id -
@@ -102,8 +104,10 @@ export function blockCode(
     Math.floor((sim.progress.wave - 1) * HALF),
   );
   const code = [...CODE_SLICES[index]!, ...EXTRA_CODE.slice(0, extra)];
+
   if (id > 1) {
     const keyword = bonusKeyword(sim.random());
+
     if (keyword) {
       code.push(`const ${keyword} = proxyFactory(await import("legacy"));`);
     }

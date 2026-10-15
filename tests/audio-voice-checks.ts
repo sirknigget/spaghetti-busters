@@ -4,7 +4,9 @@ import { expect } from "@playwright/test";
 export async function verifyBossVoice(page: Page) {
   const voice = await page.evaluate(() => {
     const a = (window as any).__bossAudio;
+
     a.play("boss");
+
     const source = [...a.synth.sources].find(
       (s: any) => s.buffer === a.graph.bossVoice,
     ) as AudioBufferSourceNode;
@@ -17,10 +19,12 @@ export async function verifyBossVoice(page: Page) {
       ).length,
       played: !!source,
     };
+
     a.pause();
 
     return { ...result, stopped: a.synth.sources.size === 0 };
   });
+
   expect(voice).toMatchObject({
     audible: true,
     sources: 1,

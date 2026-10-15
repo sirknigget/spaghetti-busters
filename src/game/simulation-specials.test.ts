@@ -4,7 +4,9 @@ import { Block, Simulation, SPECIAL_BLASTS } from "./simulation";
 
 it("homing prioritizes the rotated left edge over distance or center and follows changing urgency", () => {
   const sim = game();
+
   sim.world.blocks = [];
+
   const close = sim.spawnBlock({
     x: 510,
     y: 230,
@@ -28,6 +30,7 @@ it("homing prioritizes the rotated left edge over distance or center and follows
     life: 5,
     targetId: undefined as number | undefined,
   };
+
   sim.world.specials.push(missile);
   sim.update(1 / 120);
   expect(missile.targetId).toBe(wide.id);
@@ -38,14 +41,19 @@ it.each(["homing", "grenade"] as const)(
   "%s blasts clear armored neighbors over a wide finite radius while bosses survive",
   (type) => {
     const sim = game();
+
     sim.progress.wave = 7;
     sim.world.blocks = [];
+
     const blast = SPECIAL_BLASTS[type];
     const { a, b, far } = placeBlastTargets(sim, blast);
     const boss = sim.spawnBoss();
+
     boss.x = 700;
     boss.y = 360;
+
     const health = sim.bossHealth!.current;
+
     sim.world.specials.push({
       id: 992,
       type,
@@ -69,7 +77,9 @@ it.each(["homing", "grenade"] as const)(
 
 it("detonates recycle grenades across multiple rotated blocks with a finite radius", () => {
   const sim = game();
+
   sim.world.blocks = [];
+
   const code = [
     "const nested = JSON.parse(JSON.stringify(data));",
     'return nested.map((x: any) => eval("x"));',
@@ -77,6 +87,7 @@ it("detonates recycle grenades across multiple rotated blocks with a finite radi
   const { a, b, far } = placeGrenadeTargets(sim, code);
   const countA = a.cells.filter((cell) => cell.alive).length;
   const countB = b.cells.filter((cell) => cell.alive).length;
+
   sim.world.specials.push({
     id: 999,
     type: "grenade",
@@ -98,33 +109,28 @@ it("detonates recycle grenades across multiple rotated blocks with a finite radi
 
 it("caps primary ammunition and grants occasional special refills only once per magic node", () => {
   const sim = game();
+
   sim.world.blocks = [];
   sim.player.ammo = 59;
   for (let i = 0; i < 2; i++) {
-    const block = sim.spawnBlock({
-      x: 700,
-      y: 350,
-      vx: 0,
-      vy: 0,
-      angle: 0,
-      code: [
-        "const AMMO_CACHE = generateReallyLongThing();",
-        "return totallyUnnecessaryRecursion(true);",
-      ],
-    });
+    const block = spawnAmmoBlock(sim);
+
     sim.world.blocks = [block];
     hitCell(
       sim,
       block,
       block.cells.find((cell) => cell.magic === "ammo")!,
     );
+
     const other = block.cells.find(
       (cell) => cell.alive && cell.magic === "ammo",
     );
+
     if (other) {
       hitCell(sim, block, other);
     }
   }
+
   expect(sim.player.ammo).toBe(60);
   expect(sim.player.specialAmmo).toEqual({
     homing: 4,
@@ -137,8 +143,23 @@ it("caps primary ammunition and grants occasional special refills only once per 
   expect(sim.player.specialAmmo.grenade).toBe(1);
 });
 
+function spawnAmmoBlock(sim: Simulation) {
+  return sim.spawnBlock({
+    x: 700,
+    y: 350,
+    vx: 0,
+    vy: 0,
+    angle: 0,
+    code: [
+      "const AMMO_CACHE = generateReallyLongThing();",
+      "return totallyUnnecessaryRecursion(true);",
+    ],
+  });
+}
+
 it("matches the timeout text collider at the left glyphs and cleaner leading edge", () => {
   const sim = game();
+
   sim.spawnHazard({ x: 700, y: 360, vx: -400, vy: 0, durationMs: 1600 });
   // The visible word await starts roughly 100 pixels left of the label center.
   sim.world.bullets.push({
@@ -159,6 +180,7 @@ it("matches the timeout text collider at the left glyphs and cleaner leading edg
 
 it("lands grenade blasts at the aimed point when no enemy intercepts the arc", () => {
   const sim = game();
+
   sim.world.blocks = [];
   sim.player.aimX = 800;
   sim.player.aimY = 450;
@@ -167,6 +189,7 @@ it("lands grenade blasts at the aimed point when no enemy intercepts the arc", (
   for (let i = 0; i < 130 && !sim.world.explosions.length; i++) {
     sim.update(1 / 120);
   }
+
   expect(sim.world.explosions).toHaveLength(1);
   expect(Math.abs(sim.world.explosions[0]!.x - 800)).toBeLessThan(8);
   expect(Math.abs(sim.world.explosions[0]!.y - 450)).toBeLessThan(4);
@@ -248,6 +271,7 @@ function verifyHomingRetargeting(
     angle: -0.2,
     code: ["const escaping=1;"],
   });
+
   sim.update(1 / 120);
   expect(missile.targetId).toBe(urgent.id);
   urgent.x = 1200;

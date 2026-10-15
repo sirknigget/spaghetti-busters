@@ -41,6 +41,7 @@ export function spawnRobot(
     health: ROBOT_HEALTH,
     maxHealth: ROBOT_HEALTH,
   };
+
   sim.world.robots.push(robot);
   sim.world.events.push("robot");
 
@@ -62,6 +63,7 @@ export function damageRobot(
   if (robot.health <= 0) {
     return;
   }
+
   robot.health = Math.max(0, robot.health - power);
   robot.hitFlash = ROBOT_HIT_FLASH_SECONDS;
   visual(sim, {
@@ -98,6 +100,7 @@ interface RobotContactOptions {
 export function robotContact({ robot, ax, ay, bx, by }: RobotContactOptions) {
   // Segment clipping gives the surface contact rather than the robot's center.
   let t = 0;
+
   for (const [start, delta, half] of [
     [ax - robot.x, bx - ax, TUNING.robot.halfWidth],
     [ay - robot.y, by - ay, TUNING.robot.halfHeight],
@@ -184,6 +187,7 @@ export function updateRobots(sim: Simulation, dt: number) {
     robot.hitFlash = Math.max(0, robot.hitFlash - dt);
     advanceRobotState(sim, robot, dt);
   }
+
   sim.world.robots = sim.world.robots.filter(
     (robot) => robot.x < TUNING.robot.exitX,
   );
@@ -200,6 +204,7 @@ function generateRobotCode(sim: Simulation, robot: Robot) {
     vx: -sim.driftSpeed * TUNING.robot.generatedSpeedFactor,
     code: [...GENERATED_CODE],
   });
+
   generated.toughness = Math.min(
     TUNING.robot.generatedToughnessCap,
     generated.toughness + 1,
@@ -207,6 +212,7 @@ function generateRobotCode(sim: Simulation, robot: Robot) {
   for (const cell of generated.cells) {
     cell.health = cell.maxHealth = generated.toughness;
   }
+
   robot.state = "leaving";
   robot.stateTime = 0;
   sim.world.events.push("generate");

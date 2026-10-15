@@ -32,6 +32,7 @@ export function boss(synth: Synth, graph: AudioGraph, time: number): void {
   });
   if (graph.bossVoice) {
     const voice = graph.context.createBufferSource();
+
     voice.buffer = graph.bossVoice;
     voice.connect(bus);
     synth.track(voice, () => undefined);
@@ -41,6 +42,7 @@ export function boss(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function bossSpawn(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.tone({
     frequency: SCORE.bossSpawn.tone.frequency,
     time: time,
@@ -65,6 +67,7 @@ export function bossDefeated(
   time: number,
 ): void {
   const bus = graph.effects;
+
   for (const [i, note] of SCORE.bossDefeated.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
@@ -75,6 +78,7 @@ export function bossDefeated(
       destination: bus,
     });
   }
+
   synth.tone({
     frequency: frequency(SCORE.bossDefeated.accent.note),
     time: time + SCORE.bossDefeated.accent.delay,

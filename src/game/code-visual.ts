@@ -50,9 +50,11 @@ export function createVisual(block: Block): FractureVisual {
 export function insideRegions(point: Point, regions: Polygon[]) {
   return regions.every((polygon) => {
     let inside = false;
+
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
       const a = polygon[i]!;
       const b = polygon[j]!;
+
       if (
         a.y > point.y !== b.y > point.y &&
         point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x

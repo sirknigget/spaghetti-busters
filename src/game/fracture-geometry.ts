@@ -6,6 +6,7 @@ export { perforatedGeometry } from "./fracture-solid";
 /** Stable entropy: geometry never flickers as the simulation advances. */
 export function fractureNoise(seed: number, index: number) {
   let v = seed ^ Math.imul(index + 1, FRACTURE.hashMultiplier);
+
   v = Math.imul(v ^ (v >>> FRACTURE.hashShift), FRACTURE.hashMultiplier);
   v = Math.imul(v ^ (v >>> FRACTURE.hashShift), FRACTURE.hashMultiplier);
 
@@ -14,9 +15,11 @@ export function fractureNoise(seed: number, index: number) {
 
 export function chippedHole(x: number, y: number, seed: number): Polygon {
   const points: Polygon = [];
+
   for (let i = 0; i < CHIP.vertices; i++) {
     const angle = (i * CHIP.revolution) / CHIP.vertices;
     const spread = CHIP.minSpread + fractureNoise(seed, i) * CHIP.spreadRange;
+
     points.push({
       x:
         x +
@@ -46,6 +49,7 @@ export function fractureMask(
   const low = vertical ? bounds.bottom : bounds.left;
   const high = vertical ? bounds.top : bounds.right;
   const along = fractureContour(cut, { low, high, seed, vertical });
+
   if (vertical) {
     return side < 0
       ? [{ x: bounds.left, y: low }, ...along, { x: bounds.left, y: high }]
@@ -79,6 +83,7 @@ function fractureContour(cut: number, options: ContourOptions): Polygon {
     FRACTURE.minSegments,
     Math.ceil((high - low) / FRACTURE.segmentLength),
   );
+
   for (let i = 0; i <= count; i++) {
     const t = i / count;
     const parallel = low + (high - low) * t;
@@ -88,6 +93,7 @@ function fractureContour(cut: number, options: ContourOptions): Polygon {
         ? 0
         : (fractureNoise(seed, i) - FRACTURE.noiseCenter) *
           FRACTURE.noiseAmplitude);
+
     along.push(
       vertical ? { x: broken, y: parallel } : { x: parallel, y: broken },
     );

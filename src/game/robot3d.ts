@@ -14,20 +14,29 @@ const SHELL_EMISSIVE_INTENSITY = 0.45;
 /** Every robot owns its geometry, badge texture and label; no immortal resource cache. */
 export function createRobot(brand: Brand): THREE.Group {
   const group = instantiateModel("robot");
+
   group.name = `ai-code-robot-${brand}`;
   attachBadge(group, brand);
+
   const anchor = group.getObjectByName("robot-status-anchor");
+
   if (!anchor) {
     throw new Error("Robot model has no status anchor");
   }
+
   const labelCanvas = document.createElement("canvas");
+
   labelCanvas.width = anchor.userData.canvasWidth;
   labelCanvas.height = anchor.userData.canvasHeight;
+
   const texture = new THREE.CanvasTexture(labelCanvas);
+
   texture.colorSpace = THREE.SRGBColorSpace;
+
   const label = new THREE.Sprite(
     new THREE.SpriteMaterial({ map: texture, depthTest: false }),
   );
+
   label.name = "robot-status";
   label.position.copy(anchor.position);
   label.scale.copy(anchor.scale);
@@ -50,12 +59,16 @@ export function animateRobot(
   if (!animateShield(group, robot)) {
     return;
   }
+
   const shell = group.userData.shell;
+
   if (!(shell instanceof THREE.MeshStandardMaterial)) {
     return;
   }
+
   const damageColor =
     robot.hitFlash > 0 ? PALETTE.robot.damageEmissive : PALETTE.common.black;
+
   shell.emissive.set(frozen ? PALETTE.robot.frozenEmissive : damageColor);
   shell.emissiveIntensity = SHELL_EMISSIVE_INTENSITY;
   animateThoughts(group, robot);
@@ -64,12 +77,14 @@ export function animateRobot(
 
 function animateShield(group: THREE.Group, robot: RobotPose) {
   const shield = group.getObjectByName("robot-armor-flash");
+
   if (
     !(shield instanceof THREE.Mesh) ||
     !(shield.material instanceof THREE.MeshStandardMaterial)
   ) {
     return false;
   }
+
   shield.material.opacity =
     robot.hitFlash > 0 ? ROBOT_MOTION.hitShieldOpacity : 0;
   shield.material.color.set(
@@ -81,11 +96,13 @@ function animateShield(group: THREE.Group, robot: RobotPose) {
 
 function attachBadge(group: THREE.Group, brand: Brand) {
   const mark = group.getObjectByName("robot-brand-mark");
+
   if (
     mark instanceof THREE.Mesh &&
     mark.material instanceof THREE.MeshBasicMaterial
   ) {
     const logo = new THREE.TextureLoader().load(`/assets/brands/${brand}.svg`);
+
     logo.colorSpace = THREE.SRGBColorSpace;
     mark.material.map = logo;
     mark.material.needsUpdate = true;
@@ -97,9 +114,11 @@ function findShell(group: THREE.Group) {
     if (!(object instanceof THREE.Mesh)) {
       return;
     }
+
     const materials = Array.isArray(object.material)
       ? object.material
       : [object.material];
+
     for (const material of materials) {
       if (material.name === "robot-shell") {
         group.userData.shell = material;
@@ -112,6 +131,7 @@ function animateLimbs(group: THREE.Group, robot: RobotPose, frozen: boolean) {
   const running = robot.state !== "thinking";
   const striding = running && !frozen;
   const phase = robot.age * ROBOT_MOTION.strideFrequency;
+
   for (const side of [-1, 1]) {
     group.getObjectByName(`robot-leg-${side}`)!.rotation.x = striding
       ? Math.sin(phase + (side * Math.PI) / ROBOT_MOTION.legsPerStride) *
@@ -126,12 +146,14 @@ function animateLimbs(group: THREE.Group, robot: RobotPose, frozen: boolean) {
         ROBOT_MOTION.armSwing
       : ROBOT_MOTION.restingArmAngle;
   }
+
   animateBody(group, robot, frozen);
 }
 
 function animateBody(group: THREE.Group, robot: RobotPose, frozen: boolean) {
   const running = robot.state !== "thinking";
   const phase = robot.age * ROBOT_MOTION.strideFrequency;
+
   group.rotation.y =
     robot.state === "leaving"
       ? ROBOT_MOTION.leavingYaw
@@ -150,6 +172,7 @@ function animateBody(group: THREE.Group, robot: RobotPose, frozen: boolean) {
 
 function animateThoughts(group: THREE.Group, robot: RobotPose) {
   const thought = group.getObjectByName("robot-thinking")!;
+
   thought.visible = robot.state === "thinking";
   for (const [i, dot] of thought.children.entries()) {
     dot.scale.setScalar(
@@ -174,14 +197,20 @@ function updateLabel(group: THREE.Group, robot: RobotPose, frozen: boolean) {
   };
   const activity = frozen ? "REVIEW PAUSED" : activities[robot.state];
   const state = `${activity} · ${robot.health}/${robot.maxHealth}`;
+
   if (group.userData.labelState !== state) {
     group.userData.labelState = state;
+
     const canvas = group.userData.labelCanvas;
+
     if (!(canvas instanceof HTMLCanvasElement)) {
       return;
     }
+
     paintLabel(canvas, { brand: robot.brand, state, frozen });
+
     const labelTexture = group.userData.labelTexture;
+
     if (labelTexture instanceof THREE.CanvasTexture) {
       labelTexture.needsUpdate = true;
     }
@@ -196,6 +225,7 @@ interface LabelInfo {
 
 function paintLabel(canvas: HTMLCanvasElement, info: LabelInfo) {
   const c = canvas.getContext("2d")!;
+
   c.clearRect(0, 0, canvas.width, canvas.height);
   c.fillStyle = PALETTE.robot.labelBackground;
   c.beginPath();

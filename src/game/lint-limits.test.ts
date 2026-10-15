@@ -36,6 +36,7 @@ test.each([300, 301])("file length counts comments: %i", (lines) => {
   const source = Array<string>(lines)
     .fill("// Documentation counts too.")
     .join("\n");
+
   expect(violations(source, "max-lines")).toHaveLength(lines > 300 ? 1 : 0);
 });
 
@@ -46,6 +47,7 @@ test("function length includes blank and comment lines", () => {
     "// Comment",
     "}",
   ].join("\n");
+
   expect(violations(source, "max-lines-per-function")).toHaveLength(1);
 });
 
@@ -71,6 +73,7 @@ test.each([
 
 test("accepts three parameters including a method signature", () => {
   const source = "interface I { f(a: number, b: number, c: number): void; }";
+
   expect(linter.verify(source, config, { filename: "fixture.ts" })).toEqual([]);
 });
 
@@ -87,6 +90,7 @@ test.each(memberContainers)("member boundaries: %s", (start, end) => {
       (_, i) => `field${i}: number;`,
     );
     const source = [start, ...members, end].join("\n");
+
     expect(violations(source, "no-restricted-syntax")).toHaveLength(
       count > 30 ? 1 : 0,
     );
@@ -96,5 +100,6 @@ test.each(memberContainers)("member boundaries: %s", (start, end) => {
 test("explicit this is not a runtime parameter in signatures", () => {
   const source =
     "interface I { f(this: I, a: number, b: number, c: number): void; }";
+
   expect(linter.verify(source, config, { filename: "fixture.ts" })).toEqual([]);
 });

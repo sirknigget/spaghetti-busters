@@ -46,6 +46,7 @@ function clipAxis(
   axis: { start: number; delta: number; half: number },
 ) {
   const { start, delta, half } = axis;
+
   if (Math.abs(delta) < TUNING.collision.parallelEpsilon) {
     if (Math.abs(start) > half) {
       return false;
@@ -53,8 +54,10 @@ function clipAxis(
 
     return true;
   }
+
   const t1 = (-half - start) / delta;
   const t2 = (half - start) / delta;
+
   interval.min = Math.max(interval.min, Math.min(t1, t2));
   interval.max = Math.min(interval.max, Math.max(t1, t2));
 

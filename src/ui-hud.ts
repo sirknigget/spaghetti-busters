@@ -8,6 +8,7 @@ export function updateHud(s: Simulation) {
   );
 
   updateBossHealth(s);
+
   const waveNames = [
     "THE LEGACY BEGINS",
     "CALLBACK CATASTROPHE",
@@ -15,6 +16,7 @@ export function updateHud(s: Simulation) {
     "ENTERPRISE EDITION",
     "PRODUCTION IS ON FIRE",
   ];
+
   $("#wave").innerHTML =
     `${String(s.progress.wave).padStart(HUD.waveDigits, "0")} <small>/ ${s.isBossWave ? "FACTORYFACTORYFACTORY" : waveNames[Math.min(s.progress.wave - 1, HUD.lastWaveNameIndex)]}</small>`;
   $("#combo").textContent =
@@ -32,6 +34,7 @@ export function updateHud(s: Simulation) {
 
 function updateBossHealth(s: Simulation) {
   const bossHealth = s.bossHealth;
+
   $("#boss-health").hidden = !bossHealth || bossHealth.current <= 0;
   if (bossHealth) {
     const healthPercent = Math.max(
@@ -41,6 +44,7 @@ function updateBossHealth(s: Simulation) {
         (bossHealth.current / Math.max(1, bossHealth.max)) * HUD.percent,
       ),
     );
+
     $("#boss-health-value").textContent =
       `${Math.ceil(bossHealth.current)} / ${Math.ceil(bossHealth.max)}`;
     $("#boss-health-fill").style.width = `${healthPercent}%`;
@@ -54,7 +58,9 @@ function updateBossHealth(s: Simulation) {
 function updateSpecialWeapons(s: Simulation) {
   for (const type of specialTypes) {
     $(`#${type}-ammo`).textContent = String(s.player.specialAmmo[type]);
+
     const slot = $(`#select-${type}`);
+
     slot.classList.toggle("selected", s.player.specialWeapon === type);
     slot.classList.toggle("empty", s.player.specialAmmo[type] === 0);
     slot.setAttribute("aria-pressed", String(s.player.specialWeapon === type));
@@ -68,10 +74,26 @@ function updateStatus(s: Simulation) {
     $("#combo").textContent =
       `ENEMIES FROZEN · ${s.player.freezeRemaining.toFixed(1)}s`;
   }
+
   if (s.isStunned) {
     $("#combo").textContent =
       `EVENT LOOP BLOCKED · ${s.player.stunRemaining.toFixed(1)}s`;
   }
+
   $<HTMLButtonElement>("#fire-special").disabled =
     s.isStunned || s.player.specialAmmo[s.player.specialWeapon] === 0;
+}
+
+export function showRunResults(score: number, wave: number, best: number) {
+  $("#menu-best").textContent = String(best).padStart(HUD.scoreDigits, "0");
+  $("#overlay-eyebrow").textContent = "THE TECH DEBT GOT THROUGH";
+  $("#overlay-title").innerHTML = "BUILD<br>FAILED.";
+  $("#overlay-description").textContent =
+    "A little spaghetti escaped. A fresh run awaits.";
+  $("#results").innerHTML =
+    `<div><span>CLEANUP SCORE</span><b>${String(score).padStart(HUD.scoreDigits, "0")}</b></div><div><span>WAVE REACHED</span><b>${String(wave).padStart(HUD.waveDigits, "0")}</b></div>`;
+  $("#results").hidden = false;
+  $("#resume").hidden = true;
+  $("#game-overlay").hidden = false;
+  $("#restart").focus();
 }

@@ -4,6 +4,7 @@ import { Synth, frequency } from "./audio-synth";
 
 export function bonus(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [i, note] of SCORE.bonus.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
@@ -18,6 +19,7 @@ export function bonus(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function pickup(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [index, note] of SCORE.pickup.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
@@ -32,6 +34,7 @@ export function pickup(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function ammo(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [index, note] of SCORE.ammo.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
@@ -46,6 +49,7 @@ export function ammo(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function wave(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [index, note] of SCORE.wave.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
@@ -60,6 +64,7 @@ export function wave(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function gameover(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [index, note] of SCORE.gameover.notes.entries()) {
     synth.tone({
       frequency: frequency(note),

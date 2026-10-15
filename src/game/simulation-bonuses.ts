@@ -48,6 +48,7 @@ export function spawnBonus(
     life: BONUS_LIFETIME_SECONDS,
     age: 0,
   };
+
   sim.world.pickups.push(pickup);
   sim.world.events.push("bonus");
 
@@ -58,6 +59,7 @@ export function collectPickup(sim: Simulation, pickup: Pickup) {
   if (pickup.type in SPECIAL_AMMO_CAPS) {
     // SAFETY: Every key in SPECIAL_AMMO_CAPS is a SpecialWeapon.
     const type = pickup.type as SpecialWeapon;
+
     sim.player.specialAmmo[type] = Math.min(
       SPECIAL_AMMO_CAPS[type],
       sim.player.specialAmmo[type] +
@@ -66,12 +68,14 @@ export function collectPickup(sim: Simulation, pickup: Pickup) {
   } else {
     // SAFETY: Pickup types outside SPECIAL_AMMO_CAPS are the four upgraded primary weapons.
     const type = pickup.type as Exclude<Weapon, "single">;
+
     sim.player.ammo = Math.min(
       PRIMARY_AMMO[type] * AMMO_CAPACITY_MULTIPLIER,
       (sim.player.weapon === type ? sim.player.ammo : 0) + PRIMARY_AMMO[type],
     );
     sim.player.weapon = type;
   }
+
   pickup.life = 0;
   sim.progress.score += PICKUP_REWARD;
   burst(sim, {
@@ -132,6 +136,7 @@ function grantCacheSpecial(sim: Simulation) {
       (sim.runtime.ammoCaches / TUNING.damage.cachesPerSpecial - 1) %
         TUNING.damage.specialTypes
     ]!;
+
     sim.player.specialAmmo[type] = Math.min(
       SPECIAL_AMMO_CAPS[type],
       sim.player.specialAmmo[type] + 1,

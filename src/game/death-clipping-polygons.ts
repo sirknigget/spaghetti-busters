@@ -17,17 +17,21 @@ export const clip = (
   distance: (v: Vertex) => number,
 ): Vertex[] => {
   const out: Vertex[] = [];
+
   for (let i = 0; i < polygon.length; i++) {
     const a = polygon[i]!;
     const b = polygon[(i + 1) % polygon.length]!;
     const da = distance(a);
     const db = distance(b);
     const inside = da >= -SEAM.epsilon;
+
     if (inside) {
       out.push(a);
     }
+
     if (crossesSeam(da, db)) {
       const t = da / (da - db);
+
       out.push(a.map((v, k) => v + (b[k]! - v) * t));
     }
   }
@@ -49,9 +53,11 @@ export function append(output: ClipOutput, polygon: Vertex[]) {
     const cx = aby * acz - abz * acy;
     const cy = abz * acx - abx * acz;
     const cz = abx * acy - aby * acx;
+
     if (cx * cx + cy * cy + cz * cz < SEAM.areaEpsilon) {
       continue;
     }
+
     for (const v of [a, b, c]) {
       output.p.push(v[COMPONENT.x]!, v[COMPONENT.y]!, v[COMPONENT.z]!);
       output.n.push(v[COMPONENT.nx]!, v[COMPONENT.ny]!, v[COMPONENT.nz]!);

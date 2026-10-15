@@ -4,6 +4,7 @@ import { expect } from "@playwright/test";
 export async function verifyTrackCrossfade(page: Page) {
   const transition = await page.evaluate(() => {
     const a = (window as any).__audioTest;
+
     a.score.transport = 32.1;
     a.score.anchor = a.graph.context.currentTime;
     a.score.schedule();
@@ -14,6 +15,7 @@ export async function verifyTrackCrossfade(page: Page) {
       retiring: a.score.decks[0].retireAt > a.score.transport,
     };
   });
+
   expect(transition).toEqual({
     decks: 2,
     name: "Midnight Refactor",
@@ -26,11 +28,13 @@ export async function verifyTrackCrossfade(page: Page) {
       ),
     )
     .toBeGreaterThan(0);
+
   const crossfade = await page.evaluate(() => {
     const a = (window as any).__audioTest;
 
     return a.score.decks.map((d: any) => d.bus.gain.value);
   });
+
   expect(crossfade[0]).toBeGreaterThan(0);
   expect(crossfade[1]).toBeGreaterThan(0);
   expect(crossfade[1]).toBeLessThan(1);
@@ -39,10 +43,12 @@ export async function verifyTrackCrossfade(page: Page) {
 export async function verifyPausedTransport(page: Page) {
   const paused = await page.evaluate(() => {
     const a = (window as any).__audioTest;
+
     a.pause();
 
     return { transport: a.score.transport, clock: a.graph.context.currentTime };
   });
+
   // The audio clock keeps processing while the musical transport remains paused.
   await expect
     .poll(() =>
@@ -68,8 +74,11 @@ export async function verifyPausedTransport(page: Page) {
 export async function verifyResumedScheduler(page: Page) {
   const resumed = await page.evaluate(() => {
     const a = (window as any).__audioTest;
+
     a.resume();
+
     const timer = a.score.timer;
+
     a.resume();
     a.start();
     a.setEnabled(true);
@@ -84,6 +93,7 @@ export async function verifyResumedScheduler(page: Page) {
       decks: a.score.decks.length,
     };
   });
+
   expect(resumed.singleTimer).toBe(true);
   expect(resumed.voices).toBeGreaterThan(0);
   expect(resumed.decks).toBe(2);
@@ -92,10 +102,12 @@ export async function verifyResumedScheduler(page: Page) {
 export async function verifyMutedTransport(page: Page) {
   const muted = await page.evaluate(() => {
     const a = (window as any).__audioTest;
+
     a.setEnabled(false);
 
     return { transport: a.score.transport, clock: a.graph.context.currentTime };
   });
+
   await expect
     .poll(() =>
       page.evaluate(
@@ -119,18 +131,24 @@ export async function verifyMutedTransport(page: Page) {
 export async function verifyFinishSting(page: Page) {
   const end = await page.evaluate(() => {
     const a = (window as any).__audioTest;
+
     a.setEnabled(true);
     a.setWave(4);
     a.setWave(1);
+
     const name = a.trackName;
+
     a.finish();
+
     const sting = a.synth.sources.size;
+
     a.pause();
     a.score.clearDecks();
     void a.graph.context.close();
 
     return { name, sting, stopped: a.score.timer === null };
   });
+
   expect(end.name).toBe("Prism Circuit");
   expect(end.sting).toBeGreaterThan(0);
   expect(end.stopped).toBe(true);

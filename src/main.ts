@@ -5,10 +5,11 @@ import type { GameController } from "./game/scene";
 import { HUD, $, specialTypes } from "./ui-dom";
 import { menuMarkup } from "./menu-markup";
 import { eventMessages } from "./ui-event-messages";
-import { updateHud } from "./ui-hud";
+import { updateHud, showRunResults } from "./ui-hud";
 import { updateSoundControls } from "./ui-sound";
 
 let best = 0;
+
 try {
   best = Number(localStorage.getItem("spaghetti-best")) || 0;
 } catch {
@@ -39,6 +40,7 @@ function announceBoss() {
   if (bossAnnounced) {
     return;
   }
+
   bossAnnounced = true;
   clearBossAnnouncement();
   clearTimeout(toastTimeout);
@@ -78,6 +80,7 @@ function showToast(message: string) {
   if (bossAnnouncementRemaining > 0) {
     return;
   }
+
   $("#toast").textContent = message;
   $("#toast").classList.add("visible");
   clearTimeout(toastTimeout);
@@ -91,6 +94,7 @@ function handleBossEvent(event: string) {
   if (event === "boss") {
     announceBoss();
   }
+
   if (event === "boss-defeated") {
     clearBossAnnouncement();
     $("#boss-health").hidden = true;
@@ -102,11 +106,14 @@ function handleEvent(event: string) {
   if (event === "boss" && bossAnnounced) {
     return;
   }
+
   handleBossEvent(event);
   if (event !== "gameover") {
     audio.play(event === "shoot" ? "shot" : event);
   }
+
   const message = eventMessages.get(event);
+
   if (message) {
     showToast(message);
   }
@@ -138,14 +145,17 @@ async function start() {
   if (starting) {
     return;
   }
+
   prepareStart();
   try {
     const { createGame } = await import("./game/scene");
+
     controller ??= await createGame("game-canvas", {
       onState: (s) => {
         if (!s.isBossWave) {
           bossAnnounced = false;
         }
+
         updateHud(s);
         audio.setWave(s.progress.wave);
         $("#track-name").textContent = audio.trackName.toUpperCase();
@@ -170,6 +180,7 @@ function setPause(value: boolean) {
   if (!controller || finished || $("#game-screen").hidden) {
     return;
   }
+
   paused = value;
   controller.setPaused(value);
   $("#game-overlay").hidden = !value;
@@ -199,17 +210,8 @@ function endRun(score: number, wave: number) {
       localStorage.setItem("spaghetti-best", String(best));
     } catch {}
   }
-  $("#menu-best").textContent = String(best).padStart(HUD.scoreDigits, "0");
-  $("#overlay-eyebrow").textContent = "THE TECH DEBT GOT THROUGH";
-  $("#overlay-title").innerHTML = "BUILD<br>FAILED.";
-  $("#overlay-description").textContent =
-    "A little spaghetti escaped. A fresh run awaits.";
-  $("#results").innerHTML =
-    `<div><span>CLEANUP SCORE</span><b>${String(score).padStart(HUD.scoreDigits, "0")}</b></div><div><span>WAVE REACHED</span><b>${String(wave).padStart(HUD.waveDigits, "0")}</b></div>`;
-  $("#results").hidden = false;
-  $("#resume").hidden = true;
-  $("#game-overlay").hidden = false;
-  $("#restart").focus();
+
+  showRunResults(score, wave, best);
 }
 
 $("#start").addEventListener("click", () => {
@@ -239,6 +241,7 @@ for (const type of specialTypes) {
     controller?.selectSpecial(type),
   );
 }
+
 $("#fire-special").addEventListener("click", () => controller?.fireSpecial());
 $("#quit").addEventListener("click", () => {
   clearBossAnnouncement();
@@ -258,11 +261,13 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
     updateSoundControls(audio.enabled);
   });
 }
+
 document.addEventListener("keydown", (e) => {
   if (e.code === "Escape" || e.code === "KeyP") {
     if ($<HTMLDialogElement>("#help-dialog").open) {
       return;
     }
+
     e.preventDefault();
     setPause(!paused);
   }

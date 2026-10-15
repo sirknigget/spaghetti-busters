@@ -16,9 +16,11 @@ const SPECIAL_KEYS = new Map<string, SpecialWeapon>([
 export function point(scene: PlayScene, event: PointerEvent) {
   const canvas = scene.world.renderer.domElement;
   const box = canvas.getBoundingClientRect();
+
   if (box.width <= 0 || box.height <= 0) {
     return;
   }
+
   scene.sim.player.aimX = Math.max(
     INPUT.pointerMinX,
     Math.min(
@@ -34,8 +36,10 @@ export function point(scene: PlayScene, event: PointerEvent) {
     ),
   );
 }
+
 export function bindPointer(scene: PlayScene): void {
   const canvas = scene.world.renderer.domElement;
+
   canvas.addEventListener("pointermove", (event) => {
     if (!scene.paused) {
       point(scene, event);
@@ -45,6 +49,7 @@ export function bindPointer(scene: PlayScene): void {
     if (scene.paused) {
       return;
     }
+
     event.preventDefault();
     point(scene, event);
     canvas.setPointerCapture(event.pointerId);
@@ -70,13 +75,16 @@ export function bindKeyboard(scene: PlayScene): void {
     if (scene.paused) {
       return;
     }
+
     if (
       ["Space", "ArrowUp", "ArrowDown", "KeyW", "KeyS"].includes(event.code)
     ) {
       event.preventDefault();
       scene.keys.add(event.code);
     }
+
     const special = SPECIAL_KEYS.get(event.code);
+
     if (special) {
       scene.selectSpecial(special);
     }

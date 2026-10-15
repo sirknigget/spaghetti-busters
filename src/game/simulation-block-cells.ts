@@ -35,8 +35,10 @@ interface MagicRange {
 
 function lineMagics(line: string, id: number, row: number): MagicRange[] {
   const ranges: MagicRange[] = [];
+
   for (const [keyword, type] of MAGIC_KEYWORDS) {
     const start = line.indexOf(keyword);
+
     if (start >= 0) {
       ranges.push({
         start,
@@ -54,13 +56,16 @@ function rowCells(layout: CellLayout, row: number, line: string): Cell[] {
   const colorAt = highlightLine(line);
   const magics = lineMagics(line, layout.id, row);
   const cells: Cell[] = [];
+
   for (const [column, char] of Array.from(line).entries()) {
     if (char === " ") {
       continue;
     }
+
     const magic = magics.find(
       (item) => column >= item.start && column < item.end,
     );
+
     cells.push({
       x: column * CELL_WIDTH - layout.width * HALF + TUNING.block.textOffsetX,
       y: row * CELL_HEIGHT - layout.height * HALF + TUNING.block.textOffsetY,

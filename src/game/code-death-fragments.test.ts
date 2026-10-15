@@ -10,6 +10,7 @@ import {
 const area = (geometry: THREE.BufferGeometry) => {
   const p = geometry.getAttribute("position");
   let result = 0;
+
   for (let i = 0; i < geometry.groups[0]!.count; i += 3) {
     result +=
       Math.abs(
@@ -43,6 +44,7 @@ function slab() {
     new THREE.MeshToonMaterial({ map: texture }),
     new THREE.MeshToonMaterial(),
   ]);
+
   mesh.name = "perforated-extruded-code";
   source.add(mesh);
   source.userData.fractureVisual = {
@@ -64,6 +66,7 @@ it("partitions the actual surface into complementary centered pieces retaining h
   const { source, mesh, canvas } = slab();
   const originalArea = area(mesh.geometry);
   const pieces = createDeathFragments(source, 941);
+
   expect(pieces.length).toBeGreaterThanOrEqual(8);
   expect(pieces.length).toBeLessThanOrEqual(16);
   expect(
@@ -75,6 +78,7 @@ it("partitions the actual surface into complementary centered pieces retaining h
     ) as THREE.Mesh;
     const p = part.geometry.getAttribute("position");
     const uv = part.geometry.getAttribute("uv");
+
     part.geometry.computeBoundingBox();
     expect(
       part.geometry.boundingBox!.getCenter(new THREE.Vector3()).length(),
@@ -92,6 +96,7 @@ it("partitions the actual surface into complementary centered pieces retaining h
       );
     }
   }
+
   expect(area(mesh.geometry)).toBe(originalArea);
   pieces.forEach(disposeObject);
   disposeObject(source);
@@ -99,30 +104,39 @@ it("partitions the actual surface into complementary centered pieces retaining h
 
 it("owns independent resources, preserves assembled world pose, and varies fracture entropy", () => {
   const { source, mesh } = slab();
+
   source.position.set(420, 370, 2);
   source.rotation.set(0.2, -0.3, 0.6);
   source.updateWorldMatrix(true, false);
+
   const pieces = createDeathFragments(source, 11);
   const different = createDeathFragments(source, 12);
+
   expect(pieces.map((piece) => piece.position.toArray())).not.toEqual(
     different.map((piece) => piece.position.toArray()),
   );
+
   const maps = new Set<THREE.Texture>();
+
   for (const piece of pieces) {
     const part = piece.getObjectByName(
       "perforated-extruded-code",
     ) as THREE.Mesh;
     const material = (part.material as THREE.MeshToonMaterial[])[0]!;
+
     expect(part.geometry).not.toBe(mesh.geometry);
     expect(material).not.toBe((mesh.material as THREE.Material[])[0]);
     expect(material.map).not.toBe(
       (mesh.material as THREE.MeshToonMaterial[])[0]!.map,
     );
     maps.add(material.map!);
+
     const expected = source.localToWorld(piece.position.clone());
+
     piece.applyMatrix4(source.matrixWorld);
     expect(piece.position.distanceTo(expected)).toBeLessThan(0.001);
   }
+
   expect(maps.size).toBe(pieces.length);
   pieces.forEach(disposeObject);
   different.forEach(disposeObject);
@@ -142,6 +156,7 @@ it.each([
   ({ spacingX, spacingY, height }) => {
     const { source, mesh } = slab();
     const visual = source.userData.fractureVisual;
+
     perforateDenseGrid(visual, { height, spacingX, spacingY });
     mesh.geometry.dispose();
     mesh.geometry = perforatedGeometry(
@@ -149,7 +164,9 @@ it.each([
       [...visual.holes.values()],
       { depth: 16, offset: visual.offset, size: { width: 400, height } },
     );
+
     const pieces = createDeathFragments(source, 13);
+
     expect(pieces.length).toBeGreaterThan(1);
     expect(
       pieces.reduce((sum, piece) => sum + piece.userData.fragmentArea, 0),

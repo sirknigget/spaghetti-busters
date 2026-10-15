@@ -8,9 +8,11 @@ import { verifyHelpDialog } from "./menu-checks";
 
 test("opening screen, help popup and sound control", async ({ page }) => {
   const errors: string[] = [];
+
   page.on("pageerror", (e) => errors.push(e.message));
   await page.addInitScript(() => {
     const NativeAudioContext = window.AudioContext;
+
     window.AudioContext = class extends NativeAudioContext {
       constructor(options?: AudioContextOptions) {
         super(options);
@@ -50,6 +52,7 @@ test("escaped chunk ends run, saves best score and restart resets play", async (
   await start(page);
   await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
+
     s.progress.score = 1234;
     s.world.blocks[0].x = -1000;
   });
@@ -76,6 +79,7 @@ test("touch landscape is playable and menu fits a phone", async ({
     viewport: { width: 390, height: 844 },
   });
   const page = await context.newPage();
+
   await page.goto("/");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     390,

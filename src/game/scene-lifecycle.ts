@@ -2,6 +2,7 @@ import type { PlayScene } from "./play-scene";
 
 export function bindLifecycle(scene: PlayScene): void {
   const canvas = scene.world.renderer.domElement;
+
   window.addEventListener("keyup", (event) => scene.keys.delete(event.code));
   window.addEventListener("blur", () => scene.release());
   window.addEventListener("resize", () => {

@@ -5,10 +5,13 @@ export async function verifyMenuScheduler(page: Page) {
   const menu = await page.evaluate(() => {
     const a = (window as any).__menuAudioTest;
     const timer = a.score.timer;
+
     a.enterMenu();
     a.enterMenu();
     a.play("menu-hover");
+
     const hoverVoices = a.synth.sources.size;
+
     a.play("menu-hover");
 
     return {
@@ -20,6 +23,7 @@ export async function verifyMenuScheduler(page: Page) {
       gain: a.graph.music.gain.value,
     };
   });
+
   expect(menu.state).toBe("running");
   expect(menu.scene).toBe("menu");
   expect(menu.singleTimer).toBe(true);
@@ -33,6 +37,7 @@ export async function verifyGameMusicTransition(page: Page) {
     const a = (window as any).__menuAudioTest;
     const timer = a.score.timer;
     const transport = a.score.transport;
+
     a.enterGame();
     a.play("menu-click");
 
@@ -42,6 +47,7 @@ export async function verifyGameMusicTransition(page: Page) {
       sameTransport: a.score.transport === transport,
     };
   });
+
   expect(run).toEqual({ scene: "game", sameTimer: true, sameTransport: true });
   await expect
     .poll(() =>
@@ -55,6 +61,7 @@ export async function verifyGameMusicTransition(page: Page) {
 export async function verifyReturnToMenu(page: Page) {
   const returned = await page.evaluate(() => {
     const a = (window as any).__menuAudioTest;
+
     a.finish();
     a.enterMenu();
     a.pause();
@@ -67,6 +74,7 @@ export async function verifyReturnToMenu(page: Page) {
       voices: a.synth.sources.size,
     };
   });
+
   expect(returned.scene).toBe("menu");
   expect(returned.timer).toBe(true);
   expect(returned.paused).toBe(false);
@@ -75,6 +83,7 @@ export async function verifyReturnToMenu(page: Page) {
 export async function verifyMenuMute(page: Page) {
   const muted = await page.evaluate(() => {
     const a = (window as any).__menuAudioTest;
+
     a.setEnabled(false);
     a.enterMenu();
     a.play("menu-click");
@@ -82,15 +91,21 @@ export async function verifyMenuMute(page: Page) {
 
     return { timer: a.score.timer, voices: a.synth.sources.size };
   });
+
   expect(muted).toEqual({ timer: null, voices: 0 });
+
   const unmuted = await page.evaluate(() => {
     const a = (window as any).__menuAudioTest;
+
     a.setEnabled(true);
+
     const result = { timer: a.score.timer !== null, scene: a.score.scene };
+
     a.pause();
     void a.graph.context.close();
 
     return result;
   });
+
   expect(unmuted).toEqual({ timer: true, scene: "menu" });
 }

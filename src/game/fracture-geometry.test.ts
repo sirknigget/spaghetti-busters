@@ -18,6 +18,7 @@ const area = (geometry: ReturnType<typeof perforatedGeometry>) => {
   const p = geometry.getAttribute("position");
   const count = geometry.groups[0]!.count;
   let sum = 0;
+
   for (let i = 0; i < count; i += 3) {
     sum +=
       Math.abs(
@@ -31,17 +32,22 @@ const area = (geometry: ReturnType<typeof perforatedGeometry>) => {
 
 it("creates stable irregular chips with real open centers and walls", () => {
   const hole = chippedHole(0, 0, 42);
+
   expect(hole).toEqual(chippedHole(0, 0, 42));
   expect(hole).not.toEqual(chippedHole(0, 0, 43));
+
   const geometry = perforatedGeometry([slab], [hole], {
     depth: 16,
     offset: { x: 0, y: 0 },
     size: root,
   });
+
   expect(area(geometry)).toBeLessThan(200 * 126 - 100);
   expect(area(geometry)).toBeGreaterThan(200 * 126 - 400);
   expect(geometry.groups[1]!.count).toBeGreaterThan(geometry.groups[0]!.count);
+
   const positions = geometry.getAttribute("position");
+
   for (let i = 0; i < geometry.groups[0]!.count; i += 3) {
     const ax = positions.getX(i);
     const ay = positions.getY(i);
@@ -51,10 +57,12 @@ it("creates stable irregular chips with real open centers and walls", () => {
     const cy = positions.getY(i + 2);
     // The hole center cannot fall inside any surviving surface triangle.
     const crosses = [ax * by - ay * bx, bx * cy - by * cx, cx * ay - cy * ax];
+
     expect(
       crosses.every((v) => v > 1e-5) || crosses.every((v) => v < -1e-5),
     ).toBe(false);
   }
+
   geometry.dispose();
 });
 
@@ -78,6 +86,7 @@ it.each(["x", "y"] as const)(
         { depth: 16, offset: { x: side * 45, y: 12 }, size: root },
       ),
     );
+
     expect(area(halves[0]!) + area(halves[1]!)).toBeCloseTo(area(whole), 2);
     // Root UVs stay anchored even though a fragment's local origin is shifted.
     for (let sideIndex = 0; sideIndex < halves.length; sideIndex++) {
@@ -85,12 +94,15 @@ it.each(["x", "y"] as const)(
       const p = geometry.getAttribute("position");
       const uv = geometry.getAttribute("uv");
       const offsetX = (sideIndex === 0 ? -1 : 1) * 45;
+
       for (let i = 0; i < geometry.groups[0]!.count; i++) {
         expect(uv.getX(i)).toBeCloseTo((p.getX(i) + offsetX + 100) / 200, 5);
         expect(uv.getY(i)).toBeCloseTo((p.getY(i) + 12 + 50) / 126, 5);
       }
+
       geometry.dispose();
     }
+
     whole.dispose();
   },
 );
@@ -109,15 +121,19 @@ it("compacts dense overlapping holes without changing their union through angled
   // overlap union and region clipping rather than comparing two calls to the mesher.
   const crossings = scanlineCrossings();
   let reference = referenceArea(holes, crossings, mask);
+
   expect(area(geometry)).toBeCloseTo(reference, 0);
   // A global cut at every distant chip vertex must not retessellate unchanged spans.
   expect(geometry.groups[0]!.count).toBeLessThan(holes.length * 250);
+
   const p = geometry.getAttribute("position");
   const uv = geometry.getAttribute("uv");
+
   for (let i = 0; i < geometry.groups[0]!.count; i++) {
     expect(uv.getX(i)).toBeCloseTo((p.getX(i) + 12 + 100) / 200, 5);
     expect(uv.getY(i)).toBeCloseTo((p.getY(i) - 8 + 50) / 126, 5);
   }
+
   geometry.dispose();
 });
 
@@ -129,23 +145,28 @@ function referenceArea(
   let reference = 0;
   const samples = 6000;
   const dy = 126 / samples;
+
   for (let row = 0; row < samples; row++) {
     const y = -50 + (row + 0.5) * dy;
     const missing = holes
       .flatMap((hole) => crossings(hole, y))
       .sort((a, b) => a[0] - b[0]);
     const union = unionSpans(missing);
+
     for (const [from, to] of crossings(mask, y)) {
       const left = Math.max(-100, from);
       const right = Math.min(100, to);
+
       if (right <= left) {
         continue;
       }
+
       const removed = union.reduce(
         (sum, [a, b]) =>
           sum + Math.max(0, Math.min(right, b) - Math.max(left, a)),
         0,
       );
+
       reference += (right - left - removed) * dy;
     }
   }
@@ -155,8 +176,10 @@ function referenceArea(
 
 function unionSpans(intervals: [number, number][]) {
   const union: [number, number][] = [];
+
   for (const interval of intervals) {
     const last = union[union.length - 1];
+
     if (last && interval[0] <= last[1]) {
       last[1] = Math.max(last[1], interval[1]);
     } else {
@@ -170,15 +193,20 @@ function unionSpans(intervals: [number, number][]) {
 function scanlineCrossings() {
   return (polygon: Polygon, y: number) => {
     const xs: number[] = [];
+
     for (let i = 0; i < polygon.length; i++) {
       const a = polygon[i]!;
       const b = polygon[(i + 1) % polygon.length]!;
+
       if (a.y > y !== b.y > y) {
         xs.push(a.x + ((b.x - a.x) * (y - a.y)) / (b.y - a.y));
       }
     }
+
     xs.sort((a, b) => a - b);
+
     const spans: [number, number][] = [];
+
     for (let i = 0; i < xs.length - 1; i += 2) {
       spans.push([xs[i]!, xs[i + 1]!]);
     }

@@ -65,6 +65,7 @@ function shouldSplitBlock(sim: Simulation, block: Block, remaining: number) {
 function finishDamage(sim: Simulation, hit: DamageContext) {
   const { block, x, y } = hit;
   const remaining = block.cells.filter((cell) => cell.alive);
+
   if (shouldDestroyBlock(block, remaining.length)) {
     destroyBlock(sim, hit);
   } else if (shouldSplitBlock(sim, block, remaining.length)) {
@@ -74,6 +75,7 @@ function finishDamage(sim: Simulation, hit: DamageContext) {
 
 export function damage(sim: Simulation, options: DamageOptions) {
   const hit = damageContext(options);
+
   removeGlyphs(sim, hit);
   applyDamageImpulse(hit);
   scoreDamage(sim, hit.removedGlyphs.length);
@@ -106,6 +108,7 @@ export function showImpact(sim: Simulation, hit: DamageContext) {
 
 export function destroyBlock(sim: Simulation, hit: DamageContext) {
   const { block, surfaceBeforeHit } = hit;
+
   visual(sim, {
     type: "code-death",
     block: surfaceBeforeHit,
@@ -128,6 +131,7 @@ export function destroyBlock(sim: Simulation, hit: DamageContext) {
 
 export function applyDamageImpulse(hit: DamageContext) {
   const { block, blastRadius, bullet, y } = hit;
+
   block.hits++;
   block.vx = Math.min(
     block.boss ? TUNING.damage.bossSpeedCap : TUNING.damage.speedCap,
@@ -175,6 +179,7 @@ function glyphParticle(sim: Simulation, glyph: RemovedGlyph) {
   const life =
     TUNING.particles.glyphBaseLife +
     sim.random() * TUNING.particles.glyphLifeRange;
+
   sim.world.particles.push({
     ...glyph,
     vx:
@@ -191,13 +196,16 @@ function glyphParticle(sim: Simulation, glyph: RemovedGlyph) {
 
 export function removeGlyphs(sim: Simulation, hit: DamageContext) {
   const { block, x, y, radius, cos, sin, power } = hit;
+
   for (const cell of block.cells) {
     if (!cell.alive || Math.hypot(cell.x - x, cell.y - y) > radius) {
       continue;
     }
+
     cell.health -= power;
     if (cell.health <= 0) {
       cell.alive = false;
+
       const worldX = block.x + cell.x * cos - cell.y * sin;
       const worldY = block.y + cell.x * sin + cell.y * cos;
       const glyph = {
@@ -206,6 +214,7 @@ export function removeGlyphs(sim: Simulation, hit: DamageContext) {
         char: cell.char,
         color: cell.color,
       };
+
       hit.removedGlyphs.push(glyph);
       glyphParticle(sim, glyph);
       triggerMagic(sim, { cell, worldX, worldY });

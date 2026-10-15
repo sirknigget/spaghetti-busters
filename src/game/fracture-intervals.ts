@@ -17,12 +17,14 @@ export const span = (polygonEdges: Edge[], y: number): Interval[] => {
     .filter((e) => y > e.low && y < e.high)
     .sort((a, b) => at(a, y) - at(b, y));
   const intervals: Interval[] = [];
+
   for (let i = 0; i < crossings.length - 1; i += PAIR_SIZE) {
     intervals.push({ left: crossings[i]!, right: crossings[i + 1]! });
   }
 
   return intervals;
 };
+
 export const intersect = (
   a: Interval[],
   b: Interval[],
@@ -40,9 +42,11 @@ export const intersect = (
   );
 export const inside = (p: Point, polygon: Polygon) => {
   let yes = false;
+
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
     const a = polygon[i]!;
     const b = polygon[j]!;
+
     if (
       a.y > p.y !== b.y > p.y &&
       p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x

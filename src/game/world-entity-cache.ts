@@ -19,19 +19,23 @@ export class EntityCache<T extends Entity> {
 
   sync(entities: T[], presentation: EntityPresentation<T>) {
     const alive = new Set(entities.map((e) => e.id));
+
     for (const [id, mesh] of this.meshes) {
       if (!alive.has(id)) {
         disposeObject(mesh);
         this.meshes.delete(id);
       }
     }
+
     for (const entity of entities) {
       let mesh = this.meshes.get(entity.id);
+
       if (!mesh) {
         mesh = presentation.create(entity);
         this.meshes.set(entity.id, mesh);
         this.scene.add(mesh);
       }
+
       mesh.position.set(entity.x, HEIGHT - entity.y, 0);
       presentation.update(mesh, entity);
     }
@@ -41,6 +45,7 @@ export class EntityCache<T extends Entity> {
     for (const mesh of this.meshes.values()) {
       disposeObject(mesh);
     }
+
     this.meshes.clear();
   }
 }

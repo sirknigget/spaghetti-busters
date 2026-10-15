@@ -39,9 +39,11 @@ function specialUnavailable(sim: Simulation): boolean {
 
 export function fireSpecial(sim: Simulation): boolean {
   const type = sim.player.specialWeapon;
+
   if (specialUnavailable(sim)) {
     return false;
   }
+
   if (type === "review" || type === "lint") {
     instantSpecial(sim, type);
   } else {
@@ -52,6 +54,7 @@ export function fireSpecial(sim: Simulation): boolean {
 }
 
 type MovingSpecial = "homing" | "grenade";
+
 const LAUNCH = { speed: SPECIAL_LAUNCH_SPEED, fuse: GRENADE_FUSE_SECONDS };
 
 function grenadeVelocity(sim: Simulation) {
@@ -96,6 +99,7 @@ export function launchSpecial(sim: Simulation, type: MovingSpecial) {
       sim.player.aimX - TUNING.weapon.aimOriginX,
     ),
   );
+
   sim.world.specials.push({
     id: sim.runtime.nextId++,
     type,
@@ -119,10 +123,13 @@ export function lintBlocks(sim: Simulation) {
   // Each original block is handled once; new halves wait for the next bomb.
   for (const block of sim.world.blocks) {
     const extent = extents(block);
+
     if (block.x + extent.x < 0 || block.x - extent.x > GAME_WIDTH) {
       continue;
     }
+
     const cells = block.cells.filter((cell) => cell.alive);
+
     if (cells.length > LINT_SMALL_BLOCK_CELLS) {
       split(sim, {
         block: block,

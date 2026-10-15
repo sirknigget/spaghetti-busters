@@ -22,13 +22,17 @@ export function split(sim: Simulation, options: SplitOptions) {
   const parent = snapshot(block);
   const seed = ++sim.runtime.visualSeed;
   const plan: FracturePlan = { ...options, horizontal, cut, seed };
+
   sim.world.blocks = sim.world.blocks.filter((item) => item.id !== block.id);
+
   const children = halves.map((half, index) => {
     const child = createFragment(sim, plan, { cells: half, index });
+
     sim.world.blocks.push(child);
 
     return snapshot(child);
   });
+
   visual(sim, { type: "split", parent, children, seed });
   sim.progress.score += FRACTURE_REWARD;
   sim.world.events.push("split");

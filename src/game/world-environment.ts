@@ -36,6 +36,7 @@ export function configureRenderer(renderer: THREE.WebGLRenderer) {
 
 function sunlight() {
   const light = new THREE.DirectionalLight(PALETTE.environment.sun, LIGHT.sun);
+
   light.position.set(LIGHT.sunX, LIGHT.sunY, LIGHT.sunZ);
   light.target.position.set(LIGHT.targetX, LIGHT.targetY, LIGHT.targetZ);
   light.castShadow = true;
@@ -65,13 +66,18 @@ export function populateEnvironment(
       LIGHT.ambient,
     ),
   );
+
   const sun = sunlight();
+
   scene.add(sun, sun.target);
+
   const rim = new THREE.DirectionalLight(PALETTE.environment.rim, LIGHT.rim);
+
   rim.position.set(LIGHT.rimX, LIGHT.rimY, LIGHT.rimZ);
   scene.add(rim, createEnvironment());
   for (let y = MARKER.startY; y < MARKER.endY; y += MARKER.spacing) {
     const marker = new THREE.Mesh(loadGeometry("danger-marker"), danger);
+
     marker.position.set(MARKER.x, HEIGHT - y, 0);
     scene.add(marker);
   }
@@ -79,6 +85,7 @@ export function populateEnvironment(
 
 export function createReticle() {
   const reticle = instantiateModel("reticle");
+
   reticle.renderOrder = RETICLE_ORDER;
   reticle.traverse((child) => (child.renderOrder = RETICLE_ORDER));
 

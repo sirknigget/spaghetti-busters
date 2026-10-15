@@ -3,13 +3,16 @@ import { damage } from "../src/game/simulation-damage";
 export function inspectInitialFracture() {
   const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
   const canvas = prepareFracturedSurface(r, s, w);
+
   s.selectSpecial("lint");
   s.fireSpecial();
   r.draw();
+
   const halves = s.world.blocks.map((b: any) => w.blocks.get(b.id));
   const a = halves.map((mesh: any) => mesh.userData.fractureVisual);
   const child = s.world.blocks[0];
   const cell = child.cells.find((c: any) => c.alive);
+
   damage(s, {
     block: child,
     x: cell.x,
@@ -17,7 +20,9 @@ export function inspectInitialFracture() {
     bullet: { vx: 1080, vy: 0 },
   });
   r.draw();
+
   const rebuilt = w.blocks.get(child.id).userData.fractureVisual;
+
   r.update(0.2);
 
   return {
@@ -34,6 +39,7 @@ function prepareFracturedSurface(r: any, s: any, w: any) {
   r.setPaused(true);
   s.world.blocks = [];
   s.runtime.pendingBlocks = 0;
+
   const parent = s.spawnBlock({
     x: 870,
     y: 340,
@@ -44,13 +50,17 @@ function prepareFracturedSurface(r: any, s: any, w: any) {
       "const originalSurface = factoryFactory(JSON.parse(JSON.stringify(input)));",
     ),
   });
+
   r.draw();
+
   const dead = parent.cells.find(
     (c: any) => Math.abs(c.x) < 20 && Math.abs(c.y) < 30,
   );
+
   dead.alive = false;
   parent.hits++;
   r.draw();
+
   const canvas = w.blocks.get(parent.id).userData.fractureVisual.canvas;
 
   return canvas;
@@ -58,16 +68,21 @@ function prepareFracturedSurface(r: any, s: any, w: any) {
 
 export function inspectRobotDismantling() {
   const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
+
   r.setPaused(true);
   s.world.blocks = [];
   s.runtime.pendingBlocks = 0;
   s.world.robots = [];
+
   const robot = s.spawnRobot({ brand: "anthropic", x: 630, y: 360 });
+
   robot.state = "thinking";
   robot.stateTime = -10;
   r.draw();
   wearRobotArmor(s, robot, r);
+
   const before = { health: robot.health, alive: s.world.robots.length };
+
   s.world.bullets.push({
     id: 20015,
     x: robot.x - 55,
@@ -107,23 +122,12 @@ function wearRobotArmor(s: any, robot: any, r: any) {
 
 export function inspectHit() {
   const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
-  r.setPaused(true);
-  s.world.blocks = [];
-  s.runtime.pendingBlocks = 0;
-  const block = s.spawnBlock({
-    x: 850,
-    y: 320,
-    vx: 0,
-    vy: 0,
-    angle: 0,
-    code: Array(7).fill(
-      "const tangled = factoryFactory(JSON.parse(JSON.stringify(input)));",
-    ),
-  });
-  r.draw();
+  const block = prepareHitBlock(s, r);
+
   const cell = block.cells.find(
     (c: any) => Math.abs(c.x) < 20 && Math.abs(c.y) < 30,
   );
+
   damage(s, {
     block: block,
     x: cell.x,
@@ -131,6 +135,7 @@ export function inspectHit() {
     bullet: { vx: 1080, vy: 0 },
   });
   r.update(0.12);
+
   const mesh = w.blocks.get(block.id);
   const v = mesh.userData.fractureVisual;
   const holes = [...v.holes.values()] as any[];
@@ -144,4 +149,25 @@ export function inspectHit() {
     smoke: w.scene.getObjectByName("physics-buoyant-turbulent-smoke").count,
     sparks: w.scene.getObjectByName("physics-incandescent-sparks").count,
   };
+}
+
+function prepareHitBlock(s: any, r: any) {
+  r.setPaused(true);
+  s.world.blocks = [];
+  s.runtime.pendingBlocks = 0;
+
+  const block = s.spawnBlock({
+    x: 850,
+    y: 320,
+    vx: 0,
+    vy: 0,
+    angle: 0,
+    code: Array(7).fill(
+      "const tangled = factoryFactory(JSON.parse(JSON.stringify(input)));",
+    ),
+  });
+
+  r.draw();
+
+  return block;
 }

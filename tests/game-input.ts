@@ -13,6 +13,7 @@ export async function start(page: Page) {
 
 export async function point(page: Page, x: number, y: number) {
   const box = await page.locator("canvas").boundingBox();
+
   await page.mouse.move(
     box!.x + (x / 1280) * box!.width,
     box!.y + (y / 720) * box!.height,
@@ -22,6 +23,7 @@ export async function point(page: Page, x: number, y: number) {
 export async function holdPlayerStun(page: Page) {
   return await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
+
     // Keep slow software-WebGL input checks inside the stun window; recovery is
     // advanced explicitly below, independently of browser scheduling delays.
     s.player.stunRemaining = 30;
@@ -40,9 +42,11 @@ export async function verifyBlockedControls(
 ) {
   await point(page, 900, 570);
   await page.mouse.down();
+
   const blockedTime = await page.evaluate(
     () => (window as any).__spaghetti.simulation.progress.elapsed,
   );
+
   await expect
     .poll(() =>
       page.evaluate(
@@ -52,6 +56,7 @@ export async function verifyBlockedControls(
     .toBeGreaterThan(blockedTime + 0.1);
   await page.mouse.up();
   await page.mouse.click(1000, 650, { button: "right" });
+
   const after = await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
 
@@ -61,6 +66,7 @@ export async function verifyBlockedControls(
       ammo: s.player.specialAmmo.homing,
     };
   });
+
   expect(after).toEqual(before);
 }
 
@@ -84,6 +90,7 @@ export async function verifyResumedKeyboardControls(page: Page, time: any) {
     .toBeGreaterThan(1);
   await page.keyboard.up("ArrowDown");
   await page.keyboard.up("Space");
+
   const state = await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
 
@@ -93,6 +100,7 @@ export async function verifyResumedKeyboardControls(page: Page, time: any) {
       elapsed: s.progress.elapsed,
     };
   });
+
   expect(state.y).toBeGreaterThan(400);
   expect(state.shots).toBeGreaterThan(1);
   expect(state.elapsed).toBeGreaterThan(time);

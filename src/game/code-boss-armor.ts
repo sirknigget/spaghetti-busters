@@ -40,10 +40,13 @@ interface ArmorBox {
 
 export function createBossArmor(group: THREE.Group, visual: FractureVisual) {
   const armor = new THREE.Group();
+
   armor.name = "factory-boss-reinforced-frame";
   group.add(armor);
+
   const layout = createLayout(armor, visual);
   const rail = addRails(layout);
+
   addPlates(layout);
   addStripes(layout, rail);
   addReactor(armor, visual, layout.gold);
@@ -91,6 +94,7 @@ function addArmorBox(layout: ArmorLayout, box: ArmorBox) {
     loadGeometry("armor-box").scale(width, height, depth),
     material,
   );
+
   mesh.position.set(x, y, 0);
   mesh.userData.armorDimensions = { width, height, depth };
   mesh.castShadow = true;
@@ -107,6 +111,7 @@ function addRails(layout: ArmorLayout) {
     w * ARMOR.railWidthRatio,
     h * ARMOR.railHeightRatio,
   );
+
   for (const x of [-w * HALF + rail * HALF, w * HALF - rail * HALF]) {
     addArmorBox(layout, {
       x,
@@ -116,6 +121,7 @@ function addRails(layout: ArmorLayout) {
       material: orange,
     });
   }
+
   for (const y of [
     -h * HALF + rail * HALF,
     h * HALF + HEADER_HEIGHT - rail * HALF,
@@ -147,7 +153,9 @@ function addPlates(layout: ArmorLayout) {
         material: dark,
         depth: z * DIAMETER + ARMOR.plateDepth,
       });
+
       const bolt = new THREE.Mesh(loadGeometry("armor-bolt"), gold);
+
       bolt.rotation.x = Math.PI * HALF;
       bolt.position.set(x, y, z + ARMOR.boltDepth);
       bolt.castShadow = true;
@@ -158,6 +166,7 @@ function addPlates(layout: ArmorLayout) {
 
 function addStripes(layout: ArmorLayout, rail: number) {
   const { w, h, z, gold } = layout;
+
   for (
     let y = -h * HALF + ARMOR.stripeStart;
     y < h * HALF - ARMOR.stripeEnd;
@@ -172,6 +181,7 @@ function addStripes(layout: ArmorLayout, rail: number) {
         material: gold,
         depth: ARMOR.stripeThickness,
       });
+
       stripe.position.z = z + ARMOR.stripeDepth;
     }
   }
@@ -183,10 +193,13 @@ export function addReactor(
   gold: THREE.Material,
 ) {
   const { width: w, height: h, depth: z } = visual;
+
   if (w <= ARMOR.reactorMinimumWidth) {
     return;
   }
+
   const reactor = new THREE.Group();
+
   reactor.name = "factory-boss-reactor";
   reactor.position.set(
     w * HALF - ARMOR.reactorInset,
@@ -194,7 +207,9 @@ export function addReactor(
     z + ARMOR.reactorDepth,
   );
   armor.add(reactor);
+
   const ring = new THREE.Mesh(loadGeometry("armor-reactor-ring"), gold);
+
   ring.castShadow = true;
   reactor.add(ring);
   reactor.add(createCore());
@@ -210,6 +225,7 @@ function createCore() {
     roughness: CORE_ROUGHNESS,
   });
   const core = new THREE.Mesh(loadGeometry("armor-reactor-core"), coreMaterial);
+
   core.name = "factory-boss-core";
   core.rotation.x = ARMOR.coreTilt;
 
@@ -220,6 +236,7 @@ function addFins(reactor: THREE.Group, gold: THREE.Material) {
   for (let i = 0; i < ARMOR.finCount; i++) {
     const fin = new THREE.Mesh(loadGeometry("armor-reactor-fin"), gold);
     const a = (i * Math.PI * DIAMETER) / ARMOR.finCount;
+
     fin.position.set(
       Math.cos(a) * ARMOR.finRadius,
       Math.sin(a) * ARMOR.finRadius,

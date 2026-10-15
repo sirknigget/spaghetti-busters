@@ -18,10 +18,12 @@ test("title music unlocks on a gesture, transitions into the run, and returns wi
   page,
 }) => {
   await page.goto("/");
+
   const initial = await page.evaluate(async () => {
     const audioModulePath = "/src/game/audio.ts";
     const { AudioEngine } = await import(audioModulePath);
     const audio = new AudioEngine();
+
     (window as any).__menuAudioTest = audio;
     document.addEventListener("pointerdown", () => audio.enterMenu(), {
       once: true,
@@ -29,6 +31,7 @@ test("title music unlocks on a gesture, transitions into the run, and returns wi
 
     return { started: audio.started, context: audio.graph?.context ?? null };
   });
+
   expect(initial).toEqual({ started: false, context: null });
   await page.mouse.click(10, 10);
   await expect
@@ -54,10 +57,12 @@ test("real audio context crossfades scores and preserves transport through pause
 }) => {
   await page.goto("/");
   await page.mouse.click(10, 10);
+
   const initial = await page.evaluate(async () => {
     const audioModulePath = "/src/game/audio.ts";
     const { AudioEngine } = await import(audioModulePath);
     const audio = new AudioEngine();
+
     (window as any).__audioTest = audio;
     audio.start();
     await audio.graph.context.resume();
@@ -68,6 +73,7 @@ test("real audio context crossfades scores and preserves transport through pause
       timer: audio.score.timer !== null,
     };
   });
+
   expect(initial).toEqual({
     state: "running",
     name: "Prism Circuit",
@@ -94,6 +100,7 @@ test("bundled boss voice decodes, plays once with its cue and stops on pause or 
     const audioModulePath = "/src/game/audio.ts";
     const { AudioEngine } = await import(audioModulePath);
     const audio = new AudioEngine();
+
     (window as any).__bossAudio = audio;
     audio.enterGame();
   });
@@ -104,10 +111,13 @@ test("bundled boss voice decodes, plays once with its cue and stops on pause or 
   expect(
     await page.evaluate(() => {
       const a = (window as any).__bossAudio;
+
       a.resume();
       a.setEnabled(false);
       a.play("boss");
+
       const muted = a.synth.sources.size === 0;
+
       a.pause();
       void a.graph.context.close();
 

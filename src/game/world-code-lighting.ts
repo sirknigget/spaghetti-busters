@@ -17,6 +17,7 @@ export function placeCode(mesh: THREE.Group, block: Block) {
     block.id * TUMBLE.idPhase +
     block.age *
       (block.generation > 0 ? TUMBLE.fragmentSpeed : TUMBLE.rootSpeed);
+
   mesh.position.set(block.x, HEIGHT - block.y, 0);
   mesh.rotation.set(
     Math.sin(phase) * tumble,
@@ -41,9 +42,11 @@ function codeEmissive(block: Block, index: number, frozen: boolean): string {
   if (frozen) {
     return PALETTE.freeze.codeEmissive;
   }
+
   if (index !== 1) {
     return PALETTE.common.black;
   }
+
   if (block.boss) {
     return PALETTE.boss.emissive;
   }
@@ -53,13 +56,16 @@ function codeEmissive(block: Block, index: number, frozen: boolean): string {
 
 export function lightCode(mesh: THREE.Group, block: Block, frozen: boolean) {
   const solid = mesh.getObjectByName("perforated-extruded-code");
+
   if (!(solid instanceof THREE.Mesh) || !Array.isArray(solid.material)) {
     return;
   }
+
   for (const [index, material] of solid.material.entries()) {
     if (!(material instanceof THREE.MeshToonMaterial)) {
       continue;
     }
+
     material.emissive.set(codeEmissive(block, index, frozen));
     material.emissiveIntensity = frozen ? TUMBLE.frozenGlow : TUMBLE.normalGlow;
   }

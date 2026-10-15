@@ -29,14 +29,18 @@ export function collapseRobot(
 ) {
   const { robot, seed } = death;
   const random = debrisRandom(seed);
+
   mesh.updateWorldMatrix(true, true);
   for (const child of robotAssemblies(mesh)) {
     const assembly = cloneAssembly(child);
+
     if (!assembly) {
       continue;
     }
+
     const { group, center, size } = assembly;
     const velocity = robotVelocity(center, { robot, random });
+
     context.rigid.add({
       mesh: group,
       halfSize: size
@@ -48,6 +52,13 @@ export function collapseRobot(
       life: ROBOT.life + random() * ROBOT.lifeJitter,
     });
   }
+
+  showCollapseImpact(context, death);
+}
+
+function showCollapseImpact(context: DebrisEmitter, death: RobotDeath) {
+  const { robot, seed } = death;
+
   context.impact({
     x: robot.x,
     y: robot.y,
@@ -77,9 +88,12 @@ function robotAssemblies(mesh: THREE.Group) {
 
 function cloneAssembly(child: THREE.Object3D) {
   const clone = child.clone(true);
+
   cloneRobotResources(clone);
   child.matrixWorld.decompose(clone.position, clone.quaternion, clone.scale);
+
   const group = new THREE.Group();
+
   group.name = `fallen-${child.name || "robot-shell-part"}`;
   group.add(clone);
   group.updateMatrixWorld(true);
@@ -91,11 +105,13 @@ function centerAssembly(group: THREE.Group, clone: THREE.Object3D) {
   const bounds = new THREE.Box3().setFromObject(group);
   const center = bounds.getCenter(new THREE.Vector3());
   const size = bounds.getSize(new THREE.Vector3());
+
   if (!Number.isFinite(center.x) || size.length() < ROBOT.minSize) {
     disposeObject(group);
 
     return undefined;
   }
+
   group.position.copy(center);
   clone.position.sub(center);
   group.updateMatrixWorld(true);

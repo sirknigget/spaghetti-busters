@@ -73,6 +73,7 @@ export class WorldRenderer {
         sim.progress.elapsed - this.lastEffectsTime,
       ),
     );
+
     this.lastEffectsTime = sim.progress.elapsed;
     this.events.process(sim);
     this.debris.update(effectsDt);

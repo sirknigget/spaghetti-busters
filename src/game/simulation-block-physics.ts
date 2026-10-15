@@ -23,6 +23,7 @@ export function advanceAnger(sim: Simulation, block: Block, dt: number) {
     }
   }
 }
+
 export function limitBossVelocity(sim: Simulation, block: Block) {
   if (block.boss) {
     block.vx = clamp(
@@ -37,6 +38,7 @@ export function limitBossVelocity(sim: Simulation, block: Block) {
     );
   }
 }
+
 export function moveBlock(sim: Simulation, block: Block, dt: number) {
   block.vx +=
     (-(block.boss ? bossDriftSpeed(sim) : sim.driftSpeed) - block.vx) *
@@ -60,6 +62,7 @@ export function moveBlock(sim: Simulation, block: Block, dt: number) {
 
 export function checkBlockBoundary(sim: Simulation, block: Block) {
   const extent = extents(block);
+
   if (block.y - extent.y < TUNING.motion.topBoundary) {
     block.y = TUNING.motion.topBoundary + extent.y;
     block.vy =
@@ -67,6 +70,7 @@ export function checkBlockBoundary(sim: Simulation, block: Block) {
       TUNING.motion.bounceKick;
     block.angularVelocity *= BOUNCE_SPIN_FACTOR;
   }
+
   if (block.y + extent.y > TUNING.motion.bottomBoundary) {
     block.y = TUNING.motion.bottomBoundary - extent.y;
     block.vy =
@@ -74,6 +78,7 @@ export function checkBlockBoundary(sim: Simulation, block: Block) {
       TUNING.motion.bounceKick;
     block.angularVelocity *= BOUNCE_SPIN_FACTOR;
   }
+
   // Spawned blocks enter naturally; only objects already moving right bounce here.
   if (
     block.vx > 0 &&
@@ -82,6 +87,7 @@ export function checkBlockBoundary(sim: Simulation, block: Block) {
     block.x = GAME_WIDTH - TUNING.motion.rightBoundaryPadding - extent.x;
     block.vx = -block.vx * TUNING.motion.horizontalRestitution;
   }
+
   if (block.x + extent.x < 0) {
     sim.progress.status = "gameover";
     sim.world.events.push("gameover");
@@ -101,6 +107,7 @@ export function throwException(sim: Simulation, block: Block) {
     ['throw new Error("works locally");'],
     ["NullPointerException: undefined"],
   ];
+
   sim.spawnBlock({
     x: block.x - block.width * HALF - TUNING.exception.spawnOffsetX,
     y: clamp(
@@ -147,12 +154,15 @@ function collisionNormal(a: Block, b: Block, horizontal: boolean) {
 
 function contact(a: Block, b: Block): Contact | undefined {
   const ae = extents(a);
+
   if (outsideCollisionArea(a, b, ae.x)) {
     return undefined;
   }
+
   const be = extents(b);
   const overlapX = ae.x + be.x - Math.abs(b.x - a.x);
   const overlapY = ae.y + be.y - Math.abs(b.y - a.y);
+
   if (overlapX <= 0 || overlapY <= 0) {
     return undefined;
   }
@@ -168,11 +178,14 @@ function contact(a: Block, b: Block): Contact | undefined {
 function impulse(a: Block, b: Block, hit: Contact) {
   const { nx, ny, inverseA, inverseB } = hit;
   const relative = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+
   if (relative >= 0) {
     return;
   }
+
   const magnitude =
     (TUNING.collision.impulseFactor * relative) / (inverseA + inverseB);
+
   a.vx -= magnitude * nx * inverseA;
   a.vy -= magnitude * ny * inverseA;
   b.vx += magnitude * nx * inverseB;
@@ -187,6 +200,7 @@ function separate(a: Block, b: Block, hit: Contact) {
     (Math.max(0, overlap - TUNING.collision.penetrationSlop) *
       TUNING.collision.positionCorrection) /
     (inverseA + inverseB);
+
   a.x -= nx * separation * inverseA;
   a.y -= ny * separation * inverseA;
   b.x += nx * separation * inverseB;
@@ -197,12 +211,15 @@ function separate(a: Block, b: Block, hit: Contact) {
 export function collideBlocks(sim: Simulation) {
   for (let i = 0; i < sim.world.blocks.length; i++) {
     const a = sim.world.blocks[i]!;
+
     if (a.age < TUNING.collision.minimumAge) {
       continue;
     }
+
     for (let j = i + 1; j < sim.world.blocks.length; j++) {
       const b = sim.world.blocks[j]!;
       const hit = contact(a, b);
+
       if (hit) {
         separate(a, b, hit);
       }

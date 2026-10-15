@@ -5,7 +5,9 @@ export function debrisRandom(seed: number) {
 
   return () => {
     state += ENTROPY.increment;
+
     let n = state;
+
     n = Math.imul(n ^ (n >>> ENTROPY.firstShift), n | 1);
     n ^= n + Math.imul(n ^ (n >>> ENTROPY.secondShift), n | ENTROPY.multiplier);
 

@@ -3,6 +3,7 @@ import { type Page } from "@playwright/test";
 export async function placeLargeLintTargets(page: Page) {
   await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
+
     s.world.blocks = [];
     s.runtime.pendingBlocks = 0;
     for (const [x, y] of [
@@ -39,6 +40,7 @@ export async function placeSmallLintTarget(page: Page) {
       exception: true,
       code: ['throw new Error("oops");'],
     });
+
     (window as any).__lintSmallId = small.id;
   });
 }
