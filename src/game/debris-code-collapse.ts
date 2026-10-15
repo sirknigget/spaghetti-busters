@@ -9,6 +9,8 @@ import { addLetter } from "./debris-impact";
 import { HALF, VIEWPORT } from "./debris-settings";
 import { type DebrisImpact, type DebrisEmitter } from "./debris-types";
 
+const COLLAPSE_IMPACT_RADIUS = 32;
+
 export function codeHull(geometry: THREE.BufferGeometry) {
   const positions = geometry.getAttribute("position");
   const points: number[] = [];
@@ -214,7 +216,7 @@ function collapsePlumes(
       ...hit,
       x: p.x,
       y: VIEWPORT.height - p.y,
-      radius: 32,
+      radius: COLLAPSE_IMPACT_RADIUS,
       seed: seed + COLLAPSE.seedOffset + i * COLLAPSE.seedStride,
       removed: [],
     });

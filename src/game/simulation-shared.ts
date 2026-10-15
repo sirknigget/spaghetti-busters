@@ -1,3 +1,5 @@
+import weaponPatterns from "./weapon-patterns.json";
+import { PALETTE } from "./palette";
 import { TUNING } from "./simulation-tuning";
 import {
   type Block,
@@ -13,32 +15,23 @@ export const AMMO_CAPACITY_MULTIPLIER = 2;
 export const HOMING_AMMO_PER_PICKUP = 2;
 export const EXPLOSION_IMPULSE_FACTOR = 2;
 // These literal millisecond choices are the hazard's displayed code payloads.
-// oxlint-disable-next-line no-magic-numbers
-export const HAZARD_DURATIONS_MS = [1200, 1600, 2000, 2400];
+export const HAZARD_DURATIONS_MS = weaponPatterns.HAZARD_DURATIONS_MS;
 
 export const COLORS = {
-  text: "#d6e2f0",
-  keyword: "#bd9bff",
-  string: "#b7e994",
-  number: "#ffbc79",
-  comment: "#6889a6",
-  punctuation: "#7da6c6",
-  magic: "#ffe270",
+  text: PALETTE.syntax.text,
+  keyword: PALETTE.syntax.keyword,
+  string: PALETTE.syntax.string,
+  number: PALETTE.syntax.number,
+  comment: PALETTE.syntax.comment,
+  punctuation: PALETTE.syntax.punctuation,
+  magic: PALETTE.particles.magic,
 };
 export const clamp = (v: number, low: number, high: number) =>
   Math.max(low, Math.min(high, v));
 
 // Literal angular patterns form the weapon spread palette.
-/* oxlint-disable no-magic-numbers */
-export const WEAPON_SPREADS: Record<Weapon, number[]> = {
-  single: [0],
-  double: [-0.065, 0.065],
-  triple: [-0.15, 0, 0.15],
-  quad: [-0.18, -0.06, 0.06, 0.18],
-  quint: [-0.22, -0.11, 0, 0.11, 0.22],
-};
-
-/* oxlint-enable no-magic-numbers */
+export const WEAPON_SPREADS: Record<Weapon, number[]> =
+  weaponPatterns.WEAPON_SPREADS;
 
 export function bonusKeyword(roll: number): string | undefined {
   if (roll < TUNING.bonus.quintKeywordChance) {
@@ -126,11 +119,14 @@ export function quotedTokenEnd(line: string, start: number): number {
 
 /** Scan once so malformed code strings cannot trigger regex backtracking. */
 export function highlightLine(line: string): string[] {
-  const colors = Array.from({ length: line.length }, () => COLORS.text);
+  const colors: string[] = Array.from(
+    { length: line.length },
+    () => COLORS.text,
+  );
   let start = 0;
   while (start < line.length) {
     let end = start + 1;
-    let color = COLORS.text;
+    let color: string = COLORS.text;
     if (line.startsWith("//", start)) {
       end = line.length;
       color = COLORS.comment;

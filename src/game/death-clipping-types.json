@@ -1,0 +1,22 @@
+{
+  "COMPONENT": {
+    "x": 0,
+    "y": 1,
+    "z": 2,
+    "nx": 3,
+    "ny": 4,
+    "nz": 5,
+    "u": 6,
+    "v": 7
+  },
+  "SEAM": {
+    "epsilon": 1e-7,
+    "areaEpsilon": 1e-12,
+    "crossingEpsilon": 1e-14,
+    "minSegments": 3,
+    "segmentLength": 15,
+    "noiseCenter": 0.5,
+    "noiseAmplitude": 12,
+    "maxDisplacement": 6
+  }
+}

@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import type { Simulation } from "./simulation";
 import { burst } from "./simulation-particles";
 import {
@@ -16,6 +17,11 @@ import {
   SPECIAL_AMMO_CAPS,
 } from "./simulation-types";
 
+const BONUS_START_X = 1000;
+const BONUS_LIFETIME_SECONDS = 15;
+const PICKUP_REWARD = 100;
+const SINGLE_WEAPON_AMMO_CAP = 60;
+
 interface SpawnBonusOptions {
   type?: Pickup["type"];
   x?: number;
@@ -25,7 +31,7 @@ export function spawnBonus(
   sim: Simulation,
   {
     type,
-    x = 1000,
+    x = BONUS_START_X,
     y = TUNING.bonus.spawnMinY + sim.random() * TUNING.bonus.spawnYRange,
   }: SpawnBonusOptions,
 ): Pickup {
@@ -39,7 +45,7 @@ export function spawnBonus(
     vx: TUNING.bonus.driftSpeed - sim.random() * TUNING.bonus.speedRange,
     vy: (sim.random() > HALF ? 1 : -1) * TUNING.bonus.verticalSpeed,
     type: chosen,
-    life: 15,
+    life: BONUS_LIFETIME_SECONDS,
     age: 0,
   };
   sim.world.pickups.push(pickup);
@@ -67,11 +73,11 @@ export function collectPickup(sim: Simulation, pickup: Pickup) {
     sim.player.weapon = type;
   }
   pickup.life = 0;
-  sim.progress.score += 100;
+  sim.progress.score += PICKUP_REWARD;
   burst(sim, {
     x: pickup.x,
     y: pickup.y,
-    color: "#ffe270",
+    color: PALETTE.particles.magic,
     count: TUNING.particles.pickupBurstCount,
   });
   sim.world.events.push("pickup");
@@ -98,7 +104,7 @@ export function triggerMagic(
       burst(sim, {
         x: worldX,
         y: worldY,
-        color: "#83f4bd",
+        color: PALETTE.particles.bonus,
         count: TUNING.particles.ammoBurstCount,
       });
     } else {
@@ -110,7 +116,7 @@ export function triggerMagic(
 function grantAmmo(sim: Simulation) {
   sim.player.ammo = Math.min(
     sim.player.weapon === "single"
-      ? 60
+      ? SINGLE_WEAPON_AMMO_CAP
       : PRIMARY_AMMO[sim.player.weapon] * AMMO_CAPACITY_MULTIPLIER,
     sim.player.ammo + TUNING.damage.ammoPerCache,
   );

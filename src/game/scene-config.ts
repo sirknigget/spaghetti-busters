@@ -1,19 +1,6 @@
-export const INPUT = {
-  viewportWidth: 1280,
-  viewportHeight: 720,
-  pointerMinX: 220,
-  pointerMinY: 130,
-  pointerMaxY: 640,
-  secondaryButton: 2,
-  keyboardMinY: 145,
-  keyboardMaxY: 630,
-  keyboardSpeed: 450,
-  millisecondsPerSecond: 1000,
-  maxFrameSeconds: 0.05,
-  impactDecay: 30,
-  hudInterval: 0.07,
-  bossImpact: 4,
-};
+import sceneData from "./scene-settings.json";
+
+export const INPUT = sceneData.INPUT;
 export const MUZZLE_EVENTS = new Set([
   "shot",
   "missile",

@@ -79,12 +79,11 @@
         "no-magic-numbers": [
           "error",
           {
-            "ignore": [0, 1, -1, 24, 60],
-            "ignoreDefaultValues": true,
-            "ignoreClassFieldInitialValues": true,
+            "ignore": [0, 1, -1],
+            "detectObjects": true,
+            "enforceConst": true,
             "ignoreEnums": true,
-            "ignoreNumericLiteralTypes": true,
-            "ignoreReadonlyClassProperties": true
+            "ignoreNumericLiteralTypes": true
           }
         ],
         "no-dupe-class-members": "error",

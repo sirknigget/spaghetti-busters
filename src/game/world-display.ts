@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { disposeObject } from "./code-mesh";
 import { configureRenderer, populateEnvironment } from "./world-environment";
@@ -23,7 +24,7 @@ export class WorldDisplay {
   readonly reducedMotion = matchMedia("(prefers-reduced-motion: reduce)")
     .matches;
   private readonly dangerMaterial = new THREE.MeshBasicMaterial({
-    color: "#8faf76",
+    color: PALETTE.environment.safe,
   });
   private readonly resizeObserver: ResizeObserver;
 
@@ -57,8 +58,8 @@ export class WorldDisplay {
   render(sim: Simulation, impact: number) {
     this.dangerMaterial.color.set(
       sim.world.blocks.some((b) => b.x < DANGER.threshold)
-        ? "#de6a47"
-        : "#8faf76",
+        ? PALETTE.environment.danger
+        : PALETTE.environment.safe,
     );
     const shake = this.reducedMotion
       ? 0

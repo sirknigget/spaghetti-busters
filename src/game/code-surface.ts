@@ -1,3 +1,5 @@
+import crackArtwork from "./assets/code-cracks.svg?raw";
+import { PALETTE } from "./palette";
 import { type Block } from "./simulation";
 import {
   HALF,
@@ -9,27 +11,45 @@ import {
 import { type FractureVisual } from "./code-visual";
 import { chippedHole } from "./fracture-geometry";
 
+const HEADER_EDGE_THICKNESS = 1.5;
+const BOSS_FRAGMENT_WIDTH = 260;
+const BOSS_FRAGMENT_FONT_SIZE = 13;
+const BOSS_FONT_SIZE = 20;
+const ANGRY_TITLE_INSET = 110;
+const NORMAL_TITLE_INSET = 66;
+const TITLE_X_INSET = 34;
+const TITLE_Y_INSET = 13;
+const MINIMUM_TITLE_WIDTH = 15;
+const BOSS_TITLE_INSET = 86;
+const BUTTON_X_INSET = 10;
+const BUTTON_SPACING = 9;
+const BUTTON_RADIUS = 2.4;
+const MAGIC_HALF_WIDTH = 4.5;
+const MAGIC_HALF_HEIGHT = 9;
+const MAGIC_WIDTH = 9;
+const MAGIC_HEIGHT = 18;
+const CRACK_HIGHLIGHT_WIDTH = 0.75;
+const CRACK_SHADOW_WIDTH = 0.5;
+
 // Canvas typography and window chrome are authored texture artwork in pixel coordinates.
-// oxlint-disable eslint/no-magic-numbers
 export function createCodeCanvas(block: Block) {
   const { width: w, height: h } = block;
   const top = h * HALF + HEADER_HEIGHT;
   const canvas = document.createElement("canvas");
-  const scale = 2;
+  const scale = DIAMETER;
   // Pixel coordinates define the syntax-highlighted canvas texture, including window chrome.
-  // oxlint-disable eslint/no-magic-numbers
   canvas.width = Math.ceil(w * scale);
-  canvas.height = Math.ceil((h + 26) * scale);
+  canvas.height = Math.ceil((h + HEADER_HEIGHT) * scale);
   const context = canvas.getContext("2d")!;
   context.scale(scale, scale);
   context.translate(w * HALF, top);
   const palette = codePalette(block);
   context.fillStyle = palette.body;
-  context.fillRect(-w * HALF, -top, w, h + 26);
+  context.fillRect(-w * HALF, -top, w, h + HEADER_HEIGHT);
   context.fillStyle = palette.header;
-  context.fillRect(-w * HALF, -top, w, 26);
+  context.fillRect(-w * HALF, -top, w, HEADER_HEIGHT);
   context.fillStyle = palette.edge;
-  context.fillRect(-w * HALF, -top, w, 1.5);
+  context.fillRect(-w * HALF, -top, w, HEADER_EDGE_THICKNESS);
   drawCodeTitle(context, block);
   drawWindowButtons(context, block);
   drawCodeCells(context, block);
@@ -39,30 +59,39 @@ export function createCodeCanvas(block: Block) {
 
 function drawCodeTitle(context: CanvasRenderingContext2D, block: Block) {
   const { width: w, height: h } = block;
-  const titleSize = w < 260 ? 13 : 20;
+  const titleSize =
+    w < BOSS_FRAGMENT_WIDTH ? BOSS_FRAGMENT_FONT_SIZE : BOSS_FONT_SIZE;
   context.font = block.boss ? `bold ${titleSize}px monospace` : "9px monospace";
   context.textBaseline = "middle";
-  const bossTitle = w < 260 ? "F³ // FRAGMENT" : "FactoryFactoryFactory";
+  const bossTitle =
+    w < BOSS_FRAGMENT_WIDTH ? "F³ // FRAGMENT" : "FactoryFactoryFactory";
   const title = block.boss ? bossTitle : block.title;
-  context.fillStyle = block.boss ? "#fff0be" : "#e4efe1";
-  const titleInset = block.angry ? 110 : 66;
+  context.fillStyle = block.boss ? PALETTE.boss.title : PALETTE.code.title;
+  const titleInset = block.angry ? ANGRY_TITLE_INSET : NORMAL_TITLE_INSET;
   context.fillText(
     title,
-    -w * HALF + 34,
-    -h * HALF - 13,
-    Math.max(15, w - (block.boss ? 86 : titleInset)),
+    -w * HALF + TITLE_X_INSET,
+    -h * HALF - TITLE_Y_INSET,
+    Math.max(
+      MINIMUM_TITLE_WIDTH,
+      w - (block.boss ? BOSS_TITLE_INSET : titleInset),
+    ),
   );
 }
 
 function drawWindowButtons(context: CanvasRenderingContext2D, block: Block) {
   const { width: w, height: h } = block;
-  for (const [i, color] of ["#ff8b69", "#ffd96a", "#aee5a3"].entries()) {
+  for (const [i, color] of [
+    PALETTE.code.close,
+    PALETTE.code.minimize,
+    PALETTE.code.maximize,
+  ].entries()) {
     context.fillStyle = color;
     context.beginPath();
     context.arc(
-      -w * HALF + 10 + i * 9,
-      -h * HALF - 13,
-      2.4,
+      -w * HALF + BUTTON_X_INSET + i * BUTTON_SPACING,
+      -h * HALF - TITLE_Y_INSET,
+      BUTTON_RADIUS,
       0,
       Math.PI * DIAMETER,
     );
@@ -78,55 +107,58 @@ function drawCodeCells(context: CanvasRenderingContext2D, block: Block) {
       continue;
     }
     if (cell.magic) {
-      context.fillStyle = "#ffe75b2b";
-      context.fillRect(cell.x - 4.5, cell.y - 9, 9, 18);
+      context.fillStyle = PALETTE.code.magicHighlight;
+      context.fillRect(
+        cell.x - MAGIC_HALF_WIDTH,
+        cell.y - MAGIC_HALF_HEIGHT,
+        MAGIC_WIDTH,
+        MAGIC_HEIGHT,
+      );
     }
     context.fillStyle = cell.color;
     context.fillText(cell.char, cell.x, cell.y);
   }
 }
-// oxlint-enable eslint/no-magic-numbers
 
 export function codePalette(block: Block) {
   if (block.boss) {
     return {
-      body: "#2f202a",
-      header: "#8b3329",
-      edge: "#ffae59",
-      side: "#bd492e",
-      emissive: "#7c2314",
+      body: PALETTE.boss.body,
+      header: PALETTE.boss.header,
+      edge: PALETTE.boss.edge,
+      side: PALETTE.boss.side,
+      emissive: PALETTE.boss.emissive,
     };
   }
   if (block.angry) {
     return {
-      body: "#421b2a",
-      header: "#a23646",
-      edge: "#ff9e8c",
-      side: "#e95860",
-      emissive: "#6a0f22",
+      body: PALETTE.angry.body,
+      header: PALETTE.angry.header,
+      edge: PALETTE.angry.edge,
+      side: PALETTE.angry.side,
+      emissive: PALETTE.angry.emissive,
     };
   }
   if (block.exception) {
     return {
-      body: "#382335",
-      header: "#73506a",
-      edge: "#8ebebf",
-      side: "#9d6387",
-      emissive: "#000000",
+      body: PALETTE.exception.body,
+      header: PALETTE.exception.header,
+      edge: PALETTE.code.edge,
+      side: PALETTE.exception.side,
+      emissive: PALETTE.common.black,
     };
   }
 
   return {
-    body: "#122d40",
-    header: "#35556b",
-    edge: "#8ebebf",
-    side: "#547e92",
-    emissive: "#000000",
+    body: PALETTE.code.body,
+    header: PALETTE.code.header,
+    edge: PALETTE.code.edge,
+    side: PALETTE.code.side,
+    emissive: PALETTE.common.black,
   };
 }
 
 // Canvas crack strokes are authored texture artwork in pixel coordinates.
-// oxlint-disable eslint/no-magic-numbers
 export function addDamageScars(visual: FractureVisual, block: Block) {
   const context = visual.canvas.getContext("2d")!;
   context.save();
@@ -137,7 +169,7 @@ export function addDamageScars(visual: FractureVisual, block: Block) {
     0,
     scale,
     visual.width * scale * HALF,
-    (visual.height * HALF + 26) * scale,
+    (visual.height * HALF + HEADER_HEIGHT) * scale,
   );
   for (const cell of block.cells) {
     if (cell.alive && cell.health < cell.maxHealth) {
@@ -155,27 +187,33 @@ export function addDamageScars(visual: FractureVisual, block: Block) {
 }
 
 function drawCrack(context: CanvasRenderingContext2D, x: number, y: number) {
-  // Cracks accumulate in the original sheet's coordinates, including on surviving armor.
-  context.lineWidth = 0.75;
-  context.strokeStyle = "#ffb471";
-  context.beginPath();
-  context.moveTo(x - 4, y - 8);
-  context.lineTo(x + 2, y - 3);
-  context.lineTo(x - 2, y + 1);
-  context.lineTo(x + 3, y + 7);
-  context.moveTo(x - 2, y + 1);
-  context.lineTo(x - 7, y + 3);
-  context.stroke();
-  context.lineWidth = 0.5;
-  context.strokeStyle = "#050c13";
-  context.beginPath();
-  context.moveTo(x - 3, y - 7);
-  context.lineTo(x + 3, y - 3);
-  context.lineTo(x - 1, y + 1);
-  context.lineTo(x + 4, y + 7);
-  context.stroke();
+  const [highlight, shadow] = getCrackPaths();
+  context.save();
+  context.translate(x, y);
+  context.lineWidth = CRACK_HIGHLIGHT_WIDTH;
+  context.strokeStyle = PALETTE.code.scar;
+  context.stroke(highlight);
+  context.lineWidth = CRACK_SHADOW_WIDTH;
+  context.strokeStyle = PALETTE.code.scarShadow;
+  context.stroke(shadow);
+  context.restore();
 }
-// oxlint-enable eslint/no-magic-numbers
+
+let crackPaths: Path2D[] | undefined;
+
+function getCrackPaths() {
+  if (!crackPaths) {
+    const document = new DOMParser().parseFromString(
+      crackArtwork,
+      "image/svg+xml",
+    );
+    crackPaths = [...document.querySelectorAll("path")].map(
+      (path) => new Path2D(path.getAttribute("d")!),
+    );
+  }
+
+  return crackPaths;
+}
 
 export function addRemovedCells(visual: FractureVisual, block: Block) {
   for (const cell of block.cells) {

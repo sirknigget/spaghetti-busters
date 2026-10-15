@@ -2,6 +2,8 @@
  * Applies typed SonarJS and remaining ESLint-only checks in source and test scopes.
  * Uses a dedicated TypeScript project covering source, tests, and tools.
  */
+import { colorPolicyPlugin } from "./lint/color-policy";
+import { numericRules } from "./lint/numeric-policy";
 import { limitRules } from "./lint/limits";
 import { spacingRules } from "./lint/spacing";
 import parser from "@typescript-eslint/parser";
@@ -12,8 +14,11 @@ import stylistic from "@stylistic/eslint-plugin";
 import type { TSESLint } from "@typescript-eslint/utils";
 import type { Linter } from "eslint";
 
+const MAX_REGEX_COMPLEXITY = 20;
+
 // Checks source and tool code with typed SonarJS and remaining ESLint-only rules.
 const sourceRules: Linter.RulesRecord = {
+  ...numericRules,
   "sonarjs/prefer-immediate-return": "error",
   "sonarjs/no-ignored-return": "error",
   "sonarjs/arguments-order": "error",
@@ -22,7 +27,7 @@ const sourceRules: Linter.RulesRecord = {
   "sonarjs/no-undefined-argument": "error",
   "sonarjs/disabled-resource-integrity": "error",
   "sonarjs/empty-string-repetition": "error",
-  "sonarjs/regex-complexity": ["error", { threshold: 20 }],
+  "sonarjs/regex-complexity": ["error", { threshold: MAX_REGEX_COMPLEXITY }],
   "sonarjs/anchor-precedence": "error",
   "sonarjs/slow-regex": "error",
   "sonarjs/no-invalid-regexp": "error",
@@ -104,6 +109,7 @@ const eslintConfig: TSESLint.FlatConfig.Config[] = [
       },
     },
     plugins: {
+      "strict-colors": colorPolicyPlugin,
       sonarjs,
       unicorn,
       "@eslint-react": react,
@@ -113,7 +119,11 @@ const eslintConfig: TSESLint.FlatConfig.Config[] = [
   {
     name: "quality/spacing",
     files: ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"],
-    rules: { ...spacingRules, ...limitRules },
+    rules: {
+      ...spacingRules,
+      ...limitRules,
+      "strict-colors/no-color-literals": "error",
+    },
   },
   {
     name: "quality/source",

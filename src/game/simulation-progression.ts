@@ -1,6 +1,8 @@
 import type { Simulation } from "./simulation";
 import { TUNING } from "./simulation-tuning";
 
+const BOSS_INITIAL_SPAWN_DELAY_SECONDS = 4;
+
 export function waveTotal(sim: Simulation) {
   return sim.isBossWave
     ? 1
@@ -101,7 +103,7 @@ export function advanceWave(sim: Simulation, dt: number) {
       sim.runtime.activeBossRoot = undefined;
       sim.runtime.bossMaxHealth = 0;
       sim.runtime.bossRewarded = false;
-      sim.runtime.bossSpawnTimer = 4;
+      sim.runtime.bossSpawnTimer = BOSS_INITIAL_SPAWN_DELAY_SECONDS;
       if (sim.isBossWave) {
         sim.world.robots = [];
         sim.world.hazards = [];

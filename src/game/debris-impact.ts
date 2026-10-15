@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { loadGeometry } from "./model-assets";
 import { LETTER, IMPACT } from "./debris-impact-settings";
@@ -9,6 +10,14 @@ import {
   type Fleck,
 } from "./debris-types";
 import { debrisRandom } from "./debris-random";
+
+const LETTER_TEXTURE_HEIGHT = 56;
+const LETTER_TEXTURE_WIDTH = 48;
+
+const LETTER_ROUGHNESS = 0.7;
+const LETTER_ALPHA_TEST = 0.12;
+const RIGID_LIFT = 60;
+const RIGID_ROUGHNESS = 0.75;
 
 interface LetterMotion {
   hit: DebrisImpact;
@@ -63,8 +72,8 @@ function createLetter(letter: RemovedLetter) {
       map: texture,
       transparent: true,
       side: THREE.DoubleSide,
-      roughness: 0.7,
-      alphaTest: 0.12,
+      roughness: LETTER_ROUGHNESS,
+      alphaTest: LETTER_ALPHA_TEST,
     }),
   );
   face.castShadow = true;
@@ -75,8 +84,8 @@ function createLetter(letter: RemovedLetter) {
 
 function letterTexture(letter: RemovedLetter) {
   const canvas = document.createElement("canvas");
-  canvas.width = 48;
-  canvas.height = 56;
+  canvas.width = LETTER_TEXTURE_WIDTH;
+  canvas.height = LETTER_TEXTURE_HEIGHT;
   const c = canvas.getContext("2d")!;
   c.font = "bold 42px monospace";
   c.textAlign = "center";
@@ -211,7 +220,7 @@ function addImpactRigid(context: DebrisEmitter, source: ImpactShard) {
     halfSize: new THREE.Vector3(size, size, size),
     velocity: new THREE.Vector3(
       (random() - HALF) * IMPACT.rigidSpeedJitter + hit.vx * IMPACT.inheritX,
-      60 + random() * IMPACT.rigidSpeedJitter,
+      RIGID_LIFT + random() * IMPACT.rigidSpeedJitter,
       (random() - HALF) * IMPACT.rigidDepthSpeed,
     ),
     random,
@@ -224,8 +233,8 @@ function addImpactShard(mesh: THREE.Group, size: number, metal: boolean) {
   const fragment = new THREE.Mesh(
     loadGeometry("solid-impact-shard").scale(size, size, size),
     new THREE.MeshStandardMaterial({
-      color: metal ? "#9baeb5" : "#345965",
-      roughness: 0.75,
+      color: metal ? PALETTE.debris.metal : PALETTE.debris.dark,
+      roughness: RIGID_ROUGHNESS,
       metalness: metal ? IMPACT.metalMetalness : IMPACT.codeMetalness,
     }),
   );
@@ -239,13 +248,17 @@ function impactColor(
   random: () => number,
 ) {
   if (kind === "spark") {
-    return random() < HALF ? "#fff4b5" : "#ffae41";
+    return random() < HALF ? PALETTE.debris.spark : PALETTE.debris.sparkOrange;
   }
   if (metal) {
-    return random() < HALF ? "#bdcbd0" : "#dba149";
+    return random() < HALF
+      ? PALETTE.debris.metalLight
+      : PALETTE.debris.metalGold;
   }
 
-  return random() < IMPACT.darkShardChance ? "#203d49" : "#83c1ad";
+  return random() < IMPACT.darkShardChance
+    ? PALETTE.debris.ink
+    : PALETTE.debris.mint;
 }
 
 function impactLife(kind: Fleck["kind"], random: () => number) {

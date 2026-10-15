@@ -1,8 +1,13 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { loadGeometry } from "./model-assets";
 import type { Block } from "./simulation";
 import type { FractureVisual } from "./code-visual";
 import { HALF, DIAMETER, HEADER_HEIGHT, ATTACHMENT } from "./code-settings";
+
+const FACE_OUTLINE_OPACITY = 0.8;
+const CRYSTAL_EMISSIVE_INTENSITY = 0.35;
+const CRYSTAL_OPACITY = 0.85;
 
 export function addAngryFace(
   group: THREE.Group,
@@ -19,8 +24,12 @@ export function addAngryFace(
       z + ATTACHMENT.faceDepth,
     );
     group.add(face);
-    const eyeMaterial = new THREE.MeshBasicMaterial({ color: "#fff4ba" });
-    const browMaterial = new THREE.MeshToonMaterial({ color: "#44122a" });
+    const eyeMaterial = new THREE.MeshBasicMaterial({
+      color: PALETTE.angry.eye,
+    });
+    const browMaterial = new THREE.MeshToonMaterial({
+      color: PALETTE.angry.brow,
+    });
     for (const side of [-1, 1]) {
       const eye = new THREE.Mesh(loadGeometry("angry-eye"), eyeMaterial);
       eye.scale.set(1, ATTACHMENT.eyeSquash, HALF);
@@ -47,9 +56,9 @@ export function addIceOutline(group: THREE.Group, visual: FractureVisual) {
   const outline = new THREE.LineSegments(
     new THREE.EdgesGeometry(outlineGeometry),
     new THREE.LineBasicMaterial({
-      color: "#9eeaff",
+      color: PALETTE.freeze.edge,
       transparent: true,
-      opacity: 0.8,
+      opacity: FACE_OUTLINE_OPACITY,
     }),
   );
   outlineGeometry.dispose();
@@ -62,11 +71,11 @@ export function addIceOutline(group: THREE.Group, visual: FractureVisual) {
 function addIceCrystals(ice: THREE.Group, visual: FractureVisual) {
   const { width: w, height: h, depth: z } = visual;
   const crystalMaterial = new THREE.MeshToonMaterial({
-    color: "#b6eeff",
-    emissive: "#2885ac",
-    emissiveIntensity: 0.35,
+    color: PALETTE.freeze.crystal,
+    emissive: PALETTE.freeze.emissive,
+    emissiveIntensity: CRYSTAL_EMISSIVE_INTENSITY,
     transparent: true,
-    opacity: 0.85,
+    opacity: CRYSTAL_OPACITY,
   });
   for (const x of [-w * HALF, w * HALF]) {
     for (const y of [-h * HALF, h * HALF + HEADER_HEIGHT]) {

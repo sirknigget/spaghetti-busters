@@ -1,3 +1,4 @@
+import ARRANGEMENT from "./scores/arrangement.json";
 import { MUSIC_TRACKS } from "./music";
 import { MIX, type MusicDeck } from "./audio-config";
 import type { Synth } from "./audio-synth";
@@ -16,19 +17,19 @@ interface PhraseStep extends StepOptions {
   chord: readonly number[];
   quiet: boolean;
 }
-/* oxlint-disable no-magic-numbers -- Beat positions, MIDI offsets, and velocities form the authored musical arrangement. */
 export function musicStep(synth: Synth, options: StepOptions): void {
   const track = MUSIC_TRACKS[options.deck.track]!;
-  const beat = options.step % 16;
-  const bar = Math.floor(options.step / 16) % track.bars;
+  const beat = options.step % ARRANGEMENT.sixteenthsPerBar;
+  const bar =
+    Math.floor(options.step / ARRANGEMENT.sixteenthsPerBar) % track.bars;
   const phrase: PhraseStep = {
     ...options,
     track,
-    sixteenth: 60 / track.bpm / MIX.sixteenthsPerBeat,
+    sixteenth: MIX.secondsPerMinute / track.bpm / MIX.sixteenthsPerBeat,
     beat,
     bar,
     chord: track.chords[bar % track.chords.length]!,
-    quiet: bar >= 8 && bar < 12,
+    quiet: bar >= ARRANGEMENT.quiet.startBar && bar < ARRANGEMENT.quiet.endBar,
   };
   playChord(synth, phrase);
   playLead(synth, phrase);
@@ -37,14 +38,21 @@ export function musicStep(synth: Synth, options: StepOptions): void {
 
 function playChord(synth: Synth, phrase: PhraseStep): void {
   const { beat, chord, time, title, sixteenth, quiet, deck } = phrase;
-  const padVolume = quiet ? 0.034 : 0.028;
+  const padVolume = quiet
+    ? ARRANGEMENT.chord.quietVolume
+    : ARRANGEMENT.chord.volume;
   if (beat === 0) {
     for (const [i, note] of chord.entries()) {
       synth.pad({
         note,
-        time: time + i * (title ? 0.09 : 0.03),
-        duration: sixteenth * 18,
-        volume: title ? 0.024 : padVolume,
+        time:
+          time +
+          i *
+            (title
+              ? ARRANGEMENT.chord.titleSpacing
+              : ARRANGEMENT.chord.spacing),
+        duration: sixteenth * ARRANGEMENT.chord.duration,
+        volume: title ? ARRANGEMENT.chord.titleVolume : padVolume,
         bus: deck.bus,
       });
     }
@@ -54,38 +62,59 @@ function playChord(synth: Synth, phrase: PhraseStep): void {
 function playLead(synth: Synth, phrase: PhraseStep): void {
   const { track, bar, beat, title, quiet } = phrase;
   const note = track.phrases[bar % track.phrases.length]![beat]!;
-  const titleNote = !title || beat % 4 === 0 || beat === 7;
-  const quietEnding = bar === 11 && beat >= 12;
-  const quietDownbeat = beat === 0 || beat === 8;
+  const titleNote =
+    !title ||
+    beat % ARRANGEMENT.lead.titleBeatModulo === 0 ||
+    beat === ARRANGEMENT.lead.titleAccentBeat;
+  const quietEnding =
+    bar === ARRANGEMENT.quiet.endingBar && beat >= ARRANGEMENT.quiet.endingBeat;
+  const quietDownbeat =
+    beat === 0 || beat === ARRANGEMENT.quiet.alternateDownbeat;
   const quietNote = !quiet || quietDownbeat || quietEnding;
   if (note > 0 && titleNote && quietNote) {
-    playLeadNote(synth, phrase, note + (bar >= 12 && beat >= 8 ? 12 : 0));
+    playLeadNote(
+      synth,
+      phrase,
+      note +
+        (bar >= ARRANGEMENT.lead.octaveStartBar &&
+        beat >= ARRANGEMENT.lead.octaveStartBeat
+          ? ARRANGEMENT.octave
+          : 0),
+    );
   }
 }
 
 function playLeadNote(synth: Synth, phrase: PhraseStep, note: number): void {
   const { time, title, sixteenth, quiet, deck, bar, track } = phrase;
-  const leadDuration = quiet ? 3.4 : 2.1;
-  const leadVolume = quiet ? 0.07 : 0.1;
+  const leadDuration = quiet
+    ? ARRANGEMENT.lead.quietDuration
+    : ARRANGEMENT.lead.duration;
+  const leadVolume = quiet
+    ? ARRANGEMENT.lead.quietVolume
+    : ARRANGEMENT.lead.volume;
   synth.melodicTone({
     note,
     time,
-    duration: sixteenth * (title ? 4.2 : leadDuration),
+    duration:
+      sixteenth * (title ? ARRANGEMENT.lead.titleDuration : leadDuration),
     type: title ? "sine" : track.lead,
-    volume: title ? 0.085 : leadVolume,
+    volume: title ? ARRANGEMENT.lead.titleVolume : leadVolume,
     bus: deck.bus,
-    pan: bar % 2 ? 0.24 : -0.24,
+    pan:
+      bar % ARRANGEMENT.stereoPeriod
+        ? ARRANGEMENT.lead.pan
+        : -ARRANGEMENT.lead.pan,
   });
   // Bell-like overtones distinguish the nocturnal and glassy compositions.
-  if (deck.track === 1 || deck.track === 2) {
+  if (deck.track === 1 || deck.track === ARRANGEMENT.lead.glassTrack) {
     synth.melodicTone({
-      note: note + 12,
+      note: note + ARRANGEMENT.octave,
       time,
-      duration: sixteenth * 1.4,
+      duration: sixteenth * ARRANGEMENT.lead.overtoneDuration,
       type: "sine",
-      volume: 0.02,
+      volume: ARRANGEMENT.lead.overtoneVolume,
       bus: deck.bus,
-      pan: 0.35,
+      pan: ARRANGEMENT.lead.overtonePan,
     });
   }
 }
@@ -93,18 +122,33 @@ function playLeadNote(synth: Synth, phrase: PhraseStep, note: number): void {
 function playArpeggio(synth: Synth, phrase: PhraseStep): void {
   const { track, beat, bar, quiet, title, chord, time, sixteenth, deck } =
     phrase;
-  const arpeggio = track.arpeggio[(beat + (bar % 2 ? 3 : 0)) % 16]!;
-  if (!quiet && arpeggio >= 0 && (!title || beat % 3 === 0)) {
+  const arpeggio =
+    track.arpeggio[
+      (beat +
+        (bar % ARRANGEMENT.stereoPeriod
+          ? ARRANGEMENT.arpeggio.alternateOffset
+          : 0)) %
+        ARRANGEMENT.sixteenthsPerBar
+    ]!;
+  if (
+    !quiet &&
+    arpeggio >= 0 &&
+    (!title || beat % ARRANGEMENT.arpeggio.titleBeatModulo === 0)
+  ) {
     synth.melodicTone({
-      note: chord[arpeggio]! + 12,
+      note: chord[arpeggio]! + ARRANGEMENT.octave,
       time,
-      duration: sixteenth * (title ? 3 : 1.7),
+      duration:
+        sixteenth *
+        (title
+          ? ARRANGEMENT.arpeggio.titleDuration
+          : ARRANGEMENT.arpeggio.duration),
       type: "triangle",
-      volume: title ? 0.035 : 0.055,
+      volume: title
+        ? ARRANGEMENT.arpeggio.titleVolume
+        : ARRANGEMENT.arpeggio.volume,
       bus: deck.bus,
-      pan: -0.4,
+      pan: ARRANGEMENT.arpeggio.pan,
     });
   }
 }
-
-/* oxlint-enable no-magic-numbers */

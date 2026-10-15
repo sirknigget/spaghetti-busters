@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import { readFile } from "node:fs/promises";
 import * as THREE from "three";
 import { beforeAll, expect, it } from "vitest";
@@ -85,7 +86,7 @@ it("dismantles actual posed robot parts without reusing original resources", asy
   robot.add(arm);
   const original = new THREE.Mesh(
     new THREE.BoxGeometry(10, 28, 12),
-    new THREE.MeshStandardMaterial({ color: "#e0ebee" }),
+    new THREE.MeshStandardMaterial({ color: PALETTE.common.metalWhite }),
   );
   arm.add(original);
   scene.add(robot);

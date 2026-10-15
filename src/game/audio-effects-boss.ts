@@ -1,33 +1,33 @@
+import SCORE from "./scores/audio-effects-boss.json";
 import type { AudioGraph } from "./audio-graph";
 import { Synth, frequency } from "./audio-synth";
 
-/* oxlint-disable no-magic-numbers -- Literal pitches, envelopes, and timings are authored sound-effect scores. */
 export function boss(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
 
   // A short warning sting leaves room for the bundled spoken announcement.
   synth.tone({
-    frequency: frequency(45),
+    frequency: frequency(SCORE.boss.tone.note),
     time: time,
-    duration: 0.5,
+    duration: SCORE.boss.tone.duration,
     type: "sawtooth",
-    volume: 0.065,
+    volume: SCORE.boss.tone.volume,
     destination: bus,
   });
   synth.tone({
-    frequency: frequency(52),
-    time: time + 0.08,
-    duration: 0.4,
+    frequency: frequency(SCORE.boss.accent.note),
+    time: time + SCORE.boss.accent.delay,
+    duration: SCORE.boss.accent.duration,
     type: "triangle",
-    volume: 0.075,
+    volume: SCORE.boss.accent.volume,
     destination: bus,
   });
   synth.tone({
-    frequency: frequency(46),
-    time: time + 0.19,
-    duration: 0.3,
+    frequency: frequency(SCORE.boss.overtone.note),
+    time: time + SCORE.boss.overtone.delay,
+    duration: SCORE.boss.overtone.duration,
     type: "square",
-    volume: 0.035,
+    volume: SCORE.boss.overtone.volume,
     destination: bus,
   });
   if (graph.bossVoice) {
@@ -35,26 +35,26 @@ export function boss(synth: Synth, graph: AudioGraph, time: number): void {
     voice.buffer = graph.bossVoice;
     voice.connect(bus);
     synth.track(voice, () => undefined);
-    voice.start(time + 0.07);
+    voice.start(time + SCORE.boss.voiceDelay);
   }
 }
 
 export function bossSpawn(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
   synth.tone({
-    frequency: 105,
+    frequency: SCORE.bossSpawn.tone.frequency,
     time: time,
-    duration: 0.17,
+    duration: SCORE.bossSpawn.tone.duration,
     type: "triangle",
-    volume: 0.12,
+    volume: SCORE.bossSpawn.tone.volume,
     destination: bus,
-    endFrequency: 53,
+    endFrequency: SCORE.bossSpawn.tone.endFrequency,
   });
   synth.noise({
     time: time,
-    duration: 0.09,
-    volume: 0.055,
-    cutoff: 1800,
+    duration: SCORE.bossSpawn.noise.duration,
+    volume: SCORE.bossSpawn.noise.volume,
+    cutoff: SCORE.bossSpawn.noise.cutoff,
     destination: bus,
   });
 }
@@ -65,24 +65,22 @@ export function bossDefeated(
   time: number,
 ): void {
   const bus = graph.effects;
-  for (const [i, note] of [57, 64, 69, 76, 81, 88].entries()) {
+  for (const [i, note] of SCORE.bossDefeated.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
-      time: time + i * 0.075,
-      duration: 0.36,
+      time: time + i * SCORE.bossDefeated.tone.spacing,
+      duration: SCORE.bossDefeated.tone.duration,
       type: "triangle",
-      volume: 0.11,
+      volume: SCORE.bossDefeated.tone.volume,
       destination: bus,
     });
   }
   synth.tone({
-    frequency: frequency(93),
-    time: time + 0.38,
-    duration: 0.7,
+    frequency: frequency(SCORE.bossDefeated.accent.note),
+    time: time + SCORE.bossDefeated.accent.delay,
+    duration: SCORE.bossDefeated.accent.duration,
     type: "sine",
-    volume: 0.08,
+    volume: SCORE.bossDefeated.accent.volume,
     destination: bus,
   });
 }
-
-/* oxlint-enable no-magic-numbers */

@@ -25,6 +25,13 @@ import {
 } from "./simulation-state";
 import { TUNING } from "./simulation-tuning";
 
+const BASE_ROBOT_DELAY_SECONDS = 24;
+const INITIAL_BLOCK_DELAY_SECONDS = 3.2;
+const INITIAL_BLOCK_X = 1050;
+const INITIAL_BLOCK_Y = 330;
+const INITIAL_BLOCK_VERTICAL_SPEED = 22;
+const INITIAL_BLOCK_ANGLE = -0.035;
+
 function advanceBlocks(sim: Simulation, dt: number) {
   if (dt <= 0) {
     return true;
@@ -77,7 +84,8 @@ export function spawnTimedRobot(sim: Simulation, enemyDt: number) {
     sim.runtime.robotTimer =
       Math.max(
         TUNING.timing.minRobotDelay,
-        24 - sim.progress.wave * TUNING.timing.robotDelayPerWave,
+        BASE_ROBOT_DELAY_SECONDS -
+          sim.progress.wave * TUNING.timing.robotDelayPerWave,
       ) +
       sim.random() * TUNING.timing.robotDelayRange;
   }
@@ -116,11 +124,11 @@ export function advancePickups(sim: Simulation, dt: number) {
       pickup.vy *= -1;
     }
     if (pickup.x > TUNING.motion.pickupMaxX) {
-      pickup.x = 1235;
+      pickup.x = TUNING.motion.pickupMaxX;
       pickup.vx = -Math.abs(pickup.vx);
     }
     if (pickup.x < TUNING.motion.pickupMinX) {
-      pickup.x = 260;
+      pickup.x = TUNING.motion.pickupMinX;
       pickup.vx = Math.abs(pickup.vx);
     }
   }
@@ -165,13 +173,13 @@ export function reset(sim: Simulation) {
   sim.progress = new ProgressState();
   sim.runtime = new RuntimeState();
   sim.runtime.pendingBlocks = sim.waveTotal - 1;
-  sim.runtime.spawnTimer = 3.2;
+  sim.runtime.spawnTimer = INITIAL_BLOCK_DELAY_SECONDS;
   sim.spawnBlock({
-    x: 1050,
-    y: 330,
+    x: INITIAL_BLOCK_X,
+    y: INITIAL_BLOCK_Y,
     vx: -sim.driftSpeed,
-    vy: 22,
-    angle: -0.035,
+    vy: INITIAL_BLOCK_VERTICAL_SPEED,
+    angle: INITIAL_BLOCK_ANGLE,
   });
 }
 

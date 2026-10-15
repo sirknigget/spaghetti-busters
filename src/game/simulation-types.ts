@@ -1,33 +1,16 @@
+import simulationData from "./simulation-values.json";
+
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 export const CELL_WIDTH = 9;
 export const CELL_HEIGHT = 20;
-export const TIMEOUT_METRICS = {
-  fontSize: 20,
-  charWidth: 12,
-  widthPadding: 36,
-  height: 54,
-  depth: 30,
-} as const;
+export const TIMEOUT_METRICS = simulationData.TIMEOUT_METRICS;
 
 export type Weapon = "single" | "double" | "triple" | "quad" | "quint";
-export const PRIMARY_AMMO = {
-  double: 30,
-  triple: 24,
-  quad: 16,
-  quint: 12,
-} as const;
-export const SPECIAL_AMMO_CAPS = {
-  homing: 6,
-  grenade: 5,
-  review: 4,
-  lint: 3,
-} as const;
+export const PRIMARY_AMMO = simulationData.PRIMARY_AMMO;
+export const SPECIAL_AMMO_CAPS = simulationData.SPECIAL_AMMO_CAPS;
 export const LINT_SMALL_BLOCK_CELLS = 160;
-export const SPECIAL_BLASTS = {
-  homing: { radius: 180, power: 4 },
-  grenade: { radius: 300, power: 5 },
-} as const;
+export const SPECIAL_BLASTS = simulationData.SPECIAL_BLASTS;
 export type SpecialWeapon = "homing" | "grenade" | "review" | "lint";
 export type Magic = Pickup["type"] | "ammo";
 export type GameEvent =

@@ -1,4 +1,4 @@
-import { MIX } from "./audio-config";
+import { MIX, LIMITER } from "./audio-config";
 
 declare global {
   interface Window {
@@ -25,18 +25,18 @@ export class AudioGraph {
     this.connectEchoes();
     this.music.connect(this.master);
     this.effects = context.createGain();
-    this.effects.gain.value = 0.65;
+    this.effects.gain.value = MIX.effectsVolume;
     this.effects.connect(this.master);
     this.noiseBuffer = this.createNoise();
   }
 
   private connectLimiter() {
     const limiter = this.context.createDynamicsCompressor();
-    limiter.threshold.value = -15;
-    limiter.knee.value = 14;
-    limiter.ratio.value = 5;
-    limiter.attack.value = 0.004;
-    limiter.release.value = 0.12;
+    limiter.threshold.value = LIMITER.threshold;
+    limiter.knee.value = LIMITER.knee;
+    limiter.ratio.value = LIMITER.ratio;
+    limiter.attack.value = LIMITER.attack;
+    limiter.release.value = LIMITER.release;
     this.master.connect(limiter);
     limiter.connect(this.context.destination);
   }
@@ -50,7 +50,7 @@ export class AudioGraph {
       const delay = this.context.createDelay(1);
       delay.delayTime.value = delayTime!;
       const echo = this.context.createGain();
-      echo.gain.value = 0.17;
+      echo.gain.value = MIX.echoVolume;
       const panner = this.context.createStereoPanner();
       panner.pan.value = pan!;
       this.music.connect(delay);

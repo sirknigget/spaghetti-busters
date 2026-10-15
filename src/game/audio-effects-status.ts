@@ -1,24 +1,24 @@
+import SCORE from "./scores/audio-effects-status.json";
 import type { AudioGraph } from "./audio-graph";
 import { Synth, frequency } from "./audio-synth";
 
-/* oxlint-disable no-magic-numbers -- Literal pitches, envelopes, and timings are authored sound-effect scores. */
 export function review(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
-  for (const [i, note] of [86, 81, 74, 67].entries()) {
+  for (const [i, note] of SCORE.review.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
-      time: time + i * 0.085,
-      duration: 0.6,
+      time: time + i * SCORE.review.tone.spacing,
+      duration: SCORE.review.tone.duration,
       type: "sine",
-      volume: 0.085,
+      volume: SCORE.review.tone.volume,
       destination: bus,
     });
     synth.tone({
-      frequency: frequency(note + 7),
-      time: time + i * 0.085,
-      duration: 0.43,
+      frequency: frequency(note + SCORE.review.accent.harmonyInterval),
+      time: time + i * SCORE.review.accent.spacing,
+      duration: SCORE.review.accent.duration,
       type: "triangle",
-      volume: 0.025,
+      volume: SCORE.review.accent.volume,
       destination: bus,
     });
   }
@@ -28,19 +28,19 @@ export function lint(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
   synth.noise({
     time: time,
-    duration: 0.34,
-    volume: 0.13,
-    cutoff: 3600,
+    duration: SCORE.lint.noise.duration,
+    volume: SCORE.lint.noise.volume,
+    cutoff: SCORE.lint.noise.cutoff,
     destination: bus,
     highpass: true,
   });
-  for (const [i, note] of [57, 69, 76, 81, 88].entries()) {
+  for (const [i, note] of SCORE.lint.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
-      time: time + i * 0.045,
-      duration: 0.25,
+      time: time + i * SCORE.lint.tone.spacing,
+      duration: SCORE.lint.tone.duration,
       type: "triangle",
-      volume: 0.09,
+      volume: SCORE.lint.tone.volume,
       destination: bus,
     });
   }
@@ -48,13 +48,13 @@ export function lint(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function hazard(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
-  for (const [i, note] of [83, 77].entries()) {
+  for (const [i, note] of SCORE.hazard.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
-      time: time + i * 0.09,
-      duration: 0.085,
+      time: time + i * SCORE.hazard.tone.spacing,
+      duration: SCORE.hazard.tone.duration,
       type: "triangle",
-      volume: 0.1,
+      volume: SCORE.hazard.tone.volume,
       destination: bus,
     });
   }
@@ -62,21 +62,21 @@ export function hazard(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function stun(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
-  for (const [i, note] of [94, 87, 82, 75, 70].entries()) {
+  for (const [i, note] of SCORE.stun.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
-      time: time + i * 0.045,
-      duration: 0.11,
+      time: time + i * SCORE.stun.tone.spacing,
+      duration: SCORE.stun.tone.duration,
       type: "square",
-      volume: 0.075,
+      volume: SCORE.stun.tone.volume,
       destination: bus,
     });
   }
   synth.noise({
     time: time,
-    duration: 0.28,
-    volume: 0.08,
-    cutoff: 4000,
+    duration: SCORE.stun.noise.duration,
+    volume: SCORE.stun.noise.volume,
+    cutoff: SCORE.stun.noise.cutoff,
     destination: bus,
     highpass: true,
   });
@@ -84,16 +84,14 @@ export function stun(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function recover(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
-  for (const [i, note] of [67, 74, 79, 86].entries()) {
+  for (const [i, note] of SCORE.recover.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
-      time: time + i * 0.05,
-      duration: 0.13,
+      time: time + i * SCORE.recover.tone.spacing,
+      duration: SCORE.recover.tone.duration,
       type: "sine",
-      volume: 0.15,
+      volume: SCORE.recover.tone.volume,
       destination: bus,
     });
   }
 }
-
-/* oxlint-enable no-magic-numbers */

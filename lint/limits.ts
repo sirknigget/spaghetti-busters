@@ -1,6 +1,8 @@
 import type { Linter } from "eslint";
 
 const MAX_PARAMETERS = 3;
+const MAX_FILE_LINES = 300;
+const MAX_FUNCTION_LINES = 40;
 const signatureNodes =
   ":matches(TSMethodSignature, TSCallSignatureDeclaration, TSConstructSignatureDeclaration, TSConstructorType, TSEmptyBodyFunctionExpression)";
 
@@ -20,13 +22,18 @@ const memberLimits = [
 export const limitRules: Linter.RulesRecord = {
   "max-lines": [
     "error",
-    { max: 300, skipBlankLines: false, skipComments: false },
+    { max: MAX_FILE_LINES, skipBlankLines: false, skipComments: false },
   ],
   "max-lines-per-function": [
     "error",
-    { max: 40, skipBlankLines: false, skipComments: false, IIFEs: true },
+    {
+      max: MAX_FUNCTION_LINES,
+      skipBlankLines: false,
+      skipComments: false,
+      IIFEs: true,
+    },
   ],
-  "max-params": ["error", { max: 3, countThis: "never" }],
+  "max-params": ["error", { max: MAX_PARAMETERS, countThis: "never" }],
   "no-restricted-syntax": [
     "error",
     ...memberLimits.map(([selector, message]) => ({ selector, message })),

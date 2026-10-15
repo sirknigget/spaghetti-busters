@@ -1,13 +1,25 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { instantiateModel, loadGeometry } from "./model-assets";
 import { createEnvironment } from "./models3d";
 import { VIEW, LIGHT, MARKER, HEIGHT } from "./world-settings";
 
+const RETICLE_ORDER = 100;
+const SHADOW_BIAS = -0.0002;
+const SHADOW_NORMAL_BIAS = 0.8;
+const SHADOW_FAR = 2500;
+const SHADOW_NEAR = 10;
+const SHADOW_BOTTOM = -750;
+const SHADOW_TOP = 750;
+const SHADOW_RIGHT = 1000;
+const SHADOW_LEFT = -1000;
+const EXPOSURE = 1.1;
+
 export function configureRenderer(renderer: THREE.WebGLRenderer) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, VIEW.maxPixelRatio));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = EXPOSURE;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.domElement.style.display = "block";
@@ -23,19 +35,19 @@ export function configureRenderer(renderer: THREE.WebGLRenderer) {
 }
 
 function sunlight() {
-  const light = new THREE.DirectionalLight("#fff0c1", LIGHT.sun);
+  const light = new THREE.DirectionalLight(PALETTE.environment.sun, LIGHT.sun);
   light.position.set(LIGHT.sunX, LIGHT.sunY, LIGHT.sunZ);
   light.target.position.set(LIGHT.targetX, LIGHT.targetY, LIGHT.targetZ);
   light.castShadow = true;
   light.shadow.mapSize.set(LIGHT.shadowSize, LIGHT.shadowSize);
-  light.shadow.camera.left = -1000;
-  light.shadow.camera.right = 1000;
-  light.shadow.camera.top = 750;
-  light.shadow.camera.bottom = -750;
-  light.shadow.camera.near = 10;
-  light.shadow.camera.far = 2500;
-  light.shadow.normalBias = 0.8;
-  light.shadow.bias = -0.0002;
+  light.shadow.camera.left = SHADOW_LEFT;
+  light.shadow.camera.right = SHADOW_RIGHT;
+  light.shadow.camera.top = SHADOW_TOP;
+  light.shadow.camera.bottom = SHADOW_BOTTOM;
+  light.shadow.camera.near = SHADOW_NEAR;
+  light.shadow.camera.far = SHADOW_FAR;
+  light.shadow.normalBias = SHADOW_NORMAL_BIAS;
+  light.shadow.bias = SHADOW_BIAS;
 
   return light;
 }
@@ -44,12 +56,18 @@ export function populateEnvironment(
   scene: THREE.Scene,
   danger: THREE.Material,
 ) {
-  scene.background = new THREE.Color("#b8d3c2");
-  scene.fog = new THREE.Fog("#c2d9c8", VIEW.fogNear, VIEW.fogFar);
-  scene.add(new THREE.HemisphereLight("#e4f7ff", "#586d55", LIGHT.ambient));
+  scene.background = new THREE.Color(PALETTE.environment.sky);
+  scene.fog = new THREE.Fog(PALETTE.environment.fog, VIEW.fogNear, VIEW.fogFar);
+  scene.add(
+    new THREE.HemisphereLight(
+      PALETTE.environment.ambientSky,
+      PALETTE.environment.ground,
+      LIGHT.ambient,
+    ),
+  );
   const sun = sunlight();
   scene.add(sun, sun.target);
-  const rim = new THREE.DirectionalLight("#93cfff", LIGHT.rim);
+  const rim = new THREE.DirectionalLight(PALETTE.environment.rim, LIGHT.rim);
   rim.position.set(LIGHT.rimX, LIGHT.rimY, LIGHT.rimZ);
   scene.add(rim, createEnvironment());
   for (let y = MARKER.startY; y < MARKER.endY; y += MARKER.spacing) {
@@ -61,8 +79,8 @@ export function populateEnvironment(
 
 export function createReticle() {
   const reticle = instantiateModel("reticle");
-  reticle.renderOrder = 100;
-  reticle.traverse((child) => (child.renderOrder = 100));
+  reticle.renderOrder = RETICLE_ORDER;
+  reticle.traverse((child) => (child.renderOrder = RETICLE_ORDER));
 
   return reticle;
 }

@@ -5,6 +5,14 @@ import { INPUT, MUZZLE_EVENTS } from "./scene-config";
 import { bindPointer, bindKeyboard } from "./scene-input";
 import { bindLifecycle } from "./scene-lifecycle";
 
+const MUZZLE_FLASH_SECONDS = 0.065;
+const MEDIUM_IMPACT = 3;
+const ROBOT_HIT_IMPACT = 2;
+const ROBOT_DESTRUCTION_IMPACT = 6;
+const FRACTURE_IMPACT = 5;
+const EXPLOSION_IMPACT = 8;
+const STUN_IMPACT = 7;
+
 export class PlayScene implements GameController {
   sim = new Simulation();
 
@@ -131,25 +139,25 @@ export class PlayScene implements GameController {
   private consumeEvents() {
     for (const event of this.sim.world.events.splice(0)) {
       if (MUZZLE_EVENTS.has(event)) {
-        this.muzzle = 0.065;
+        this.muzzle = MUZZLE_FLASH_SECONDS;
       }
       if (event === "hit") {
-        this.impact = 3;
+        this.impact = MEDIUM_IMPACT;
       }
       if (event === "robot-hit") {
-        this.impact = 2;
+        this.impact = ROBOT_HIT_IMPACT;
       }
       if (event === "robot-destroy") {
-        this.impact = 6;
+        this.impact = ROBOT_DESTRUCTION_IMPACT;
       }
       if (event === "split" || event === "destroy") {
-        this.impact = 5;
+        this.impact = FRACTURE_IMPACT;
       }
       if (event === "explosion" || event === "lint") {
-        this.impact = 8;
+        this.impact = EXPLOSION_IMPACT;
       }
       if (event === "generate") {
-        this.impact = 3;
+        this.impact = MEDIUM_IMPACT;
       }
       if (event === "boss" || event === "boss-spawn") {
         this.impact = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -158,7 +166,7 @@ export class PlayScene implements GameController {
           : INPUT.bossImpact;
       }
       if (event === "stun") {
-        this.impact = 7;
+        this.impact = STUN_IMPACT;
       }
       this.callbacks.onEvent(event);
     }

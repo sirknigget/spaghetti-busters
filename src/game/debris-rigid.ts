@@ -16,8 +16,10 @@ import { BODY } from "./debris-impact-settings";
 import * as THREE from "three";
 import { disposeObject } from "./graphics-resources";
 
+const GRAVITY_Y = -640;
+
 export function createDebrisWorld() {
-  const world = new RAPIER.World({ x: 0, y: -640, z: 0 });
+  const world = new RAPIER.World({ x: 0, y: GRAVITY_Y, z: 0 });
   world.timestep = STEP.interval;
   world.createCollider(
     RAPIER.ColliderDesc.cuboid(

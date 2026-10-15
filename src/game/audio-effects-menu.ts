@@ -1,16 +1,16 @@
+import SCORE from "./scores/audio-effects-menu.json";
 import type { AudioGraph } from "./audio-graph";
 import { Synth, frequency } from "./audio-synth";
 
-/* oxlint-disable no-magic-numbers -- Literal pitches, envelopes, and timings are authored sound-effect scores. */
 export function menuOpen(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
-  for (const [i, note] of [67, 74, 79, 83].entries()) {
+  for (const [i, note] of SCORE.menuOpen.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
-      time: time + i * 0.13,
-      duration: 0.65,
+      time: time + i * SCORE.menuOpen.tone.spacing,
+      duration: SCORE.menuOpen.tone.duration,
       type: "sine",
-      volume: 0.065,
+      volume: SCORE.menuOpen.tone.volume,
       destination: bus,
     });
   }
@@ -19,11 +19,11 @@ export function menuOpen(synth: Synth, graph: AudioGraph, time: number): void {
 export function menuHover(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
   synth.tone({
-    frequency: frequency(83),
+    frequency: frequency(SCORE.menuHover.tone.note),
     time: time,
-    duration: 0.08,
+    duration: SCORE.menuHover.tone.duration,
     type: "sine",
-    volume: 0.04,
+    volume: SCORE.menuHover.tone.volume,
     destination: bus,
   });
 }
@@ -31,21 +31,19 @@ export function menuHover(synth: Synth, graph: AudioGraph, time: number): void {
 export function menuClick(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
   synth.tone({
-    frequency: frequency(76),
+    frequency: frequency(SCORE.menuClick.tone.note),
     time: time,
-    duration: 0.12,
+    duration: SCORE.menuClick.tone.duration,
     type: "triangle",
-    volume: 0.065,
+    volume: SCORE.menuClick.tone.volume,
     destination: bus,
   });
   synth.tone({
-    frequency: frequency(88),
-    time: time + 0.055,
-    duration: 0.18,
+    frequency: frequency(SCORE.menuClick.accent.note),
+    time: time + SCORE.menuClick.accent.delay,
+    duration: SCORE.menuClick.accent.duration,
     type: "sine",
-    volume: 0.05,
+    volume: SCORE.menuClick.accent.volume,
     destination: bus,
   });
 }
-
-/* oxlint-enable no-magic-numbers */

@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import type { Block } from "./simulation";
 import { perforatedGeometry } from "./fracture-geometry";
@@ -7,6 +8,10 @@ import { addAngryFace, addIceOutline } from "./code-attachments";
 import { createBossArmor } from "./code-boss-armor";
 import { clipBossArmor } from "./code-boss-clipping";
 import { DIAMETER } from "./code-settings";
+
+const TEXTURE_ANISOTROPY = 4;
+
+const SIDE_EMISSIVE_INTENSITY = 0.3;
 
 /** A perforated solid retains its original surface and exposes its broken interior. */
 export function createCodeMesh(
@@ -43,12 +48,15 @@ export function createCodeMesh(
 function createCodeMaterials(block: Block, canvas: HTMLCanvasElement) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
-  const front = new THREE.MeshToonMaterial({ map: texture, color: "#ffffff" });
+  texture.anisotropy = TEXTURE_ANISOTROPY;
+  const front = new THREE.MeshToonMaterial({
+    map: texture,
+    color: PALETTE.common.white,
+  });
   const side = new THREE.MeshToonMaterial({
     color: codePalette(block).side,
     emissive: codePalette(block).emissive,
-    emissiveIntensity: 0.3,
+    emissiveIntensity: SIDE_EMISSIVE_INTENSITY,
   });
 
   return [front, side] as const;

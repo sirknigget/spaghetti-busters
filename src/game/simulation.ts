@@ -38,6 +38,8 @@ import type {
   TimeoutHazard,
 } from "./simulation-types";
 
+const BONUS_START_X = 1000;
+
 export { CODE_SLICES } from "./code-library";
 export * from "./simulation-types";
 
@@ -112,7 +114,7 @@ export class Simulation {
 
   spawnBonus(
     type?: Pickup["type"],
-    x = 1000,
+    x = BONUS_START_X,
     y: number = TUNING.bonus.spawnMinY +
       this.random() * TUNING.bonus.spawnYRange,
   ): Pickup {

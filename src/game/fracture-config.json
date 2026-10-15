@@ -1,0 +1,37 @@
+{
+  "COORDINATE": {
+    "x": 0,
+    "y": 1,
+    "z": 2
+  },
+  "QUAD": {
+    "first": 0,
+    "second": 1,
+    "third": 2,
+    "fourth": 3
+  },
+  "FRACTURE": {
+    "edgeEpsilon": 0.0001,
+    "gapEpsilon": 0.001,
+    "crossingEpsilon": 0.000001,
+    "hashMultiplier": 73244475,
+    "hashShift": 16,
+    "maxHash": 4294967295,
+    "minSegments": 3,
+    "segmentLength": 15,
+    "noiseCenter": 0.5,
+    "noiseAmplitude": 12,
+    "textureHeaderHeight": 26
+  },
+  "CHIP": {
+    "vertices": 10,
+    "minSpread": 0.76,
+    "spreadRange": 0.36,
+    "baseRadiusX": 5.7,
+    "radiusXSeed": 20,
+    "radiusXRange": 1.3,
+    "baseRadiusY": 9.8,
+    "radiusYSeed": 21,
+    "radiusYRange": 1.4
+  }
+}

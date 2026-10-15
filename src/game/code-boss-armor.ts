@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { loadGeometry } from "./model-assets";
 import { type FractureVisual } from "./code-visual";
@@ -8,6 +9,16 @@ import {
   ATTACHMENT,
   ARMOR,
 } from "./code-settings";
+
+const FRAME_METALNESS = 0.62;
+const FRAME_ROUGHNESS = 0.35;
+const PLATE_METALNESS = 0.7;
+const PLATE_ROUGHNESS = 0.4;
+const BOLT_METALNESS = 0.65;
+const BOLT_ROUGHNESS = 0.27;
+const CORE_EMISSIVE_INTENSITY = 0.8;
+const CORE_METALNESS = 0.3;
+const CORE_ROUGHNESS = 0.2;
 
 interface ArmorLayout {
   armor: THREE.Group;
@@ -40,19 +51,19 @@ export function createBossArmor(group: THREE.Group, visual: FractureVisual) {
 
 function createLayout(armor: THREE.Group, visual: FractureVisual): ArmorLayout {
   const orange = new THREE.MeshStandardMaterial({
-    color: "#e85b2b",
-    metalness: 0.62,
-    roughness: 0.35,
+    color: PALETTE.boss.armor,
+    metalness: FRAME_METALNESS,
+    roughness: FRAME_ROUGHNESS,
   });
   const dark = new THREE.MeshStandardMaterial({
-    color: "#542c30",
-    metalness: 0.7,
-    roughness: 0.4,
+    color: PALETTE.boss.armorDark,
+    metalness: PLATE_METALNESS,
+    roughness: PLATE_ROUGHNESS,
   });
   const gold = new THREE.MeshStandardMaterial({
-    color: "#ffc26a",
-    metalness: 0.65,
-    roughness: 0.27,
+    color: PALETTE.boss.gold,
+    metalness: BOLT_METALNESS,
+    roughness: BOLT_ROUGHNESS,
   });
 
   return {
@@ -192,11 +203,11 @@ export function addReactor(
 
 function createCore() {
   const coreMaterial = new THREE.MeshStandardMaterial({
-    color: "#ffd48b",
-    emissive: "#ff6d21",
-    emissiveIntensity: 0.8,
-    metalness: 0.3,
-    roughness: 0.2,
+    color: PALETTE.boss.core,
+    emissive: PALETTE.boss.coreEmissive,
+    emissiveIntensity: CORE_EMISSIVE_INTENSITY,
+    metalness: CORE_METALNESS,
+    roughness: CORE_ROUGHNESS,
   });
   const core = new THREE.Mesh(loadGeometry("armor-reactor-core"), coreMaterial);
   core.name = "factory-boss-core";

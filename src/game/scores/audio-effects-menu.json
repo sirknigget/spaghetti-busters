@@ -1,0 +1,30 @@
+{
+  "menuOpen": {
+    "notes": [67, 74, 79, 83],
+    "tone": {
+      "spacing": 0.13,
+      "duration": 0.65,
+      "volume": 0.065
+    }
+  },
+  "menuHover": {
+    "tone": {
+      "note": 83,
+      "duration": 0.08,
+      "volume": 0.04
+    }
+  },
+  "menuClick": {
+    "tone": {
+      "note": 76,
+      "duration": 0.12,
+      "volume": 0.065
+    },
+    "accent": {
+      "note": 88,
+      "delay": 0.055,
+      "duration": 0.18,
+      "volume": 0.05
+    }
+  }
+}

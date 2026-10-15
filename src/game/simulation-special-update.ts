@@ -12,6 +12,8 @@ import {
   type SpecialProjectile,
 } from "./simulation-types";
 
+const GRENADE_BOUNCE_RESTITUTION = -0.65;
+
 function specialHitsRobot(
   sim: Simulation,
   special: SpecialProjectile,
@@ -97,7 +99,7 @@ export function moveSpecial(
       TUNING.weapon.grenadeFloorMin,
       TUNING.weapon.grenadeFloorMax,
     );
-    special.vy *= -0.65;
+    special.vy *= GRENADE_BOUNCE_RESTITUTION;
   }
 }
 

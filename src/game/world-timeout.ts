@@ -1,7 +1,17 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { loadGeometry } from "./model-assets";
 import { TIMEOUT_METRICS, type TimeoutHazard } from "./simulation";
 import { HALF, HAZARD } from "./world-settings";
+
+const CANVAS_SCALE = 3;
+const FRAME_WIDTH = 2.5;
+const FRAME_INSET = 1.25;
+const STRIPE_INSET = 3;
+const STRIPE_WIDTH = 4;
+const STRIPE_VERTICAL_INSET = 6;
+
+const TRAIL_OPACITY = 0.32;
 
 function timeoutCanvas(hazard: TimeoutHazard) {
   const text = `await setTimeout(${hazard.durationMs});`;
@@ -9,9 +19,8 @@ function timeoutCanvas(hazard: TimeoutHazard) {
   const width = text.length * charWidth + widthPadding;
   const canvas = document.createElement("canvas");
   // Authored canvas typography uses pixel coordinates and supersampling.
-  // oxlint-disable eslint/no-magic-numbers
-  canvas.width = width * 3;
-  canvas.height = height * 3;
+  canvas.width = width * CANVAS_SCALE;
+  canvas.height = height * CANVAS_SCALE;
   const c = canvas.getContext("2d")!;
   drawTimeoutBackground(c, width, height);
   drawTimeoutText(c, hazard, width);
@@ -24,14 +33,24 @@ function drawTimeoutBackground(
   width: number,
   height: number,
 ) {
-  c.scale(3, 3);
-  c.fillStyle = "#442336";
+  c.scale(CANVAS_SCALE, CANVAS_SCALE);
+  c.fillStyle = PALETTE.timeout.panel;
   c.fillRect(0, 0, width, height);
-  c.strokeStyle = "#ffc58b";
-  c.lineWidth = 2.5;
-  c.strokeRect(1.25, 1.25, width - 2.5, height - 2.5);
-  c.fillStyle = "#9e5670";
-  c.fillRect(3, 3, 4, height - 6);
+  c.strokeStyle = PALETTE.timeout.border;
+  c.lineWidth = FRAME_WIDTH;
+  c.strokeRect(
+    FRAME_INSET,
+    FRAME_INSET,
+    width - FRAME_WIDTH,
+    height - FRAME_WIDTH,
+  );
+  c.fillStyle = PALETTE.timeout.bar;
+  c.fillRect(
+    STRIPE_INSET,
+    STRIPE_INSET,
+    STRIPE_WIDTH,
+    height - STRIPE_VERTICAL_INSET,
+  );
 }
 
 function drawTimeoutText(
@@ -43,19 +62,18 @@ function drawTimeoutText(
   c.font = `bold ${fontSize}px monospace`;
   c.textBaseline = "middle";
   const text = `await setTimeout(${hazard.durationMs});`;
-  let x = (width - text.length * charWidth) / 2;
+  let x = (width - text.length * charWidth) * HALF;
   for (const [word, color] of [
-    ["await ", "#e5baff"],
-    ["setTimeout", "#fff7ce"],
-    ["(", "#ffcfb0"],
-    [String(hazard.durationMs), "#ffbd80"],
-    [");", "#ffcfb0"],
+    ["await ", PALETTE.timeout.keyword],
+    ["setTimeout", PALETTE.timeout.identifier],
+    ["(", PALETTE.timeout.punctuation],
+    [String(hazard.durationMs), PALETTE.timeout.number],
+    [");", PALETTE.timeout.punctuation],
   ]) {
     c.fillStyle = color;
-    c.fillText(word!, x, height / 2);
+    c.fillText(word!, x, height * HALF);
     x += word!.length * charWidth;
   }
-  // oxlint-enable eslint/no-magic-numbers
 }
 
 export function createTimeoutMesh(hazard: TimeoutHazard) {
@@ -66,7 +84,7 @@ export function createTimeoutMesh(hazard: TimeoutHazard) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   const face = new THREE.MeshToonMaterial({ map: texture });
-  const side = new THREE.MeshToonMaterial({ color: "#df7456" });
+  const side = new THREE.MeshToonMaterial({ color: PALETTE.timeout.side });
   const group = new THREE.Group();
   group.name = "timeout-solid";
   group.userData.width = width;
@@ -88,9 +106,9 @@ function timeoutTrail(width: number) {
   const trail = new THREE.Mesh(
     loadGeometry("hazard-trail"),
     new THREE.MeshBasicMaterial({
-      color: "#ff9975",
+      color: PALETTE.timeout.trail,
       transparent: true,
-      opacity: 0.32,
+      opacity: TRAIL_OPACITY,
     }),
   );
   trail.rotation.z = -Math.PI * HALF;

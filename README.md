@@ -95,6 +95,21 @@ separate variable declarations, and blank lines before returns and between
 methods. Prettier retains its 80-column layout. Run ESLint with `--fix` followed
 by `npm run format` to apply spacing fixes. These rules discourage compressing
 statements to evade the size limits.
+
+Runtime numeric literals, including defaults, class fields, object properties,
+and assignments, must use named scalar constants or declarative JSON tuning.
+Only `0`, `1`, and `-1` are allowed inline; numeric enum members and literal types
+remain semantic declarations. Existing browser and unit test fixtures retain
+their numeric exemption. Both ESLint and Oxlint enforce this source policy.
+Authored 3D geometry stays in glTF/GLB assets; the authored 2D crack paths use SVG.
+
+Literal colors belong in `src/game/palette.ts` or CSS custom-property definitions
+in `src/palette.css`. ESLint rejects inline hex and CSS color-function strings,
+plus named and numeric colors in rendering contexts. Stylelint rejects literal
+colors in CSS outside those palette definitions. Existing CI lint jobs enforce
+both policies; generic strings, shaders, and external model assets are not parsed
+as separate color languages.
+
 The anti-slop dependency is pinned to an immutable Git commit.
 
 GitHub CI checks formatting, ESLint, Oxlint, Stylelint, unit tests, the production

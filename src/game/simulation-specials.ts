@@ -6,15 +6,21 @@ import { clamp } from "./simulation-shared";
 import { TUNING } from "./simulation-tuning";
 import { GAME_WIDTH, LINT_SMALL_BLOCK_CELLS } from "./simulation-types";
 
+const INSTANT_SPECIAL_DURATION_SECONDS = 0.8;
+const REVIEW_FREEZE_SECONDS = 2;
+const REVIEW_PULSE_SECONDS = 0.65;
+const SPECIAL_LAUNCH_SPEED = 600;
+const GRENADE_FUSE_SECONDS = 1.05;
+
 function instantSpecial(sim: Simulation, type: "review" | "lint") {
   sim.player.specialAmmo[type]--;
-  sim.runtime.specialCooldown = 0.8;
+  sim.runtime.specialCooldown = INSTANT_SPECIAL_DURATION_SECONDS;
   if (type === "review") {
-    sim.player.freezeRemaining = 2;
-    sim.player.reviewPulse = 0.65;
+    sim.player.freezeRemaining = REVIEW_FREEZE_SECONDS;
+    sim.player.reviewPulse = REVIEW_PULSE_SECONDS;
     sim.world.events.push("review");
   } else {
-    sim.player.lintPulse = 0.8;
+    sim.player.lintPulse = INSTANT_SPECIAL_DURATION_SECONDS;
     lintBlocks(sim);
     sim.world.events.push("lint");
   }
@@ -40,7 +46,7 @@ export function fireSpecial(sim: Simulation): boolean {
 }
 
 type MovingSpecial = "homing" | "grenade";
-const LAUNCH = { speed: 600, fuse: 1.05 };
+const LAUNCH = { speed: SPECIAL_LAUNCH_SPEED, fuse: GRENADE_FUSE_SECONDS };
 
 function grenadeVelocity(sim: Simulation) {
   const x = clamp(
@@ -87,7 +93,7 @@ export function launchSpecial(sim: Simulation, type: MovingSpecial) {
   sim.world.specials.push({
     id: sim.runtime.nextId++,
     type,
-    x: 172,
+    x: TUNING.weapon.muzzleX,
     y: sim.player.playerY,
     ...launchVelocity(sim, type, angle),
     angle,

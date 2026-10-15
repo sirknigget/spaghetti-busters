@@ -1,6 +1,6 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { instantiateModel } from "./model-assets";
-
 import {
   ROBOT_MOTION,
   LABEL_LAYOUT,
@@ -8,6 +8,8 @@ import {
   type Brand,
   type RobotPose,
 } from "./robot-config";
+
+const SHELL_EMISSIVE_INTENSITY = 0.45;
 
 /** Every robot owns its geometry, badge texture and label; no immortal resource cache. */
 export function createRobot(brand: Brand): THREE.Group {
@@ -54,14 +56,17 @@ export function animateRobot(
   }
   shield.material.opacity =
     robot.hitFlash > 0 ? ROBOT_MOTION.hitShieldOpacity : 0;
-  shield.material.color.set(robot.hitFlash > 0 ? "#fff0ad" : "#74cfe2");
+  shield.material.color.set(
+    robot.hitFlash > 0 ? PALETTE.robot.hitShield : PALETTE.robot.shield,
+  );
   const shell = group.userData.shell;
   if (!(shell instanceof THREE.MeshStandardMaterial)) {
     return;
   }
-  const damageColor = robot.hitFlash > 0 ? "#bd8e35" : "#000000";
-  shell.emissive.set(frozen ? "#286c9c" : damageColor);
-  shell.emissiveIntensity = 0.45;
+  const damageColor =
+    robot.hitFlash > 0 ? PALETTE.robot.damageEmissive : PALETTE.common.black;
+  shell.emissive.set(frozen ? PALETTE.robot.frozenEmissive : damageColor);
+  shell.emissiveIntensity = SHELL_EMISSIVE_INTENSITY;
   animateThoughts(group, robot);
   updateLabel(group, robot, frozen);
 }
@@ -186,21 +191,23 @@ interface LabelInfo {
 function paintLabel(canvas: HTMLCanvasElement, info: LabelInfo) {
   const c = canvas.getContext("2d")!;
   c.clearRect(0, 0, canvas.width, canvas.height);
-  c.fillStyle = "#173849";
+  c.fillStyle = PALETTE.robot.labelBackground;
   c.beginPath();
   c.roundRect(0, 0, canvas.width, canvas.height, LABEL_LAYOUT.cornerRadius);
   c.fill();
   c.textAlign = "center";
   c.textBaseline = "middle";
   c.font = "bold 40px monospace";
-  c.fillStyle = "#fff1be";
+  c.fillStyle = PALETTE.robot.labelText;
   c.fillText(
     names[info.brand],
     canvas.width / LABEL_LAYOUT.centerDivisor,
     LABEL_LAYOUT.companyY,
   );
   c.font = "bold 22px monospace";
-  c.fillStyle = info.frozen ? "#9deaff" : "#b4e7e7";
+  c.fillStyle = info.frozen
+    ? PALETTE.robot.labelFrozen
+    : PALETTE.robot.labelActive;
   c.fillText(
     info.state,
     canvas.width / LABEL_LAYOUT.centerDivisor,

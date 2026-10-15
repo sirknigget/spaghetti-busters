@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import type { Simulation } from "./simulation";
 import { segmentRectangle } from "./simulation-collision";
 import { burst } from "./simulation-particles";
@@ -5,6 +6,8 @@ import { clamp, HALF, HAZARD_DURATIONS_MS } from "./simulation-shared";
 import { TUNING } from "./simulation-tuning";
 import type { TimeoutHazard } from "./simulation-types";
 import { TIMEOUT_METRICS } from "./simulation-types";
+
+const HAZARD_LIFETIME_SECONDS = 6;
 
 export interface HazardOptions {
   x?: number;
@@ -56,7 +59,7 @@ export function spawnHazard(
           (x - TUNING.hazard.playerX) / -vx,
         ),
     durationMs,
-    life: 6,
+    life: HAZARD_LIFETIME_SECONDS,
     health: 1,
     age: 0,
   };
@@ -95,7 +98,7 @@ export function updateHazards(sim: Simulation, dt: number) {
       burst(sim, {
         x: TUNING.hazard.playerX,
         y: sim.player.playerY,
-        color: "#ff88bb",
+        color: PALETTE.particles.hazard,
         count: TUNING.particles.stunBurstCount,
       });
       sim.world.events.push("stun");
