@@ -141,6 +141,12 @@ function verticalSpeed(sim: Simulation) {
   );
 }
 
+function horizontalSpeed(sim: Simulation, options: SpawnBlockOptions) {
+  return -(options.boss
+    ? bossDriftSpeed(sim)
+    : sim.driftSpeed + sim.random() * TUNING.block.speedRange);
+}
+
 export function blockMotion(sim: Simulation, construction: BlockMotionOptions) {
   const { options, width } = construction;
 
@@ -149,11 +155,7 @@ export function blockMotion(sim: Simulation, construction: BlockMotionOptions) {
     y:
       options.y ??
       TUNING.block.spawnMinY + sim.random() * TUNING.block.spawnYRange,
-    vx:
-      options.vx ??
-      -(options.boss
-        ? bossDriftSpeed(sim)
-        : sim.driftSpeed + sim.random() * TUNING.block.speedRange),
+    vx: options.vx ?? horizontalSpeed(sim, options),
     vy: options.vy ?? verticalSpeed(sim),
     angle:
       options.angle ?? (sim.random() - HALF) * TUNING.block.initialAngleRange,

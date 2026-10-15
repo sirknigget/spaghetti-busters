@@ -25,15 +25,20 @@ interface HoleSubtraction {
   holeIndex: number;
 }
 
-function subtractSolid(solid: Interval, state: HoleSubtraction) {
-  const { union, mid, visible } = state;
-  let left = solid.left;
+function skipPrecedingHoles(solid: Interval, state: HoleSubtraction) {
+  const { union, mid } = state;
   while (
     state.holeIndex < union.length &&
-    at(union[state.holeIndex]!.right, mid) <= at(left, mid)
+    at(union[state.holeIndex]!.right, mid) <= at(solid.left, mid)
   ) {
     state.holeIndex++;
   }
+}
+
+function subtractSolid(solid: Interval, state: HoleSubtraction) {
+  const { union, mid, visible } = state;
+  let left = solid.left;
+  skipPrecedingHoles(solid, state);
   let index = state.holeIndex;
   while (
     index < union.length &&

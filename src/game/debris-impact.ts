@@ -109,6 +109,12 @@ interface ImpactShard {
   metal: boolean;
 }
 
+function impactKind(index: number): Fleck["kind"] {
+  const nonSmokeKind = index < IMPACT.sparkEnd ? "spark" : "shard";
+
+  return index < IMPACT.smokeEnd ? "smoke" : nonSmokeKind;
+}
+
 export function emitImpact(context: DebrisEmitter, hit: DebrisImpact) {
   const random = debrisRandom(hit.seed);
   const metal = hit.target === "robot";
@@ -117,8 +123,7 @@ export function emitImpact(context: DebrisEmitter, hit: DebrisImpact) {
     IMPACT.baseFlecks + Math.ceil(hit.radius * IMPACT.radiusFlecks),
   );
   for (let i = 0; i < count; i++) {
-    const nonSmokeKind = i < IMPACT.sparkEnd ? "spark" : "shard";
-    const kind = i < IMPACT.smokeEnd ? "smoke" : nonSmokeKind;
+    const kind = impactKind(i);
     context.particles.add(impactFleck(hit, { random, metal, kind }));
   }
   for (let i = 0; i < IMPACT.rigidCount; i++) {

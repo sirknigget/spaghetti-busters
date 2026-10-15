@@ -86,6 +86,18 @@ function retainedResources(armor: THREE.Object3D) {
   return { liveGeometries, liveMaterials };
 }
 
+function collectDeadMaterials(
+  mesh: THREE.Mesh | THREE.LineSegments,
+  liveMaterials: Set<THREE.Material>,
+  deadMaterials: Set<THREE.Material>,
+) {
+  for (const material of armorMaterials(mesh)) {
+    if (material && !liveMaterials.has(material)) {
+      deadMaterials.add(material);
+    }
+  }
+}
+
 function disposeRemovedArmor(armor: THREE.Object3D, removed: THREE.Object3D[]) {
   const { liveGeometries, liveMaterials } = retainedResources(armor);
   const deadGeometries = new Set<THREE.BufferGeometry>();
@@ -101,11 +113,7 @@ function disposeRemovedArmor(armor: THREE.Object3D, removed: THREE.Object3D[]) {
       if (mesh.geometry && !liveGeometries.has(mesh.geometry)) {
         deadGeometries.add(mesh.geometry);
       }
-      for (const material of armorMaterials(mesh)) {
-        if (material && !liveMaterials.has(material)) {
-          deadMaterials.add(material);
-        }
-      }
+      collectDeadMaterials(mesh, liveMaterials, deadMaterials);
     });
   }
   for (const geometry of deadGeometries) {

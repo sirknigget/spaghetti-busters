@@ -26,14 +26,20 @@ function instantSpecial(sim: Simulation, type: "review" | "lint") {
   }
 }
 
-export function fireSpecial(sim: Simulation): boolean {
+function specialUnavailable(sim: Simulation): boolean {
   const type = sim.player.specialWeapon;
-  if (
+
+  return (
     sim.progress.status !== "playing" ||
     sim.isStunned ||
     sim.runtime.specialCooldown > 0 ||
     sim.player.specialAmmo[type] <= 0
-  ) {
+  );
+}
+
+export function fireSpecial(sim: Simulation): boolean {
+  const type = sim.player.specialWeapon;
+  if (specialUnavailable(sim)) {
     return false;
   }
   if (type === "review" || type === "lint") {

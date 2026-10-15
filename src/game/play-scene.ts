@@ -24,6 +24,16 @@ const EVENT_IMPACTS: Partial<Record<GameEvent, number>> = {
   stun: STUN_IMPACT,
 };
 
+function eventImpact(event: GameEvent, previous: number): number {
+  if (event === "boss" || event === "boss-spawn") {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? 0
+      : INPUT.bossImpact;
+  }
+
+  return EVENT_IMPACTS[event] ?? previous;
+}
+
 export class PlayScene implements GameController {
   sim = new Simulation();
 
@@ -127,6 +137,16 @@ export class PlayScene implements GameController {
   }
 
   private updateInput(dt: number) {
+    this.updateAim(dt);
+    if (this.holding || this.keys.has("Space")) {
+      this.sim.fire();
+    }
+    if (this.holdingSpecial) {
+      this.sim.fireSpecial();
+    }
+  }
+
+  private updateAim(dt: number) {
     if (this.keys.has("ArrowUp") || this.keys.has("KeyW")) {
       this.sim.player.aimY = Math.max(
         INPUT.keyboardMinY,
@@ -139,12 +159,6 @@ export class PlayScene implements GameController {
         this.sim.player.aimY + dt * INPUT.keyboardSpeed,
       );
     }
-    if (this.holding || this.keys.has("Space")) {
-      this.sim.fire();
-    }
-    if (this.holdingSpecial) {
-      this.sim.fireSpecial();
-    }
   }
 
   private consumeEvents() {
@@ -152,16 +166,7 @@ export class PlayScene implements GameController {
       if (MUZZLE_EVENTS.has(event)) {
         this.muzzle = MUZZLE_FLASH_SECONDS;
       }
-      const impact = EVENT_IMPACTS[event];
-      if (impact !== undefined) {
-        this.impact = impact;
-      }
-      if (event === "boss" || event === "boss-spawn") {
-        this.impact = window.matchMedia("(prefers-reduced-motion: reduce)")
-          .matches
-          ? 0
-          : INPUT.bossImpact;
-      }
+      this.impact = eventImpact(event, this.impact);
       this.callbacks.onEvent(event);
     }
   }

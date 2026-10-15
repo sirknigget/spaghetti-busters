@@ -57,15 +57,24 @@ export function createCodeCanvas(block: Block) {
   return canvas;
 }
 
-function drawCodeTitle(context: CanvasRenderingContext2D, block: Block) {
-  const { width: w, height: h } = block;
+function titleTypography(block: Block) {
+  const w = block.width;
   const titleSize =
     w < BOSS_FRAGMENT_WIDTH ? BOSS_FRAGMENT_FONT_SIZE : BOSS_FONT_SIZE;
-  context.font = block.boss ? `bold ${titleSize}px monospace` : "9px monospace";
-  context.textBaseline = "middle";
   const bossTitle =
     w < BOSS_FRAGMENT_WIDTH ? "F³ // FRAGMENT" : "FactoryFactoryFactory";
-  const title = block.boss ? bossTitle : block.title;
+
+  return {
+    font: block.boss ? `bold ${titleSize}px monospace` : "9px monospace",
+    title: block.boss ? bossTitle : block.title,
+  };
+}
+
+function drawCodeTitle(context: CanvasRenderingContext2D, block: Block) {
+  const { width: w, height: h } = block;
+  const { font, title } = titleTypography(block);
+  context.font = font;
+  context.textBaseline = "middle";
   context.fillStyle = block.boss ? PALETTE.boss.title : PALETTE.code.title;
   const titleInset = block.angry ? ANGRY_TITLE_INSET : NORMAL_TITLE_INSET;
   context.fillText(

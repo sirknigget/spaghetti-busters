@@ -6,6 +6,12 @@ import { type SpecialWeapon, SPECIAL_AMMO_CAPS } from "./simulation-types";
 const BULLET_LIFETIME_SECONDS = 1.5;
 const SHOT_COOLDOWN_SECONDS = 0.135;
 
+function prepareWeapon(sim: Simulation) {
+  if (sim.player.weapon !== "single" && sim.player.ammo <= 0) {
+    sim.player.weapon = "single";
+  }
+}
+
 export function fire(sim: Simulation): boolean {
   if (
     sim.progress.status !== "playing" ||
@@ -14,9 +20,7 @@ export function fire(sim: Simulation): boolean {
   ) {
     return false;
   }
-  if (sim.player.weapon !== "single" && sim.player.ammo <= 0) {
-    sim.player.weapon = "single";
-  }
+  prepareWeapon(sim);
   const angle = Math.atan2(
     sim.player.aimY - sim.player.playerY,
     Math.max(

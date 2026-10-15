@@ -33,53 +33,30 @@ export const clamp = (v: number, low: number, high: number) =>
 export const WEAPON_SPREADS: Record<Weapon, number[]> =
   weaponPatterns.WEAPON_SPREADS;
 
-export function bonusKeyword(roll: number): string | undefined {
-  if (roll < TUNING.bonus.quintKeywordChance) {
-    return "QUINT_SHOT";
-  }
-  if (roll < TUNING.bonus.quadKeywordChance) {
-    return "QUAD_SHOT";
-  }
-  if (roll < TUNING.bonus.lintKeywordChance) {
-    return "LINT_BOMB";
-  }
-  if (roll < TUNING.bonus.reviewKeywordChance) {
-    return "CODE_REVIEW";
-  }
-  if (roll < TUNING.bonus.grenadeKeywordChance) {
-    return "RECYCLE_GRENADE";
-  }
-  if (roll < TUNING.bonus.homingKeywordChance) {
-    return "HOMING_MISSILE";
-  }
+const BONUS_KEYWORDS: [number, string][] = [
+  [TUNING.bonus.quintKeywordChance, "QUINT_SHOT"],
+  [TUNING.bonus.quadKeywordChance, "QUAD_SHOT"],
+  [TUNING.bonus.lintKeywordChance, "LINT_BOMB"],
+  [TUNING.bonus.reviewKeywordChance, "CODE_REVIEW"],
+  [TUNING.bonus.grenadeKeywordChance, "RECYCLE_GRENADE"],
+  [TUNING.bonus.homingKeywordChance, "HOMING_MISSILE"],
+];
+const BONUS_TYPES: [number, Pickup["type"]][] = [
+  [TUNING.bonus.homingDropChance, "homing"],
+  [TUNING.bonus.grenadeDropChance, "grenade"],
+  [TUNING.bonus.reviewDropChance, "review"],
+  [TUNING.bonus.lintDropChance, "lint"],
+  [TUNING.bonus.doubleDropChance, "double"],
+  [TUNING.bonus.tripleDropChance, "triple"],
+  [TUNING.bonus.quadDropChance, "quad"],
+];
 
-  return undefined;
+export function bonusKeyword(roll: number): string | undefined {
+  return BONUS_KEYWORDS.find(([threshold]) => roll < threshold)?.[1];
 }
 
 export function bonusType(roll: number): Pickup["type"] {
-  if (roll < TUNING.bonus.homingDropChance) {
-    return "homing";
-  }
-  if (roll < TUNING.bonus.grenadeDropChance) {
-    return "grenade";
-  }
-  if (roll < TUNING.bonus.reviewDropChance) {
-    return "review";
-  }
-  if (roll < TUNING.bonus.lintDropChance) {
-    return "lint";
-  }
-  if (roll < TUNING.bonus.doubleDropChance) {
-    return "double";
-  }
-  if (roll < TUNING.bonus.tripleDropChance) {
-    return "triple";
-  }
-  if (roll < TUNING.bonus.quadDropChance) {
-    return "quad";
-  }
-
-  return "quint";
+  return BONUS_TYPES.find(([threshold]) => roll < threshold)?.[1] ?? "quint";
 }
 
 export const CODE_KEYWORDS = new Set([
@@ -133,6 +110,29 @@ function highlightWord(line: string, start: number) {
   return { end, color };
 }
 
+function highlightQuote(line: string, start: number) {
+  const end = quotedTokenEnd(line, start);
+
+  return { end, color: end > start + 1 ? COLORS.string : COLORS.text };
+}
+
+function highlightToken(line: string, start: number) {
+  if (line.startsWith("//", start)) {
+    return { end: line.length, color: COLORS.comment };
+  }
+  if (line[start] === '"' || line[start] === "'") {
+    return highlightQuote(line, start);
+  }
+  if (/\w/.test(line[start]!)) {
+    return highlightWord(line, start);
+  }
+  if (/[{}()[\];.,?:=+!<>|]/.test(line[start]!)) {
+    return { end: start + 1, color: COLORS.punctuation };
+  }
+
+  return { end: start + 1, color: COLORS.text };
+}
+
 /** Scan once so malformed code strings cannot trigger regex backtracking. */
 export function highlightLine(line: string): string[] {
   const colors: string[] = Array.from(
@@ -141,23 +141,7 @@ export function highlightLine(line: string): string[] {
   );
   let start = 0;
   while (start < line.length) {
-    let end = start + 1;
-    let color: string = COLORS.text;
-    if (line.startsWith("//", start)) {
-      end = line.length;
-      color = COLORS.comment;
-    } else if (line[start] === '"' || line[start] === "'") {
-      end = quotedTokenEnd(line, start);
-      if (end > start + 1) {
-        color = COLORS.string;
-      }
-    } else if (/\w/.test(line[start]!)) {
-      const word = highlightWord(line, start);
-      end = word.end;
-      color = word.color;
-    } else if (/[{}()[\];.,?:=+!<>|]/.test(line[start]!)) {
-      color = COLORS.punctuation;
-    }
+    const { end, color } = highlightToken(line, start);
     colors.fill(color, start, end);
     start = end;
   }

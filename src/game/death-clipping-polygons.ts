@@ -5,6 +5,13 @@ import {
   type Vertex,
 } from "./death-clipping-types";
 
+function crossesSeam(da: number, db: number) {
+  return (
+    (da > SEAM.epsilon && db < -SEAM.epsilon) ||
+    (da < -SEAM.epsilon && db > SEAM.epsilon)
+  );
+}
+
 export const clip = (
   polygon: Vertex[],
   distance: (v: Vertex) => number,
@@ -19,10 +26,7 @@ export const clip = (
     if (inside) {
       out.push(a);
     }
-    if (
-      (da > SEAM.epsilon && db < -SEAM.epsilon) ||
-      (da < -SEAM.epsilon && db > SEAM.epsilon)
-    ) {
+    if (crossesSeam(da, db)) {
       const t = da / (da - db);
       out.push(a.map((v, k) => v + (b[k]! - v) * t));
     }

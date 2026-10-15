@@ -153,28 +153,36 @@ const GENERATED_CODE = [
   "}",
 ];
 
+function advanceRunningRobot(robot: Robot, dt: number) {
+  robot.x = Math.max(
+    TUNING.robot.thinkingX,
+    robot.x - TUNING.robot.runSpeed * dt,
+  );
+  if (robot.x <= TUNING.robot.thinkingX) {
+    robot.state = "thinking";
+    robot.stateTime = 0;
+  }
+}
+
+function advanceRobotState(sim: Simulation, robot: Robot, dt: number) {
+  if (robot.state === "running") {
+    advanceRunningRobot(robot, dt);
+  } else if (
+    robot.state === "thinking" &&
+    robot.stateTime >= TUNING.robot.thinkDuration
+  ) {
+    generateRobotCode(sim, robot);
+  } else if (robot.state === "leaving") {
+    robot.x += TUNING.robot.exitSpeed * dt;
+  }
+}
+
 export function updateRobots(sim: Simulation, dt: number) {
   for (const robot of sim.world.robots) {
     robot.age += dt;
     robot.stateTime += dt;
     robot.hitFlash = Math.max(0, robot.hitFlash - dt);
-    if (robot.state === "running") {
-      robot.x = Math.max(
-        TUNING.robot.thinkingX,
-        robot.x - TUNING.robot.runSpeed * dt,
-      );
-      if (robot.x <= TUNING.robot.thinkingX) {
-        robot.state = "thinking";
-        robot.stateTime = 0;
-      }
-    } else if (
-      robot.state === "thinking" &&
-      robot.stateTime >= TUNING.robot.thinkDuration
-    ) {
-      generateRobotCode(sim, robot);
-    } else if (robot.state === "leaving") {
-      robot.x += TUNING.robot.exitSpeed * dt;
-    }
+    advanceRobotState(sim, robot, dt);
   }
   sim.world.robots = sim.world.robots.filter(
     (robot) => robot.x < TUNING.robot.exitX,

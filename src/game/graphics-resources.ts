@@ -38,10 +38,7 @@ export function disposeObject(object: THREE.Object3D) {
     const mesh = child;
     const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const material of list) {
-      materials.add(material);
-      for (const texture of materialTextures(material)) {
-        textures.add(texture);
-      }
+      collectMaterialResources(material, materials, textures);
     }
   });
   for (const g of geometries) {
@@ -54,6 +51,17 @@ export function disposeObject(object: THREE.Object3D) {
     t.dispose();
   }
   object.removeFromParent();
+}
+
+function collectMaterialResources(
+  material: THREE.Material,
+  materials: Set<THREE.Material>,
+  textures: Set<THREE.Texture>,
+) {
+  materials.add(material);
+  for (const texture of materialTextures(material)) {
+    textures.add(texture);
+  }
 }
 
 function materialTextures(material: THREE.Material): THREE.Texture[] {

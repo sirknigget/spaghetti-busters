@@ -6,6 +6,7 @@ import { HUD, $, specialTypes } from "./ui-dom";
 import { menuMarkup } from "./menu-markup";
 import { eventMessages } from "./ui-event-messages";
 import { updateHud } from "./ui-hud";
+import { updateSoundControls } from "./ui-sound";
 
 let best = 0;
 try {
@@ -86,10 +87,7 @@ function showToast(message: string) {
   );
 }
 
-function handleEvent(event: string) {
-  if (event === "boss" && bossAnnounced) {
-    return;
-  }
+function handleBossEvent(event: string) {
   if (event === "boss") {
     announceBoss();
   }
@@ -98,6 +96,13 @@ function handleEvent(event: string) {
     $("#boss-health").hidden = true;
     showToast("FACTORY SHUT DOWN // BUILD APPROVED");
   }
+}
+
+function handleEvent(event: string) {
+  if (event === "boss" && bossAnnounced) {
+    return;
+  }
+  handleBossEvent(event);
   if (event !== "gameover") {
     audio.play(event === "shoot" ? "shot" : event);
   }
@@ -250,20 +255,7 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
 )) {
   button.addEventListener("click", () => {
     audio.setEnabled(!audio.enabled);
-    $("#opening-audio-status").textContent = audio.enabled
-      ? "♫ OPENING THEME · SOUND ON"
-      : "SOUND OFF";
-    for (const b of document.querySelectorAll("[data-sound]")) {
-      b.setAttribute(
-        "aria-label",
-        audio.enabled ? "Turn sound off" : "Turn sound on",
-      );
-      b.classList.toggle("muted", !audio.enabled);
-      const label = b.querySelector("span");
-      if (label) {
-        label.textContent = audio.enabled ? "SOUND ON" : "SOUND OFF";
-      }
-    }
+    updateSoundControls(audio.enabled);
   });
 }
 document.addEventListener("keydown", (e) => {
