@@ -2,7 +2,7 @@ import { frequency, type Synth } from "./audio-synth";
 import type {
   EffectLayer,
   SequenceLayer,
-  SequenceVoice,
+  SequenceTone,
   ToneLayer,
   ToneScore,
 } from "./audio-effect-score";
@@ -61,67 +61,116 @@ function toneFrequency(tone: ToneScore): number {
     return frequency(tone.note);
   }
 
-  return (
-    tone.frequency ?? tone.baseFrequency! + Math.random() * tone.frequencyRange!
-  );
+  if (tone.frequency !== undefined) {
+    return tone.frequency;
+  }
+
+  return tone.baseFrequency + Math.random() * tone.frequencyRange;
+}
+
+type NoteTiming =
+  { delays: readonly number[] } | { spacing: number; quadratic: boolean };
+interface NoteVoice {
+  tone: SequenceTone;
+  waveform: OscillatorType;
+  harmonyInterval: number;
+  midi: boolean;
+  timing: NoteTiming;
 }
 
 function playSequence(synth: Synth, layer: SequenceLayer, time: number): void {
-  const { sequence, waveform, harmony } = layer;
+  const { sequence } = layer;
   const values = "notes" in sequence ? sequence.notes : sequence.frequencies;
-  const voices: SequenceVoice[] = [{ ...sequence.tone, waveform }];
-
-  if (harmony) {
-    voices.push(harmony);
-  }
+  const voices = sequenceVoices(layer);
 
   for (const [index, value] of values.entries()) {
     const step = { index, value, time };
 
     for (const voice of voices) {
-      playSequenceNote(synth, { ...layer, ...voice }, step);
+      playSequenceNote(synth, voice, step);
     }
   }
 }
 
-interface NoteLayer extends SequenceLayer, SequenceVoice {}
+function sequenceVoices(layer: SequenceLayer): NoteVoice[] {
+  const primary: NoteVoice = {
+    tone: layer.sequence.tone,
+    waveform: layer.waveform,
+    harmonyInterval: 0,
+    midi: "notes" in layer.sequence,
+    timing: sequenceTiming(layer),
+  };
+  const voices = [primary];
+
+  if (layer.harmony) {
+    voices.push({
+      ...primary,
+      tone: layer.harmony,
+      waveform: layer.harmony.waveform,
+      harmonyInterval: layer.harmony.harmonyInterval ?? 0,
+      timing: {
+        spacing: layer.harmony.spacing,
+        quadratic: layer.quadratic ?? false,
+      },
+    });
+  }
+
+  return voices;
+}
+
+function sequenceTiming(layer: SequenceLayer): NoteTiming {
+  const { sequence } = layer;
+
+  if (sequence.delays !== undefined) {
+    return { delays: sequence.delays };
+  }
+
+  return {
+    spacing: sequence.tone.spacing,
+    quadratic: layer.quadratic ?? false,
+  };
+}
 
 function playSequenceNote(
   synth: Synth,
-  layer: NoteLayer,
+  voice: NoteVoice,
   step: NoteStep,
 ): void {
-  const hz =
-    "notes" in layer.sequence
-      ? frequency(step.value + (layer.harmonyInterval ?? 0))
-      : step.value;
+  const hz = voice.midi
+    ? frequency(step.value + voice.harmonyInterval)
+    : step.value;
+  const { tone } = voice;
   const duration =
-    step.index === layer.finalNoteIndex ? layer.finalDuration! : layer.duration;
+    step.index === tone.finalNoteIndex ? tone.finalDuration : tone.duration;
 
   synth.tone({
     frequency: hz,
-    time: step.time + noteDelay(layer, step.index),
+    time: step.time + noteDelay(voice.timing, step.index),
     duration,
-    type: layer.waveform,
-    volume: layer.volume,
+    type: voice.waveform,
+    volume: tone.volume,
     destination: synth.graph.effects,
     endFrequency:
-      layer.endFrequencyRatio === undefined
+      tone.endFrequencyRatio === undefined
         ? undefined
-        : hz * layer.endFrequencyRatio,
+        : hz * tone.endFrequencyRatio,
   });
 }
 
-function noteDelay(layer: NoteLayer, index: number): number {
-  const scheduled = layer.sequence.delays?.[index];
+function noteDelay(timing: NoteTiming, index: number): number {
+  if ("spacing" in timing) {
+    const beat = timing.quadratic ? index * index : index;
 
-  if (scheduled !== undefined) {
-    return scheduled;
+    return beat * timing.spacing;
   }
 
-  const beat = layer.quadratic ? index * index : index;
+  const delay = timing.delays[index];
 
-  return beat * layer.spacing!;
+  if (delay === undefined) {
+    throw new RangeError("Missing authored delay for an audio sequence note.");
+  }
+
+  return delay;
 }
 
 function playVoice(synth: Synth, time: number): void {

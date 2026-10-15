@@ -27,12 +27,30 @@ and is intentionally unset.
 | `exact`               | 53 / 9                 | Exact tokens after comment/spacing removal                          |              9 |                          0 |
 | `identifiers`         | 53 / 16                | Normalize identifiers; preserve literal values and annotations      |              1 |                          0 |
 | `renamed`             | 204 / 1                | Normalize identifiers, literals, and annotations                    |              3 |                          0 |
-| `similar`             | 19 / 5                 | AST similarity 0.75, minimum 1 node; gap merging up to 12 lines     |             27 |                          0 |
+| `similar`             | 19 / 5                 | AST similarity 0.90, minimum 1 node; gap merging up to 12 lines     |             17 |                          0 |
 | `semantic`            | 36 / 1                 | CodeRankEmbed, similarity 0.84 within/across languages, scope `all` |              5 |                          0 |
 
-These are the most sensitive useful configurations found in the tested parameter
-neighborhoods, not proof of a unique global optimum. Gap limits from 12 through 300 produced the same 27 near-miss findings; 12
-retains them without bridging larger unmatched spans. Minimum size, similarity,
+The initial calibration selected AST similarity 0.75. Reviewing the resulting
+abstractions showed that this setting also pressures different audio
+orchestrations into one generic player. Raising only AST similarity to **0.90**
+requires a closer structural match: rerunning the original corpus reduces the
+near-miss reports from 27 to 17 (AST 21 to 11; all 6 gap findings unchanged).
+The other four profiles, minimum sizes, gap settings, scan scope, and zero-finding
+requirement stay unchanged.
+
+This is a design-policy tradeoff, not a claim that the original 0.75 setting
+exceeded the manual false-positive guideline. Similarity measures tree resemblance,
+not whether an abstraction is well designed; even 0.90 retains a differently
+ordered tone/noise pair. Existing useful shared helpers remain in place. Some
+modified clones, including the original spin variants, fall below the new AST
+cutoff and are not caught by another selected profile. Direct copies still meet
+the exact/renamed checks. The change reduces pressure to generalize different
+routines, at the cost of some modified-clone coverage.
+
+The other settings are the most sensitive useful configurations found in the
+tested parameter neighborhoods, not proof of a unique global optimum. During
+initial calibration, gap limits from 12 through 300 produced the same 27 near-miss
+findings; 12 retains them without bridging larger unmatched spans. Minimum size, similarity,
 normalization, and gap size have competing effects; there is no single strictness
 slider. Every selected native configuration was rerun and its actual results read.
 Filtering one permissive report is insufficient: changing seed sizes can expose
@@ -62,7 +80,8 @@ Manual review included 94 permissive exact pairs, 110 broadly normalized pairs,
 After cleanup, the neighboring smaller exact/full-normalization/semantic settings
 still report false positives. Identifier sensitivity was tightened using its
 remaining nonempty true-positive finding before the final palette extraction.
-Representative native boundaries on the calibration tree:
+Representative native boundaries on the calibration tree (near-miss rows record
+the initial 0.75 calibration, before the policy adjustment above):
 
 | Change from selected profile                         | False positives / reports | Example reason for rejection                                    |
 | ---------------------------------------------------- | ------------------------- | --------------------------------------------------------------- |
