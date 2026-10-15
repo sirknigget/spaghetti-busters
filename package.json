@@ -36,7 +36,6 @@
     "oxlint": "1.88.0",
     "oxlint-plugin-anti-slop": "git+https://github.com/sirknigget/anti-slop.git#aa6fd941330b4e73a59bff0570344cba35ff0f4d",
     "oxlint-tsgolint": "7.0.2004",
-    "postcss-value-parser": "4.2.0",
     "prettier": "3.9.10",
     "stylelint": "17.16.0",
     "typescript": "~5.9.3",

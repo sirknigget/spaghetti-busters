@@ -1,5 +1,5 @@
 {
-  "plugins": ["@stylistic/stylelint-plugin", "./lint/color-stylelint.mjs"],
+  "plugins": ["@stylistic/stylelint-plugin"],
   "rules": {
     "@stylistic/no-extra-semicolons": true,
     "selector-no-deprecated": [
@@ -183,6 +183,33 @@
       }
     ],
     "at-rule-descriptor-no-unknown": true,
-    "strict-colors/no-literals": true
-  }
+    "color-no-hex": true,
+    "color-named": "never",
+    "function-disallowed-list": [
+      "rgb",
+      "rgba",
+      "hsl",
+      "hsla",
+      "hwb",
+      "lab",
+      "lch",
+      "oklab",
+      "oklch",
+      "color",
+      "color-mix",
+      "device-cmyk",
+      "light-dark",
+      "contrast-color"
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/palette.css"],
+      "rules": {
+        "color-no-hex": null,
+        "color-named": null,
+        "function-disallowed-list": null
+      }
+    }
+  ]
 }

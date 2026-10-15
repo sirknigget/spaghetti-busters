@@ -2,9 +2,8 @@
  * Applies typed SonarJS and remaining ESLint-only checks in source and test scopes.
  * Uses a dedicated TypeScript project covering source, tests, and tools.
  */
-import { colorPolicyPlugin } from "./lint/color-policy";
 import { numericRules } from "./lint/numeric-policy";
-import { limitRules } from "./lint/limits";
+import { limitRules, restrictedSyntax } from "./lint/limits";
 import { spacingRules } from "./lint/spacing";
 import parser from "@typescript-eslint/parser";
 import sonarjs from "eslint-plugin-sonarjs";
@@ -15,6 +14,10 @@ import type { TSESLint } from "@typescript-eslint/utils";
 import type { Linter } from "eslint";
 
 const MAX_REGEX_COMPLEXITY = 20;
+const colorPatterns = [
+  /#[0-9a-f]{3,8}\b/i,
+  /\b(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch|color|color-mix|device-cmyk|light-dark|contrast-color)\s*\(/i,
+];
 
 // Checks source and tool code with typed SonarJS and remaining ESLint-only rules.
 const sourceRules: Linter.RulesRecord = {
@@ -109,7 +112,6 @@ const eslintConfig: TSESLint.FlatConfig.Config[] = [
       },
     },
     plugins: {
-      "strict-colors": colorPolicyPlugin,
       sonarjs,
       unicorn,
       "@eslint-react": react,
@@ -122,7 +124,26 @@ const eslintConfig: TSESLint.FlatConfig.Config[] = [
     rules: {
       ...spacingRules,
       ...limitRules,
-      "strict-colors/no-color-literals": "error",
+    },
+  },
+  {
+    name: "quality/color-strings",
+    files: ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"],
+    ignores: ["src/game/palette.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        ...restrictedSyntax,
+        ...[
+          ["Literal:not([regex])", "value"],
+          ["TemplateElement", "value.raw"],
+        ].flatMap(([node, value]) =>
+          colorPatterns.map((pattern) => ({
+            selector: `${node}[${value}=${pattern}]`,
+            message: "Use a named color from src/game/palette.ts.",
+          })),
+        ),
+      ],
     },
   },
   {

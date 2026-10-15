@@ -104,11 +104,9 @@ their numeric exemption. ESLint enforces this source policy.
 Authored 3D geometry stays in glTF/GLB assets; the authored 2D crack paths use SVG.
 
 Literal colors belong in `src/game/palette.ts` or CSS custom-property definitions
-in `src/palette.css`. ESLint rejects inline hex and CSS color-function strings,
-plus named and numeric colors in rendering contexts. Stylelint rejects literal
-colors in CSS outside those palette definitions. Existing CI lint jobs enforce
-both policies; generic strings, shaders, and external model assets are not parsed
-as separate color languages.
+in `src/palette.css`. Built-in ESLint restrictions reject hex and CSS color-function strings.
+Built-in Stylelint rules reject hex colors, named colors, and color functions
+outside the CSS palette. Existing CI lint jobs enforce both policies.
 
 The anti-slop dependency is pinned to an immutable Git commit.
 

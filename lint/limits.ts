@@ -18,6 +18,19 @@ const memberLimits = [
   ],
 ];
 
+export const restrictedSyntax = [
+  ...memberLimits.map(([selector, message]) => ({ selector, message })),
+  ...[MAX_PARAMETERS, MAX_PARAMETERS + 1].map((max) => ({
+    selector: `${signatureNodes}[params.length>${max}]${
+      max === MAX_PARAMETERS
+        ? ':not([params.0.name="this"])'
+        : '[params.0.name="this"]'
+    }`,
+    message:
+      "TypeScript signatures may declare at most 3 parameters (excluding this).",
+  })),
+];
+
 /** Count physical lines, including comments and blank lines, in every code scope. */
 export const limitRules: Linter.RulesRecord = {
   "max-lines": [
@@ -34,17 +47,5 @@ export const limitRules: Linter.RulesRecord = {
     },
   ],
   "max-params": ["error", { max: MAX_PARAMETERS, countThis: "never" }],
-  "no-restricted-syntax": [
-    "error",
-    ...memberLimits.map(([selector, message]) => ({ selector, message })),
-    ...[MAX_PARAMETERS, MAX_PARAMETERS + 1].map((max) => ({
-      selector: `${signatureNodes}[params.length>${max}]${
-        max === MAX_PARAMETERS
-          ? ':not([params.0.name="this"])'
-          : '[params.0.name="this"]'
-      }`,
-      message:
-        "TypeScript signatures may declare at most 3 parameters (excluding this).",
-    })),
-  ],
+  "no-restricted-syntax": ["error", ...restrictedSyntax],
 };
