@@ -1,20 +1,13 @@
+import { preloadTestModels } from "#root/tests/unit/model-support.ts";
 import { PALETTE } from "#root/src/game/palette.ts";
-import { readFile } from "node:fs/promises";
 import * as THREE from "three";
 import { beforeAll, expect, it } from "vitest";
 import {
   DebrisPhysics,
   debrisRandom,
 } from "#root/src/game/debris/debris-physics.ts";
-import { preloadModels } from "#root/src/game/rendering/models/model-assets.ts";
 
-beforeAll(async () => {
-  const bytes = await readFile(
-    new URL("../../../public/assets/models/arcade-models.glb", import.meta.url),
-  );
-
-  await preloadModels(Uint8Array.from(bytes).buffer);
-});
+beforeAll(preloadTestModels);
 
 const hit = {
   x: 600,

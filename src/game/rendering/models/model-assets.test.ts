@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { preloadTestModels } from "#root/tests/unit/model-support.ts";
 import * as THREE from "three";
 import { beforeAll, expect, it } from "vitest";
 import { disposeObject } from "#root/src/game/code/code-mesh.ts";
@@ -6,7 +6,6 @@ import {
   instantiateModel,
   loadGeometry,
   loadMesh,
-  preloadModels,
   type ModelName,
 } from "#root/src/game/rendering/models/model-assets.ts";
 import {
@@ -14,16 +13,7 @@ import {
   createSpecialist,
 } from "#root/src/game/rendering/models/models3d.ts";
 
-beforeAll(async () => {
-  const bytes = await readFile(
-    new URL(
-      "../../../../public/assets/models/arcade-models.glb",
-      import.meta.url,
-    ),
-  );
-
-  await preloadModels(Uint8Array.from(bytes).buffer);
-});
+beforeAll(preloadTestModels);
 
 function meshes(object: THREE.Object3D): THREE.Mesh[] {
   const result: THREE.Mesh[] = [];
