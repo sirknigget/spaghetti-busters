@@ -1,0 +1,13 @@
+name: Set up project
+description: Install Node.js and project dependencies
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+    - run: npm install --global pnpm@10.33.0
+      shell: bash
+    - run: npm ci
+      shell: bash

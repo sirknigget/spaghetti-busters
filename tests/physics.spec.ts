@@ -1,12 +1,6 @@
+import { startDebrisGame as start } from "./browser-fixtures";
 import type { TestInfo } from "@playwright/test";
 import { expect, test, type Page } from "@playwright/test";
-
-async function start(page: Page) {
-  await page.goto("/");
-  await page.locator("#enter").click();
-  await page.locator("#start").click();
-  await page.waitForFunction(() => !!(window as any).__spaghetti?.world.debris);
-}
 
 test("hits create entropy-driven debris, falling letters, smoke and sparks without changing gameplay", async ({
   page,
@@ -145,17 +139,12 @@ async function verifyRobotWreckage(page: Page, testInfo: TestInfo) {
 }
 
 async function verifyFallingDebris(page: Page, testInfo: TestInfo) {
-  const fall = await page.evaluate(() => {
+  const fall = await page.evaluate(async () => {
+    const modulePath = "/tests/gameplay-snapshot.ts";
+    const { gameplaySnapshot } = await import(modulePath);
+
     const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
-    const gameplay = () =>
-      JSON.stringify({
-        blocks: s.world.blocks,
-        robots: s.world.robots,
-        score: s.progress.score,
-        ammo: s.player.ammo,
-        elapsed: s.progress.elapsed,
-      });
-    const before = gameplay();
+    const before = gameplaySnapshot(s);
     const start = w.debris.bodySnapshots;
 
     for (let i = 0; i < 240; i++) {
@@ -167,7 +156,7 @@ async function verifyFallingDebris(page: Page, testInfo: TestInfo) {
     r.draw();
 
     return {
-      unchanged: gameplay() === before,
+      unchanged: gameplaySnapshot(s) === before,
       start,
       end,
       effects: w.debris.diagnostics,

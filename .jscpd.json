@@ -10,10 +10,10 @@
     "**/test-results/**",
     "**/coverage/**",
     "**/.quality-results/**",
-    "**/.jscpd/**",
     "**/public/**"
   ],
   "reporters": ["console", "json"],
   "output": ".quality-results/jscpd",
-  "failOnEmpty": true
+  "failOnEmpty": true,
+  "exitCode": 1
 }

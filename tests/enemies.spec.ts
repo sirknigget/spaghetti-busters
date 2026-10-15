@@ -1,25 +1,11 @@
+import { enterGame as start, collectBrowserErrors } from "./browser-fixtures";
 import { expect, test, type Page } from "@playwright/test";
-
-async function start(page: Page) {
-  await page.goto("/");
-  await page
-    .getByRole("button", { name: "Click to play", exact: true })
-    .click();
-  await page.locator("#start").click();
-  await page.waitForFunction(() => !!(window as any).__spaghetti);
-}
 
 test("a tough branded robot intercepts shots, thinks, and creates a huge solid block", async ({
   page,
 }) => {
-  const errors: string[] = [];
+  const errors = collectBrowserErrors(page);
 
-  page.on("pageerror", (e) => errors.push(e.message));
-  page.on("response", (response) => {
-    if (response.status() >= 400) {
-      errors.push(`${response.status()} ${response.url()}`);
-    }
-  });
   await start(page);
 
   const shielding = await page.evaluate(async () => {

@@ -83,17 +83,7 @@ export function inspectRobotDismantling() {
 
   const before = { health: robot.health, alive: s.world.robots.length };
 
-  s.world.bullets.push({
-    id: 20015,
-    x: robot.x - 55,
-    y: robot.y,
-    vx: 1080,
-    vy: 0,
-    life: 1,
-    weapon: "single",
-  });
-  s.update(1 / 120);
-  r.draw();
+  hitRobot({ simulation: s, scene: r }, robot, 20015);
 
   return {
     before,
@@ -106,18 +96,26 @@ export function inspectRobotDismantling() {
 
 function wearRobotArmor(s: any, robot: any, r: any) {
   for (let i = 0; i < 14; i++) {
-    s.world.bullets.push({
-      id: 20000 + i,
-      x: robot.x - 55,
-      y: robot.y,
-      vx: 1080,
-      vy: 0,
-      life: 1,
-      weapon: "single",
-    });
-    s.update(1 / 120);
-    r.draw();
+    hitRobot({ simulation: s, scene: r }, robot, 20000 + i);
   }
+}
+
+function hitRobot(
+  context: { simulation: any; scene: any },
+  robot: any,
+  id: number,
+) {
+  context.simulation.world.bullets.push({
+    id,
+    x: robot.x - 55,
+    y: robot.y,
+    vx: 1080,
+    vy: 0,
+    life: 1,
+    weapon: "single",
+  });
+  context.simulation.update(1 / 120);
+  context.scene.draw();
 }
 
 export function inspectHit() {

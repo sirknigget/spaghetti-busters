@@ -1,11 +1,5 @@
+import { startDebrisGame as start } from "./browser-fixtures";
 import { expect, test, type Page } from "@playwright/test";
-
-async function start(page: Page) {
-  await page.goto("/");
-  await page.locator("#enter").click();
-  await page.locator("#start").click();
-  await page.waitForFunction(() => !!(window as any).__spaghetti?.world.debris);
-}
 
 function renderingErrors(page: Page) {
   const errors: string[] = [];

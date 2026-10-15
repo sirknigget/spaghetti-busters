@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { FractureVisual } from "./code-visual";
 import type { DeathLeaf } from "./code-death-cuts";
-import { cloneOwnedMaterial } from "./graphics-resources";
+import { cloneOwnedMaterial, cloneMeshResources } from "./graphics-resources";
 import { createBossArmor } from "./code-boss-armor";
 import { clipBossArmor } from "./code-boss-clipping";
 import { insideRegions } from "./code-visual";
@@ -109,29 +109,9 @@ function attachAngryFace(group: THREE.Group, origin: FaceSource) {
     const copy = face.clone(true);
 
     copy.position.sub(center);
-    cloneFaceResources(copy);
+    cloneMeshResources(copy);
     group.add(copy);
   }
-}
-
-function cloneFaceResources(copy: THREE.Object3D) {
-  copy.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) {
-      return;
-    }
-
-    const part = object;
-
-    if (part.geometry) {
-      part.geometry = part.geometry.clone();
-    }
-
-    if (part.material) {
-      part.material = Array.isArray(part.material)
-        ? part.material.map(cloneOwnedMaterial)
-        : cloneOwnedMaterial(part.material);
-    }
-  });
 }
 
 function frontArea(geometry: THREE.BufferGeometry) {

@@ -1,3 +1,4 @@
+import { randomDebrisSpin } from "./debris-spin";
 import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { debrisRandom } from "./debris-random";
@@ -38,7 +39,7 @@ function crumbleFleck(i: number, source: CrumbleSource): Fleck {
 
   return {
     ...crumbleTrajectory(position, random, energy),
-    ...crumbleSpin(random),
+    ...randomDebrisSpin(random, CRUMBLE),
     scale: new THREE.Vector3(size, size * CRUMBLE.heightScale, size * HALF),
     color: new THREE.Color(
       random() < HALF ? PALETTE.debris.dark : PALETTE.debris.light,
@@ -69,23 +70,6 @@ function crumbleTrajectory(
       (random() - HALF) * energy,
       CRUMBLE.lift + random() * energy * CRUMBLE.energyLift,
       (random() - HALF) * CRUMBLE.depthSpeed,
-    ),
-  };
-}
-
-function crumbleSpin(random: () => number) {
-  return {
-    rotation: new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(
-        random() * CRUMBLE.rotationSpan,
-        random() * CRUMBLE.rotationSpan,
-        random() * CRUMBLE.rotationSpan,
-      ),
-    ),
-    spin: new THREE.Vector3(
-      random() * CRUMBLE.spinSpan,
-      random() * CRUMBLE.spinSpan,
-      random() * CRUMBLE.spinSpan,
     ),
   };
 }

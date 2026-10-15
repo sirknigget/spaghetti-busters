@@ -1,7 +1,8 @@
+import { createGlyphTexture } from "./glyph-texture";
 import * as THREE from "three";
 import type { Simulation, Particle } from "./simulation";
 import { loadGeometry } from "./model-assets";
-import { HALF, HEIGHT, PARTICLE } from "./world-settings";
+import { HEIGHT, PARTICLE } from "./world-settings";
 
 const LETTER_TEXTURE_HEIGHT = 40;
 const LETTER_TEXTURE_WIDTH = 32;
@@ -45,7 +46,11 @@ export class WorldParticles {
       let texture = this.letterTextures.get(key);
 
       if (!texture) {
-        texture = letterTexture(particle);
+        texture = createGlyphTexture(particle, {
+          width: LETTER_TEXTURE_WIDTH,
+          height: LETTER_TEXTURE_HEIGHT,
+          font: "bold 27px monospace",
+        });
         this.letterTextures.set(key, texture);
       }
 
@@ -95,27 +100,6 @@ function disposeParticle(mesh: THREE.Mesh) {
   }
 
   mesh.removeFromParent();
-}
-
-function letterTexture(particle: Particle) {
-  const canvas = document.createElement("canvas");
-
-  canvas.width = LETTER_TEXTURE_WIDTH;
-  canvas.height = LETTER_TEXTURE_HEIGHT;
-
-  const c = canvas.getContext("2d")!;
-
-  c.font = "bold 27px monospace";
-  c.fillStyle = particle.color;
-  c.textAlign = "center";
-  c.textBaseline = "middle";
-  c.fillText(particle.char!, canvas.width * HALF, canvas.height * HALF);
-
-  const texture = new THREE.CanvasTexture(canvas);
-
-  texture.colorSpace = THREE.SRGBColorSpace;
-
-  return texture;
 }
 
 function animateParticle(mesh: THREE.Mesh, particle: Particle) {

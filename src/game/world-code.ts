@@ -1,8 +1,9 @@
+import { disposeObjectMap } from "./graphics-resources";
 import * as THREE from "three";
 import type { Simulation, Block } from "./simulation";
 import { createCodeMesh, disposeObject } from "./code-mesh";
-import { codeTumble, lightCode, needsCodeRefresh } from "./world-code-lighting";
-import { HEIGHT, TUMBLE } from "./world-settings";
+import { placeCode, lightCode, needsCodeRefresh } from "./world-code-lighting";
+import { TUMBLE } from "./world-settings";
 
 interface CodeMotion {
   frozen: boolean;
@@ -78,41 +79,23 @@ export class WorldCode {
   }
 
   reset() {
-    for (const mesh of this.blocks.values()) {
-      disposeObject(mesh);
-    }
-
-    this.blocks.clear();
+    disposeObjectMap(this.blocks);
   }
 }
 
 function animateCode(mesh: THREE.Group, block: Block, motion: CodeMotion) {
   const { frozen, reducedMotion, effectsDt } = motion;
-  const tumble = codeTumble(block);
-  const phase =
-    block.id * TUMBLE.idPhase +
-    block.age *
-      (block.generation > 0 ? TUMBLE.fragmentSpeed : TUMBLE.rootSpeed);
   const rattle =
     block.angry && !frozen && !reducedMotion
       ? Math.sin(block.age * TUMBLE.rattleFrequency) * TUMBLE.rattleAmplitude
       : 0;
 
-  mesh.position.set(
-    block.x + rattle,
-    HEIGHT -
-      block.y +
-      Math.cos(block.age * TUMBLE.rattleYFrequency) *
-        Math.abs(rattle) *
-        TUMBLE.rattleYScale,
-    0,
-  );
-  mesh.rotation.set(
-    Math.sin(phase) * tumble,
-    Math.cos(phase * TUMBLE.yFrequency) * tumble,
-    -block.angle,
-    "ZYX",
-  );
+  placeCode(mesh, block);
+  mesh.position.x += rattle;
+  mesh.position.y +=
+    Math.cos(block.age * TUMBLE.rattleYFrequency) *
+    Math.abs(rattle) *
+    TUMBLE.rattleYScale;
   blendSplitPose(mesh, effectsDt);
 }
 

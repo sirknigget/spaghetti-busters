@@ -1,3 +1,4 @@
+import { disposeObjectMap } from "./graphics-resources";
 import * as THREE from "three";
 import { disposeObject } from "./code-mesh";
 import { HEIGHT } from "./world-settings";
@@ -42,10 +43,6 @@ export class EntityCache<T extends Entity> {
   }
 
   reset() {
-    for (const mesh of this.meshes.values()) {
-      disposeObject(mesh);
-    }
-
-    this.meshes.clear();
+    disposeObjectMap(this.meshes);
   }
 }

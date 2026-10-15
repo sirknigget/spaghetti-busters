@@ -49,26 +49,12 @@ export async function verifyPausedTransport(page: Page) {
     return { transport: a.score.transport, clock: a.graph.context.currentTime };
   });
 
-  // The audio clock keeps processing while the musical transport remains paused.
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () => (window as any).__audioTest.graph.context.currentTime,
-      ),
-    )
-    .toBeGreaterThan(paused.clock + 0.1);
+  await verifySuspendedTransport(page, paused);
   expect(
-    await page.evaluate(() => {
-      const a = (window as any).__audioTest;
-
-      return {
-        transport: a.score.transport,
-        timer: a.score.timer,
-        voices: a.synth.sources.size,
-        gain: a.graph.master.gain.value,
-      };
-    }),
-  ).toEqual({ transport: paused.transport, timer: null, voices: 0, gain: 0 });
+    await page.evaluate(
+      () => (window as any).__audioTest.graph.master.gain.value,
+    ),
+  ).toBe(0);
 }
 
 export async function verifyResumedScheduler(page: Page) {
@@ -108,24 +94,32 @@ export async function verifyMutedTransport(page: Page) {
     return { transport: a.score.transport, clock: a.graph.context.currentTime };
   });
 
+  await verifySuspendedTransport(page, muted);
+}
+
+async function verifySuspendedTransport(
+  page: Page,
+  before: { transport: number; clock: number },
+) {
+  // Suspension stops music transport, while the audio clock keeps processing.
   await expect
     .poll(() =>
       page.evaluate(
         () => (window as any).__audioTest.graph.context.currentTime,
       ),
     )
-    .toBeGreaterThan(muted.clock + 0.1);
+    .toBeGreaterThan(before.clock + 0.1);
   expect(
     await page.evaluate(() => {
-      const a = (window as any).__audioTest;
+      const audio = (window as any).__audioTest;
 
       return {
-        transport: a.score.transport,
-        timer: a.score.timer,
-        voices: a.synth.sources.size,
+        transport: audio.score.transport,
+        timer: audio.score.timer,
+        voices: audio.synth.sources.size,
       };
     }),
-  ).toEqual({ transport: muted.transport, timer: null, voices: 0 });
+  ).toEqual({ transport: before.transport, timer: null, voices: 0 });
 }
 
 export async function verifyFinishSting(page: Page) {

@@ -1,3 +1,4 @@
+import { gameplaySnapshot } from "./gameplay-snapshot";
 import { damage } from "../src/game/simulation-damage";
 import { explode } from "../src/game/simulation-explode";
 
@@ -148,15 +149,7 @@ function prepareSpecialDeathBlock(r: any, s: any, mode: string) {
 
 export function inspectSettled() {
   const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
-  const gameplay = () =>
-    JSON.stringify({
-      blocks: s.world.blocks,
-      robots: s.world.robots,
-      score: s.progress.score,
-      ammo: s.player.ammo,
-      elapsed: s.progress.elapsed,
-    });
-  const before = gameplay();
+  const before = gameplaySnapshot(s);
   const bodies = w.debris.bodySnapshots;
 
   r.draw();
@@ -173,7 +166,7 @@ export function inspectSettled() {
   r.draw();
 
   return {
-    unchanged: gameplay() === before,
+    unchanged: gameplaySnapshot(s) === before,
     pauseSafe,
     start,
     end: w.debris.bodySnapshots.filter((body: any) => body.kind === "code"),

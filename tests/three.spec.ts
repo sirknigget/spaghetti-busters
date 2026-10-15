@@ -1,14 +1,6 @@
+import { enterGame as start, verifyFrozenGameplay } from "./browser-fixtures";
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
-
-async function start(page: import("@playwright/test").Page) {
-  await page.goto("/");
-  await page
-    .getByRole("button", { name: "Click to play", exact: true })
-    .click();
-  await page.locator("#start").click();
-  await page.waitForFunction(() => !!(window as any).__spaghetti);
-}
 
 test("WebGL renders solid code and models with real three-axis rotation and damage holes", async ({
   page,
@@ -69,7 +61,7 @@ test("WebGL context loss pauses safely and restores the scene", async ({
   await expect(page.locator("#game-overlay")).toBeVisible();
   await expect(page.locator("#resume")).toBeDisabled();
 
-  const time = await verifyContextLossPause(page);
+  const time = await verifyFrozenGameplay(page);
 
   await page.evaluate(() =>
     (window as any).__contextExtension.restoreContext(),
@@ -90,28 +82,6 @@ test("WebGL context loss pauses safely and restores the scene", async ({
   expect(box!.width / box!.height).toBeCloseTo(16 / 9, 2);
   expect(box!.width).toBeLessThanOrEqual(1024);
 });
-
-async function verifyContextLossPause(page: Page) {
-  const time = await page.evaluate(
-    () => (window as any).__spaghetti.simulation.progress.elapsed,
-  );
-  const lostFrame = await page.evaluate(
-    () => (window as any).__spaghetti.scene.lastFrame,
-  );
-
-  await expect
-    .poll(() =>
-      page.evaluate(() => (window as any).__spaghetti.scene.lastFrame),
-    )
-    .toBeGreaterThan(lostFrame);
-  expect(
-    await page.evaluate(
-      () => (window as any).__spaghetti.simulation.progress.elapsed,
-    ),
-  ).toBe(time);
-
-  return time;
-}
 
 async function inspectInitialWebGL(page: Page) {
   return await page.evaluate(async () => {

@@ -1,10 +1,11 @@
+import { collectBrowserErrors, enterGame } from "./browser-fixtures";
 import type { Page, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 test("fifth wave announces a solid factory boss, tracks damage and produces code; timeout stays legible", async ({
   page,
 }, testInfo) => {
-  const errors: string[] = collectBossErrors(page);
+  const errors: string[] = collectBrowserErrors(page);
 
   await startBossBattle(page);
 
@@ -42,24 +43,8 @@ test("fifth wave announces a solid factory boss, tracks damage and produces code
 
 async function startBossBattle(page: Page) {
   await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
-  await page.goto("/");
-  await page.locator("#enter").click();
-  await page.locator("#start").click();
-  await page.waitForFunction(() => !!(window as any).__spaghetti);
+  await enterGame(page);
   await page.clock.pauseAt(new Date("2026-01-01T00:01:00Z"));
-}
-
-function collectBossErrors(page: Page) {
-  const errors: string[] = [];
-
-  page.on("pageerror", (e) => errors.push(e.message));
-  page.on("response", (r) => {
-    if (r.status() >= 400) {
-      errors.push(`${r.status()} ${r.url()}`);
-    }
-  });
-
-  return errors;
 }
 
 async function inspectBossEntry(page: Page) {

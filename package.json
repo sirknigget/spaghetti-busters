@@ -16,11 +16,11 @@
     "lint:eslint": "eslint . --max-warnings 0",
     "lint:css": "stylelint \"src/**/*.css\" --max-warnings 0",
     "lint:duplicates": "npm run lint:duplicates:exact && npm run lint:duplicates:identifiers && npm run lint:duplicates:renamed && npm run lint:duplicates:similar && npm run lint:duplicates:semantic",
-    "lint:duplicates:exact": "jscpd --config .jscpd.json --kind exact --min-tokens 53 --min-lines 9 --baseline .jscpd/exact.json --fail-on-new-clones 0 --report-name exact",
-    "lint:duplicates:identifiers": "jscpd --config .jscpd.json --kind renamed --ignore-identifiers --min-tokens 110 --min-lines 16 --baseline .jscpd/identifiers.json --fail-on-new-clones 0 --report-name identifiers",
-    "lint:duplicates:renamed": "jscpd --config .jscpd.json --kind renamed --ignore-identifiers --ignore-literals --ignore-annotations --min-tokens 204 --min-lines 1 --baseline .jscpd/renamed.json --fail-on-new-clones 0 --report-name renamed",
-    "lint:duplicates:similar": "jscpd --config .jscpd.json --kind similar,gap,ast --similarity 0.75 --min-nodes 1 --max-gap-lines 12 --min-tokens 19 --min-lines 5 --baseline .jscpd/similar.json --fail-on-new-clones 0 --report-name similar",
-    "lint:duplicates:semantic": "jscpd --config .jscpd.json --kind semantic --semantic --semantic-download CodeRankEmbed --semantic-model CodeRankEmbed --semantic-scope all --semantic-same-threshold 0.84 --semantic-threshold 0.84 --min-tokens 36 --min-lines 1 --baseline .jscpd/semantic.json --fail-on-new-clones 0 --report-name semantic"
+    "lint:duplicates:exact": "jscpd --config .jscpd.json --kind exact --min-tokens 53 --min-lines 9 --report-name exact",
+    "lint:duplicates:identifiers": "jscpd --config .jscpd.json --kind renamed --ignore-identifiers --min-tokens 53 --min-lines 16 --report-name identifiers",
+    "lint:duplicates:renamed": "jscpd --config .jscpd.json --kind renamed --ignore-identifiers --ignore-literals --ignore-annotations --min-tokens 204 --min-lines 1 --report-name renamed",
+    "lint:duplicates:similar": "jscpd --config .jscpd.json --kind similar,gap,ast --similarity 0.75 --min-nodes 1 --max-gap-lines 12 --min-tokens 19 --min-lines 5 --report-name similar",
+    "lint:duplicates:semantic": "jscpd --config .jscpd.json --kind semantic --semantic --semantic-download CodeRankEmbed --semantic-model CodeRankEmbed --semantic-scope all --semantic-same-threshold 0.84 --semantic-threshold 0.84 --min-tokens 36 --min-lines 1 --report-name semantic"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",
