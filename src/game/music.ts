@@ -11,6 +11,8 @@ export interface MusicTrack {
 }
 
 export const MUSIC_CROSSFADE_SECONDS = 3;
+// MIDI pitches, rests, and phrase indices are intentionally written as score data.
+/* oxlint-disable no-magic-numbers */
 export const MUSIC_TRACKS: readonly MusicTrack[] = [
   {
     name: "Prism Circuit",
@@ -90,6 +92,10 @@ export const MUSIC_TRACKS: readonly MusicTrack[] = [
   },
 ];
 
+/* oxlint-enable no-magic-numbers */
+
+const BEATS_PER_BAR = 4;
+
 export function trackDuration(track: MusicTrack): number {
-  return (track.bars * 4 * 60) / track.bpm;
+  return (track.bars * BEATS_PER_BAR * 60) / track.bpm;
 }

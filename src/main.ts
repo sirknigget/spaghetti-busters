@@ -2,6 +2,15 @@ import "./style.css";
 import { AudioEngine } from "./game/audio";
 import type { GameController } from "./game/scene";
 
+const HUD = {
+  scoreDigits: 6,
+  waveDigits: 2,
+  bossAnnouncementMs: 1000,
+  toastMs: 2500,
+  percent: 100,
+  lastWaveNameIndex: 4,
+};
+
 const bolt =
   '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m14 2-9 12h6l-1 8 9-13h-6l1-7Z" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/></svg>';
 const audioIcon =
@@ -36,7 +45,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
       <div class="tagline">Clean code. <span>Dirty work.</span></div>
       <p class="hero-description">The codebase is out of control.<br>You're the specialist. Bring a bigger cannon.</p>
       <div class="menu-actions"><button id="start" class="primary-button"><span>LET’S BUST SOME CODE</span><span class="button-arrow">↗</span></button><button id="help" class="help-button" aria-label="Help: how to play">HOW TO PLAY <span>?</span></button></div>
-      <div class="hero-meta"><span><i class="live-dot"></i> INFINITE BAD CODE. ONE GOOD DEVELOPER.</span><span>BEST <b id="menu-best">${String(best).padStart(6, "0")}</b></span></div>
+      <div class="hero-meta"><span><i class="live-dot"></i> INFINITE BAD CODE. ONE GOOD DEVELOPER.</span><span>BEST <b id="menu-best">${String(best).padStart(HUD.scoreDigits, "0")}</b></span></div>
     </section>
     <div class="art-caption" aria-hidden="true"><span>MEET YOUR CODE QUALITY SPECIALIST</span><span>WHITE SUIT. ZERO MERCY. ↗</span></div>
     <footer class="menu-footer"><span class="footer-pill">THE MISSION</span><span>BLAST THE BLOAT.</span><i>✳</i><span>BREAK THE BLOCKS.</span><i>✳</i><span>SHIP CLEAN.</span><span class="footer-version">v2.0 <span> / </span> BUILT TO BREAK THINGS</span></footer>
@@ -83,8 +92,11 @@ function announceBoss() {
   clearTimeout(toastTimeout);
   $("#toast").classList.remove("visible");
   $("#boss-announcement").hidden = false;
-  bossAnnouncementRemaining = 1000;
-  bossAnnouncementTimer = setTimeout(clearBossAnnouncement, 1000);
+  bossAnnouncementRemaining = HUD.bossAnnouncementMs;
+  bossAnnouncementTimer = setTimeout(
+    clearBossAnnouncement,
+    HUD.bossAnnouncementMs,
+  );
 }
 
 $("#enter").addEventListener("click", () => {
@@ -95,16 +107,16 @@ $("#enter").addEventListener("click", () => {
   $("#opening-audio-status").textContent = "♫ OPENING THEME · SOUND ON";
   $("#start").focus();
 });
-document
-  .querySelectorAll<HTMLButtonElement>("#menu button, #help-dialog button")
-  .forEach((button) => {
-    button.addEventListener("pointerenter", () => {
-      if (menuSoundUnlocked) audio.play("menu-hover");
-    });
-    button.addEventListener("click", () => {
-      if (menuSoundUnlocked) audio.play("menu-click");
-    });
+for (const button of document.querySelectorAll<HTMLButtonElement>(
+  "#menu button, #help-dialog button",
+)) {
+  button.addEventListener("pointerenter", () => {
+    if (menuSoundUnlocked) audio.play("menu-hover");
   });
+  button.addEventListener("click", () => {
+    if (menuSoundUnlocked) audio.play("menu-click");
+  });
+}
 
 function showToast(message: string) {
   if (bossAnnouncementRemaining > 0) return;
@@ -113,7 +125,7 @@ function showToast(message: string) {
   clearTimeout(toastTimeout);
   toastTimeout = setTimeout(
     () => $("#toast").classList.remove("visible"),
-    2500,
+    HUD.toastMs,
   );
 }
 
@@ -129,105 +141,101 @@ async function start() {
   audio.enterGame();
   try {
     const { createGame } = await import("./game/scene");
-    if (!controller)
-      controller = await createGame("game-canvas", {
-        onState: (s) => {
-          $("#score").textContent = String(s.score).padStart(6, "0");
-          if (!s.isBossWave) bossAnnounced = false;
-          const bossHealth = s.bossHealth;
-          $("#boss-health").hidden = !bossHealth || bossHealth.current <= 0;
-          if (bossHealth) {
-            const healthPercent = Math.max(
-              0,
-              Math.min(
-                100,
-                (bossHealth.current / Math.max(1, bossHealth.max)) * 100,
-              ),
-            );
-            $("#boss-health-value").textContent =
-              `${Math.ceil(bossHealth.current)} / ${Math.ceil(bossHealth.max)}`;
-            $("#boss-health-fill").style.width = `${healthPercent}%`;
-            $("#boss-health-meter").setAttribute(
-              "aria-valuenow",
-              String(Math.round(healthPercent)),
-            );
-          }
-          const waveNames = [
-            "THE LEGACY BEGINS",
-            "CALLBACK CATASTROPHE",
-            "DEPENDENCY HELL",
-            "ENTERPRISE EDITION",
-            "PRODUCTION IS ON FIRE",
-          ];
-          $("#wave").innerHTML =
-            `${String(s.wave).padStart(2, "0")} <small>/ ${s.isBossWave ? "FACTORYFACTORYFACTORY" : waveNames[Math.min(s.wave - 1, 4)]}</small>`;
-          $("#combo").textContent =
-            s.combo > 1
-              ? `${s.combo}× COMBO · KEEP IT CLEAN`
-              : "READY TO REFACTOR";
-          $("#weapon").textContent = `${s.weapon.toUpperCase()} SHOT`;
-          $("#ammo").textContent =
-            s.weapon === "single"
-              ? "∞ UNLIMITED AMMO"
-              : `${s.ammo} ROUNDS REMAINING`;
-          for (const type of specialTypes) {
-            $(`#${type}-ammo`).textContent = String(s.specialAmmo[type]);
-            const slot = $(`#select-${type}`);
-            slot.classList.toggle("selected", s.specialWeapon === type);
-            slot.classList.toggle("empty", s.specialAmmo[type] === 0);
-            slot.setAttribute("aria-pressed", String(s.specialWeapon === type));
-          }
-          $("#game-screen").classList.toggle("stunned", s.isStunned);
-          $("#game-screen").classList.toggle(
-            "reviewing",
-            s.freezeRemaining > 0,
+    controller ??= await createGame("game-canvas", {
+      onState: (s) => {
+        $("#score").textContent = String(s.score).padStart(
+          HUD.scoreDigits,
+          "0",
+        );
+        if (!s.isBossWave) bossAnnounced = false;
+        const bossHealth = s.bossHealth;
+        $("#boss-health").hidden = !bossHealth || bossHealth.current <= 0;
+        if (bossHealth) {
+          const healthPercent = Math.max(
+            0,
+            Math.min(
+              HUD.percent,
+              (bossHealth.current / Math.max(1, bossHealth.max)) * HUD.percent,
+            ),
           );
-          if (s.freezeRemaining > 0)
-            $("#combo").textContent =
-              `ENEMIES FROZEN · ${s.freezeRemaining.toFixed(1)}s`;
-          if (s.isStunned)
-            $("#combo").textContent =
-              `EVENT LOOP BLOCKED · ${s.stunRemaining.toFixed(1)}s`;
-          $<HTMLButtonElement>("#fire-special").disabled =
-            s.isStunned || s.specialAmmo[s.specialWeapon] === 0;
-          audio.setWave(s.wave);
-          $("#track-name").textContent = audio.trackName.toUpperCase();
-        },
-        onEvent: (event) => {
-          if (event === "boss") {
-            if (bossAnnounced) return;
-            announceBoss();
-          }
-          if (event === "boss-defeated") {
-            clearBossAnnouncement();
-            $("#boss-health").hidden = true;
-            showToast("FACTORY SHUT DOWN // BUILD APPROVED");
-          }
-          if (event !== "gameover")
-            audio.play(event === "shoot" ? "shot" : event);
-          if (event === "wave") showToast("NEW WAVE // MORE CODE. LESS MERCY.");
-          if (event === "pickup") showToast("BONUS COLLECTED // LET IT RIP!");
-          if (event === "ammo") showToast("AMMO LOADED // BACK TO WORK");
-          if (event === "hazard")
-            showToast("TIMEOUT INCOMING // SHOOT IT OR DODGE!");
-          if (event === "stun")
-            showToast("EVENT LOOP BLOCKED // CLEANER PARALYZED");
-          if (event === "recover") showToast("BACK ONLINE // KEEP CLEANING");
-          if (event === "robot")
-            showToast("AI AGENT INCOMING // ARMORED · 15 HITS TO DESTROY");
-          if (event === "robot-destroy")
-            showToast("AI AGENT DISMANTLED // ARMOR BREACHED");
-          if (event === "generate")
-            showToast("GENERATION COMPLETE // MORE TECH DEBT");
-          if (event === "review")
-            showToast("CODE REVIEW // ALL ENEMIES FROZEN FOR 2s");
-          if (event === "lint")
-            showToast("LINT BOMB // BIG BLOCKS SPLIT · SMALL BLOCKS CLEARED");
-          if (event === "bonus")
-            showToast("BONUS INCOMING // SHOOT TO COLLECT");
-        },
-        onGameOver: (score, wave) => endRun(score, wave),
-      });
+          $("#boss-health-value").textContent =
+            `${Math.ceil(bossHealth.current)} / ${Math.ceil(bossHealth.max)}`;
+          $("#boss-health-fill").style.width = `${healthPercent}%`;
+          $("#boss-health-meter").setAttribute(
+            "aria-valuenow",
+            String(Math.round(healthPercent)),
+          );
+        }
+        const waveNames = [
+          "THE LEGACY BEGINS",
+          "CALLBACK CATASTROPHE",
+          "DEPENDENCY HELL",
+          "ENTERPRISE EDITION",
+          "PRODUCTION IS ON FIRE",
+        ];
+        $("#wave").innerHTML =
+          `${String(s.wave).padStart(HUD.waveDigits, "0")} <small>/ ${s.isBossWave ? "FACTORYFACTORYFACTORY" : waveNames[Math.min(s.wave - 1, HUD.lastWaveNameIndex)]}</small>`;
+        $("#combo").textContent =
+          s.combo > 1
+            ? `${s.combo}× COMBO · KEEP IT CLEAN`
+            : "READY TO REFACTOR";
+        $("#weapon").textContent = `${s.weapon.toUpperCase()} SHOT`;
+        $("#ammo").textContent =
+          s.weapon === "single"
+            ? "∞ UNLIMITED AMMO"
+            : `${s.ammo} ROUNDS REMAINING`;
+        for (const type of specialTypes) {
+          $(`#${type}-ammo`).textContent = String(s.specialAmmo[type]);
+          const slot = $(`#select-${type}`);
+          slot.classList.toggle("selected", s.specialWeapon === type);
+          slot.classList.toggle("empty", s.specialAmmo[type] === 0);
+          slot.setAttribute("aria-pressed", String(s.specialWeapon === type));
+        }
+        $("#game-screen").classList.toggle("stunned", s.isStunned);
+        $("#game-screen").classList.toggle("reviewing", s.freezeRemaining > 0);
+        if (s.freezeRemaining > 0)
+          $("#combo").textContent =
+            `ENEMIES FROZEN · ${s.freezeRemaining.toFixed(1)}s`;
+        if (s.isStunned)
+          $("#combo").textContent =
+            `EVENT LOOP BLOCKED · ${s.stunRemaining.toFixed(1)}s`;
+        $<HTMLButtonElement>("#fire-special").disabled =
+          s.isStunned || s.specialAmmo[s.specialWeapon] === 0;
+        audio.setWave(s.wave);
+        $("#track-name").textContent = audio.trackName.toUpperCase();
+      },
+      onEvent: (event) => {
+        if (event === "boss" && bossAnnounced) return;
+        if (event === "boss") announceBoss();
+        if (event === "boss-defeated") {
+          clearBossAnnouncement();
+          $("#boss-health").hidden = true;
+          showToast("FACTORY SHUT DOWN // BUILD APPROVED");
+        }
+        if (event !== "gameover")
+          audio.play(event === "shoot" ? "shot" : event);
+        if (event === "wave") showToast("NEW WAVE // MORE CODE. LESS MERCY.");
+        if (event === "pickup") showToast("BONUS COLLECTED // LET IT RIP!");
+        if (event === "ammo") showToast("AMMO LOADED // BACK TO WORK");
+        if (event === "hazard")
+          showToast("TIMEOUT INCOMING // SHOOT IT OR DODGE!");
+        if (event === "stun")
+          showToast("EVENT LOOP BLOCKED // CLEANER PARALYZED");
+        if (event === "recover") showToast("BACK ONLINE // KEEP CLEANING");
+        if (event === "robot")
+          showToast("AI AGENT INCOMING // ARMORED · 15 HITS TO DESTROY");
+        if (event === "robot-destroy")
+          showToast("AI AGENT DISMANTLED // ARMOR BREACHED");
+        if (event === "generate")
+          showToast("GENERATION COMPLETE // MORE TECH DEBT");
+        if (event === "review")
+          showToast("CODE REVIEW // ALL ENEMIES FROZEN FOR 2s");
+        if (event === "lint")
+          showToast("LINT BOMB // BIG BLOCKS SPLIT · SMALL BLOCKS CLEARED");
+        if (event === "bonus") showToast("BONUS INCOMING // SHOOT TO COLLECT");
+      },
+      onGameOver: (score, wave) => endRun(score, wave),
+    });
     $("#menu").hidden = true;
     $("#game-screen").hidden = false;
     $("#game-overlay").hidden = true;
@@ -277,21 +285,25 @@ function endRun(score: number, wave: number) {
       localStorage.setItem("spaghetti-best", String(best));
     } catch {}
   }
-  $("#menu-best").textContent = String(best).padStart(6, "0");
+  $("#menu-best").textContent = String(best).padStart(HUD.scoreDigits, "0");
   $("#overlay-eyebrow").textContent = "THE TECH DEBT GOT THROUGH";
   $("#overlay-title").innerHTML = "BUILD<br>FAILED.";
   $("#overlay-description").textContent =
     "A little spaghetti escaped. A fresh run awaits.";
   $("#results").innerHTML =
-    `<div><span>CLEANUP SCORE</span><b>${String(score).padStart(6, "0")}</b></div><div><span>WAVE REACHED</span><b>${String(wave).padStart(2, "0")}</b></div>`;
+    `<div><span>CLEANUP SCORE</span><b>${String(score).padStart(HUD.scoreDigits, "0")}</b></div><div><span>WAVE REACHED</span><b>${String(wave).padStart(HUD.waveDigits, "0")}</b></div>`;
   $("#results").hidden = false;
   $("#resume").hidden = true;
   $("#game-overlay").hidden = false;
   $("#restart").focus();
 }
 
-$("#start").addEventListener("click", start);
-$("#help-play").addEventListener("click", start);
+$("#start").addEventListener("click", () => {
+  void start();
+});
+$("#help-play").addEventListener("click", () => {
+  void start();
+});
 $("#help").addEventListener("click", () =>
   $<HTMLDialogElement>("#help-dialog").showModal(),
 );
@@ -304,7 +316,9 @@ $<HTMLDialogElement>("#help-dialog").addEventListener("click", (e) => {
 });
 $("#pause").addEventListener("click", () => setPause(!paused));
 $("#resume").addEventListener("click", () => setPause(false));
-$("#restart").addEventListener("click", start);
+$("#restart").addEventListener("click", () => {
+  void start();
+});
 for (const type of specialTypes)
   $(`#select-${type}`).addEventListener("click", () =>
     controller?.selectSpecial(type),
@@ -320,13 +334,15 @@ $("#quit").addEventListener("click", () => {
   $("#start span").textContent = "LET’S BUST SOME CODE";
   $("#start").focus();
 });
-document.querySelectorAll<HTMLButtonElement>("[data-sound]").forEach((button) =>
+for (const button of document.querySelectorAll<HTMLButtonElement>(
+  "[data-sound]",
+)) {
   button.addEventListener("click", () => {
     audio.setEnabled(!audio.enabled);
     $("#opening-audio-status").textContent = audio.enabled
       ? "♫ OPENING THEME · SOUND ON"
       : "SOUND OFF";
-    document.querySelectorAll("[data-sound]").forEach((b) => {
+    for (const b of document.querySelectorAll("[data-sound]")) {
       b.setAttribute(
         "aria-label",
         audio.enabled ? "Turn sound off" : "Turn sound on",
@@ -334,9 +350,9 @@ document.querySelectorAll<HTMLButtonElement>("[data-sound]").forEach((button) =>
       b.classList.toggle("muted", !audio.enabled);
       const label = b.querySelector("span");
       if (label) label.textContent = audio.enabled ? "SOUND ON" : "SOUND OFF";
-    });
-  }),
-);
+    }
+  });
+}
 document.addEventListener("keydown", (e) => {
   if (e.code === "Escape" || e.code === "KeyP") {
     if ($<HTMLDialogElement>("#help-dialog").open) return;

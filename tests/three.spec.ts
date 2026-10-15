@@ -133,7 +133,14 @@ test("WebGL context loss pauses safely and restores the scene", async ({
   const time = await page.evaluate(
     () => (window as any).__spaghetti.simulation.elapsed,
   );
-  await page.waitForTimeout(200);
+  const lostFrame = await page.evaluate(
+    () => (window as any).__spaghetti.scene.lastFrame,
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__spaghetti.scene.lastFrame),
+    )
+    .toBeGreaterThan(lostFrame);
   expect(
     await page.evaluate(() => (window as any).__spaghetti.simulation.elapsed),
   ).toBe(time);

@@ -23,8 +23,51 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - run: npm install --global pnpm@10.33.0
       - run: npm ci
       - run: npm run format:check
+
+  eslint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --global pnpm@10.33.0
+      - run: npm ci
+      - run: npm run lint:eslint
+
+  oxlint:
+    name: Oxlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --global pnpm@10.33.0
+      - run: npm ci
+      - run: npm run lint:oxlint
+
+  stylelint:
+    name: Stylelint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --global pnpm@10.33.0
+      - run: npm ci
+      - run: npm run lint:css
 
   build:
     name: Build
@@ -36,6 +79,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - run: npm install --global pnpm@10.33.0
       - run: npm ci
       - run: npm run build
 
@@ -49,6 +93,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - run: npm install --global pnpm@10.33.0
       - run: npm ci
       - run: npm test
 
@@ -66,6 +111,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - run: npm install --global pnpm@10.33.0
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e -- --shard=${{ matrix.shard }}/2

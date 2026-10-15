@@ -1,6 +1,15 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
+import { readFile } from "node:fs/promises";
+import { preloadModels } from "./model-assets";
 import * as THREE from "three";
 import { DebrisPhysics, debrisRandom } from "./debris-physics";
+
+beforeAll(async () => {
+  const bytes = await readFile(
+    new URL("../../public/assets/models/arcade-models.glb", import.meta.url),
+  );
+  await preloadModels(Uint8Array.from(bytes).buffer);
+});
 
 const hit = {
   x: 600,
