@@ -1,18 +1,18 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
-import { loadGeometry } from "#root/src/game/rendering/models/model-assets.ts";
+import { loadGeometry } from "#root/src/game/graphics/model-assets.ts";
 import {
   MAX_FLECKS,
   HALF,
   DRAW,
 } from "#root/src/game/debris/debris-settings.ts";
-import { disposeObject } from "#root/src/game/rendering/graphics-resources.ts";
+import { disposeObject } from "#root/src/game/graphics/graphics-resources.ts";
 import { type Fleck } from "#root/src/game/debris/debris-types.ts";
 
 const FLECK_ROUGHNESS = 0.86;
 const FLECK_METALNESS = 0.12;
 
-export function createShards() {
+function createShards() {
   const mesh = new THREE.InstancedMesh(
     loadGeometry("solid-impact-shard"),
     new THREE.MeshStandardMaterial({
@@ -30,7 +30,7 @@ export function createShards() {
   return mesh;
 }
 
-export function createSparks() {
+function createSparks() {
   const mesh = new THREE.InstancedMesh(
     loadGeometry("spark-fleck"),
     new THREE.MeshBasicMaterial({
@@ -46,7 +46,7 @@ export function createSparks() {
   return mesh;
 }
 
-export function createSmoke(smokeAlpha: THREE.InstancedBufferAttribute) {
+function createSmoke(smokeAlpha: THREE.InstancedBufferAttribute) {
   const smokeGeometry = loadGeometry("smoke-quad");
 
   smokeGeometry.setAttribute("instanceAlpha", smokeAlpha);

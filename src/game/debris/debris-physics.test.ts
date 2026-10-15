@@ -1,11 +1,9 @@
+import { debrisRandom } from "#root/src/game/debris/debris-random.ts";
 import { preloadTestModels } from "#root/tests/unit/model-support.ts";
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
 import { beforeAll, expect, it } from "vitest";
-import {
-  DebrisPhysics,
-  debrisRandom,
-} from "#root/src/game/debris/debris-physics.ts";
+import { DebrisPhysics } from "#root/src/game/debris/debris-physics.ts";
 
 beforeAll(preloadTestModels);
 

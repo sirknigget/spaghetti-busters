@@ -63,6 +63,7 @@ A single **Click to play** prelude unlocks browser audio; the opening screen the
 ```sh
 npm run format:check
 npm run lint
+npm run report:dependencies
 npm run build
 npm run preview
 npm test
@@ -80,6 +81,12 @@ covers the supplied SonarJS, Unicorn, React, and stylistic rules; Oxlint runs th
 supplied correctness, security, TypeScript, test, and
 [anti-slop](https://github.com/sirknigget/anti-slop) rules with type information.
 Duplicate detection uses jscpd; see [settings and manual calibration](docs/duplicate-detection.md).
+Knip enforces unused code, exports, types, and packages in normal and production
+runs. dependency-cruiser enforces import integrity, eager runtime cycles,
+production dependency boundaries, and source folder cycles. See the
+[rule assessment and measured effects](docs/dependency-enforcement.md), including
+advisory metrics, discovery wiring, and policies deliberately left disabled.
+Run `npm run report:dependencies` to write the advisory graph report.
 Stylelint checks `src/**/*.css`. Source and colocated unit tests use separate
 rule scopes, and the lint TypeScript project also includes browser tests and
 root configuration files and lint policy modules. All JavaScript and TypeScript,
@@ -135,7 +142,8 @@ outside the CSS palette. Existing CI lint jobs enforce both policies.
 The anti-slop dependency is pinned to an immutable Git commit.
 
 GitHub CI checks formatting, ESLint, Oxlint, Stylelint, unit tests, the production
-build, and browser tests on pull requests and pushes to `main`. Checks run as
+build, unused code in normal and production modes, dependency integrity, and
+browser tests on pull requests and pushes to `main`. Checks run as
 independent parallel jobs, with browser tests split across two runners and one
 browser worker per runner.
 
@@ -147,6 +155,7 @@ The deterministic simulation tests cover damage, splitting, impulses and bounces
 
 - `src/game/simulation/`: renderer-independent gameplay facade, grouped world/player/progress state, and focused collision/wave/weapon systems with small fixed substeps.
 - `src/game/scene/`: native pointer/keyboard input, frame loop, and simulation-to-renderer adapter.
+- `src/game/graphics/` and `src/game/content/`: shared model/glyph/resource primitives and authored code samples, independent of world orchestration.
 - `src/game/rendering/` and `src/game/code/`: Three.js scene, perspective camera, glTF model loading, perforated code geometry, shadows, and GPU resource cleanup.
 - `src/game/debris/` and `src/game/geometry/`: independent Rapier debris, pooled smoke/sparks, compact perforated surfaces, and direct triangle clipping for final disintegration.
 - `src/game/audio/`: Web Audio routing, synthesis, effect scores, and music transport; opening theme, seamless menu/game transitions, and four crossfading scores.

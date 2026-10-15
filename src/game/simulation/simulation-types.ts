@@ -4,7 +4,7 @@ import simulationData from "#root/src/game/simulation/simulation-values.json";
 export type { RobotBrand } from "#root/src/game/rendering/robots/robot-types.ts";
 
 export const GAME_WIDTH = 1280;
-export const GAME_HEIGHT = 720;
+
 export const CELL_WIDTH = 9;
 export const CELL_HEIGHT = 20;
 export const TIMEOUT_METRICS = simulationData.TIMEOUT_METRICS;

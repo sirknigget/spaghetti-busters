@@ -1,5 +1,5 @@
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
-import { extents } from "#root/src/game/simulation/blocks/simulation-collision.ts";
+import { extents } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { bossDriftSpeed } from "#root/src/game/simulation/progression/simulation-progression.ts";
 import { clamp, HALF } from "#root/src/game/simulation/simulation-shared.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
@@ -24,7 +24,7 @@ export function advanceAnger(sim: Simulation, block: Block, dt: number) {
   }
 }
 
-export function limitBossVelocity(sim: Simulation, block: Block) {
+function limitBossVelocity(sim: Simulation, block: Block) {
   if (block.boss) {
     block.vx = clamp(
       block.vx,
@@ -98,7 +98,7 @@ export function checkBlockBoundary(sim: Simulation, block: Block) {
   return true;
 }
 
-export function throwException(sim: Simulation, block: Block) {
+function throwException(sim: Simulation, block: Block) {
   const labels = [
     ['throw new Error("oops");'],
     ["TypeError: any is not a function"],

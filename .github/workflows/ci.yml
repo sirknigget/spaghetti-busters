@@ -35,6 +35,12 @@ jobs:
             command: npm test
           - name: Duplicate detection
             command: npm run lint:duplicates
+          - name: Unused code
+            command: npm run lint:unused
+          - name: Production unused code
+            command: npm run lint:unused:production
+          - name: Dependency graph
+            command: npm run lint:dependencies
     env:
       JSCPD_CACHE_DIR: ${{ github.workspace }}/.quality-results/jscpd-cache
     steps:
@@ -53,6 +59,16 @@ jobs:
         with:
           name: duplicate-reports
           path: .quality-results/jscpd/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - run: npm run report:dependencies
+        if: ${{ always() && matrix.name == 'Dependency graph' }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && matrix.name == 'Dependency graph' }}
+        with:
+          name: dependency-metrics
+          path: .quality-results/dependencies.json
           if-no-files-found: error
           retention-days: 7
 

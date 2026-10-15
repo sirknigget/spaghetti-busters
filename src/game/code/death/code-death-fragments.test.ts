@@ -1,9 +1,7 @@
+import { createDeathFragments } from "#root/src/game/code/death/code-death-fragments.ts";
 import * as THREE from "three";
 import { expect, it } from "vitest";
-import {
-  createDeathFragments,
-  disposeObject,
-} from "#root/src/game/code/code-mesh.ts";
+import { disposeObject } from "#root/src/game/code/code-mesh.ts";
 import {
   chippedHole,
   perforatedGeometry,

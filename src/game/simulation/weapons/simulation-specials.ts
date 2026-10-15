@@ -1,6 +1,6 @@
 import { weaponAim } from "#root/src/game/simulation/weapons/weapon-aim.ts";
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
-import { extents } from "#root/src/game/simulation/blocks/simulation-collision.ts";
+import { extents } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { damage } from "#root/src/game/simulation/blocks/simulation-damage.ts";
 import { split } from "#root/src/game/simulation/blocks/simulation-fragments.ts";
 import { clamp } from "#root/src/game/simulation/simulation-shared.ts";
@@ -95,7 +95,7 @@ function launchVelocity(sim: Simulation, type: MovingSpecial, angle: number) {
       };
 }
 
-export function launchSpecial(sim: Simulation, type: MovingSpecial) {
+function launchSpecial(sim: Simulation, type: MovingSpecial) {
   const angle = weaponAim(sim.player);
 
   sim.world.specials.push({
@@ -117,7 +117,7 @@ export function launchSpecial(sim: Simulation, type: MovingSpecial) {
   sim.world.events.push(type === "homing" ? "missile" : "grenade");
 }
 
-export function lintBlocks(sim: Simulation) {
+function lintBlocks(sim: Simulation) {
   // Each original block is handled once; new halves wait for the next bomb.
   for (const block of sim.world.blocks) {
     const extent = extents(block);

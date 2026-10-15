@@ -5,7 +5,7 @@ import { perforatedGeometry } from "#root/src/game/geometry/fracture/fracture-ge
 import {
   createVisual,
   type FractureVisual,
-} from "#root/src/game/code/code-visual.ts";
+} from "#root/src/game/code/common/code-visual.ts";
 import {
   addRemovedCells,
   addDamageScars,
@@ -17,7 +17,7 @@ import {
 } from "#root/src/game/code/code-attachments.ts";
 import { createBossArmor } from "#root/src/game/code/boss/code-boss-armor.ts";
 import { clipBossArmor } from "#root/src/game/code/boss/code-boss-clipping.ts";
-import { DIAMETER } from "#root/src/game/code/code-settings.ts";
+import { DIAMETER } from "#root/src/game/code/common/code-settings.ts";
 
 const TEXTURE_ANISOTROPY = 4;
 

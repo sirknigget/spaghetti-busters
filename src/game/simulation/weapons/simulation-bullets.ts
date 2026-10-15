@@ -1,11 +1,11 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
 import { collectPickup } from "#root/src/game/simulation/progression/simulation-bonuses.ts";
-import type { Segment } from "#root/src/game/simulation/blocks/simulation-collision.ts";
-import { segmentDistance } from "#root/src/game/simulation/blocks/simulation-collision.ts";
+import type { Segment } from "#root/src/game/simulation/collision/simulation-collision.ts";
+import { segmentDistance } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { damage } from "#root/src/game/simulation/blocks/simulation-damage.ts";
 import { hitsHazard } from "#root/src/game/simulation/enemies/simulation-hazards.ts";
-import { burst } from "#root/src/game/simulation/runtime/simulation-particles.ts";
+import { burst } from "#root/src/game/simulation/effects/simulation-particles.ts";
 import {
   damageRobot,
   interceptRobot,
@@ -41,7 +41,7 @@ export function updateBullet(sim: Simulation, bullet: Bullet, dt: number) {
   }
 }
 
-export function blockSegment(block: Block, travel: Segment): Segment {
+function blockSegment(block: Block, travel: Segment): Segment {
   const cos = Math.cos(block.angle);
   const sin = Math.sin(block.angle);
 
@@ -82,11 +82,7 @@ function hitCell(block: Block, travel: Segment) {
   );
 }
 
-export function bulletHitsBlock(
-  sim: Simulation,
-  bullet: Bullet,
-  travel: Segment,
-) {
+function bulletHitsBlock(sim: Simulation, bullet: Bullet, travel: Segment) {
   // Ascending distance ensures the frontmost block absorbs each projectile.
   const candidates = [...sim.world.blocks].sort((a, b) => a.x - b.x);
 
@@ -103,11 +99,7 @@ export function bulletHitsBlock(
   return false;
 }
 
-export function bulletHitsRobot(
-  sim: Simulation,
-  bullet: Bullet,
-  travel: Segment,
-) {
+function bulletHitsRobot(sim: Simulation, bullet: Bullet, travel: Segment) {
   const robot = interceptRobot(sim, travel);
 
   if (!robot) {
@@ -128,7 +120,7 @@ export function bulletHitsRobot(
   return true;
 }
 
-export function bulletHitsHazard(sim: Simulation, travel: Segment) {
+function bulletHitsHazard(sim: Simulation, travel: Segment) {
   const hazard = sim.world.hazards.find(
     (candidate) =>
       candidate.life > 0 && hitsHazard({ ...travel, hazard: candidate }),
@@ -151,7 +143,7 @@ export function bulletHitsHazard(sim: Simulation, travel: Segment) {
   return true;
 }
 
-export function bulletHitsPickup(sim: Simulation, travel: Segment) {
+function bulletHitsPickup(sim: Simulation, travel: Segment) {
   const pickup = sim.world.pickups.find(
     (candidate) =>
       candidate.life > 0 &&

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://www.dependency-cruiser.org/schema.json",
+  "forbidden": [
+    {
+      "name": "no-orphans",
+      "severity": "ignore",
+      "comment": "Knip owns entry-point reachability, including HTML and tool configuration."
+    },
+    {
+      "name": "no-circular",
+      "severity": "error",
+      "to": {
+        "circular": true,
+        "viaOnly": {
+          "dependencyTypesNot": [
+            "type-only",
+            "pre-compilation-only",
+            "dynamic-import"
+          ]
+        }
+      }
+    },
+    {
+      "name": "no-deprecated-core",
+      "severity": "warn"
+    },
+    {
+      "name": "not-to-dev-dep",
+      "severity": "error",
+      "from": {
+        "path": "^src/",
+        "pathNot": "\\.test\\.ts$"
+      },
+      "to": {
+        "dependencyTypes": ["npm-dev"],
+        "dependencyTypesNot": ["type-only", "pre-compilation-only"]
+      }
+    },
+    {
+      "name": "not-to-spec",
+      "severity": "error",
+      "from": {
+        "path": "^src/",
+        "pathNot": "\\.test\\.ts$"
+      },
+      "to": {
+        "path": "(^|/)(tests|lint)/|\\.(test|spec)\\.[cm]?[jt]sx?$"
+      }
+    }
+  ],
+  "options": {
+    "doNotFollow": {
+      "path": "node_modules"
+    },
+    "exclude": {
+      "path": "^(dist|coverage|playwright-report|test-results|\\.quality-results)/"
+    },
+    "tsConfig": {
+      "fileName": "tsconfig.lint.json"
+    },
+    "tsPreCompilationDeps": "specify",
+    "enhancedResolveOptions": {
+      "conditionNames": ["import", "node", "default"],
+      "mainFields": ["module", "main", "types", "typings"],
+      "exportsFields": ["exports"]
+    }
+  },
+  "extends": "dependency-cruiser/configs/recommended.cjs"
+}

@@ -6,7 +6,7 @@ import {
   burst,
   snapshot,
   visual,
-} from "#root/src/game/simulation/runtime/simulation-particles.ts";
+} from "#root/src/game/simulation/effects/simulation-particles.ts";
 import {
   clamp,
   HALF,
@@ -106,7 +106,7 @@ function impactMotion(hit: DamageContext) {
   };
 }
 
-export function showImpact(sim: Simulation, hit: DamageContext) {
+function showImpact(sim: Simulation, hit: DamageContext) {
   visual(sim, {
     type: "impact",
     target: "code",
@@ -117,7 +117,7 @@ export function showImpact(sim: Simulation, hit: DamageContext) {
   });
 }
 
-export function destroyBlock(sim: Simulation, hit: DamageContext) {
+function destroyBlock(sim: Simulation, hit: DamageContext) {
   const { block, surfaceBeforeHit } = hit;
 
   visual(sim, {
@@ -140,7 +140,7 @@ export function destroyBlock(sim: Simulation, hit: DamageContext) {
   sim.world.events.push("destroy");
 }
 
-export function applyDamageImpulse(hit: DamageContext) {
+function applyDamageImpulse(hit: DamageContext) {
   const { block, blastRadius, bullet, y } = hit;
 
   block.hits++;
@@ -170,7 +170,7 @@ export interface DamageOptions {
   power?: number;
 }
 
-export interface RemovedGlyph {
+interface RemovedGlyph {
   x: number;
   y: number;
   char: string;
@@ -205,7 +205,7 @@ function glyphParticle(sim: Simulation, glyph: RemovedGlyph) {
   });
 }
 
-export function removeGlyphs(sim: Simulation, hit: DamageContext) {
+function removeGlyphs(sim: Simulation, hit: DamageContext) {
   const { block, x, y, radius, cos, sin, power } = hit;
 
   for (const cell of block.cells) {

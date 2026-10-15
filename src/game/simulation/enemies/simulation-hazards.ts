@@ -1,7 +1,7 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
-import { segmentRectangle } from "#root/src/game/simulation/blocks/simulation-collision.ts";
-import { burst } from "#root/src/game/simulation/runtime/simulation-particles.ts";
+import { segmentRectangle } from "#root/src/game/simulation/collision/simulation-collision.ts";
+import { burst } from "#root/src/game/simulation/effects/simulation-particles.ts";
 import {
   clamp,
   HALF,
@@ -151,7 +151,7 @@ export function hitsHazard({ ax, ay, bx, by, hazard }: HitsHazardOptions) {
   });
 }
 
-export function hazardHalfWidth(hazard: TimeoutHazard) {
+function hazardHalfWidth(hazard: TimeoutHazard) {
   return (
     (`await setTimeout(${hazard.durationMs});`.length *
       TIMEOUT_METRICS.charWidth +

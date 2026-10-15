@@ -1,9 +1,7 @@
+import { CODE_SLICES } from "#root/src/game/content/code-library.ts";
 import { expect, it } from "vitest";
 import { game, hitCell } from "#root/tests/unit/simulation-support.ts";
-import {
-  CODE_SLICES,
-  Simulation,
-} from "#root/src/game/simulation/simulation.ts";
+import { Simulation } from "#root/src/game/simulation/simulation.ts";
 
 it("allows aimed fire to clear consecutive waves without invulnerable fragments", () => {
   const sim = solvabilityGame();

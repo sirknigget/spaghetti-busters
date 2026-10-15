@@ -1,14 +1,14 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
-import { loadGeometry } from "#root/src/game/rendering/models/model-assets.ts";
+import { loadGeometry } from "#root/src/game/graphics/model-assets.ts";
 import type { Block } from "#root/src/game/simulation/simulation.ts";
-import type { FractureVisual } from "#root/src/game/code/code-visual.ts";
+import type { FractureVisual } from "#root/src/game/code/common/code-visual.ts";
 import {
   HALF,
   DIAMETER,
   HEADER_HEIGHT,
   ATTACHMENT,
-} from "#root/src/game/code/code-settings.ts";
+} from "#root/src/game/code/common/code-settings.ts";
 
 const FACE_OUTLINE_OPACITY = 0.8;
 const CRYSTAL_EMISSIVE_INTENSITY = 0.35;

@@ -208,13 +208,3 @@ export function instantiateModel(name: ModelName): THREE.Group {
 
   return group;
 }
-
-export function loadMesh(name: ModelName): THREE.Mesh {
-  const object = instantiate(name);
-
-  if (!(object instanceof THREE.Mesh)) {
-    throw new Error(`Expected a mesh model: ${name}`);
-  }
-
-  return object;
-}

@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { preloadModels } from "#root/src/game/rendering/models/model-assets.ts";
+import { preloadModels } from "#root/src/game/graphics/model-assets.ts";
 
 export async function preloadTestModels(): Promise<void> {
   const bytes = await readFile(

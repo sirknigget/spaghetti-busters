@@ -1,4 +1,4 @@
-import settings from "#root/src/game/code/code-settings.json";
+import settings from "#root/src/game/code/common/code-settings.json";
 
 export const HALF = 0.5;
 export const DIAMETER = 2;

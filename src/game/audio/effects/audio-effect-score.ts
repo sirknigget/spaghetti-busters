@@ -24,7 +24,7 @@ interface ToneEnvelope {
 }
 export type ToneScore = ToneEnvelope & (MidiPitch | FixedPitch | RandomPitch);
 
-export interface NoiseScore {
+interface NoiseScore {
   duration: number;
   volume: number;
   cutoff: number;
@@ -61,9 +61,7 @@ interface TimedSequence {
   tone: SequenceTone & { spacing?: never };
   delays: readonly number[];
 }
-export type SequenceScore = (MidiSequence | HertzSequence) &
-  (SpacedSequence | TimedSequence);
-export type SequenceVoice = SpacedTone & {
+type SequenceVoice = SpacedTone & {
   waveform: OscillatorType;
   harmonyInterval?: number;
 };

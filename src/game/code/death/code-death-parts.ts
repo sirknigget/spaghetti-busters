@@ -1,18 +1,18 @@
 import * as THREE from "three";
-import type { FractureVisual } from "#root/src/game/code/code-visual.ts";
+import type { FractureVisual } from "#root/src/game/code/common/code-visual.ts";
 import type { DeathLeaf } from "#root/src/game/code/death/code-death-cuts.ts";
 import {
   cloneOwnedMaterial,
   cloneMeshResources,
-} from "#root/src/game/rendering/graphics-resources.ts";
+} from "#root/src/game/graphics/graphics-resources.ts";
 import { createBossArmor } from "#root/src/game/code/boss/code-boss-armor.ts";
 import { clipBossArmor } from "#root/src/game/code/boss/code-boss-clipping.ts";
-import { insideRegions } from "#root/src/game/code/code-visual.ts";
+import { insideRegions } from "#root/src/game/code/common/code-visual.ts";
 import {
   HALF,
   DIAMETER,
   TRIANGLE_VERTICES,
-} from "#root/src/game/code/code-settings.ts";
+} from "#root/src/game/code/common/code-settings.ts";
 
 interface FragmentSource {
   source: THREE.Group;

@@ -54,7 +54,7 @@ function advanceBlocks(sim: Simulation, dt: number) {
   return true;
 }
 
-export function step(sim: Simulation, dt: number) {
+function step(sim: Simulation, dt: number) {
   advancePlayer(sim, dt);
 
   const enemyDt = advanceFreeze(sim, dt);
@@ -81,7 +81,7 @@ export function step(sim: Simulation, dt: number) {
   advanceParticles(sim, dt);
 }
 
-export function spawnTimedRobot(sim: Simulation, enemyDt: number) {
+function spawnTimedRobot(sim: Simulation, enemyDt: number) {
   sim.runtime.robotTimer -= enemyDt;
   if (
     !sim.isBossWave &&
@@ -100,7 +100,7 @@ export function spawnTimedRobot(sim: Simulation, enemyDt: number) {
   }
 }
 
-export function spawnTimedBonus(sim: Simulation, dt: number) {
+function spawnTimedBonus(sim: Simulation, dt: number) {
   sim.runtime.bonusTimer -= dt;
   if (sim.runtime.bonusTimer <= 0) {
     sim.spawnBonus();
@@ -110,7 +110,7 @@ export function spawnTimedBonus(sim: Simulation, dt: number) {
   }
 }
 
-export function spawnTimedHazard(sim: Simulation, enemyDt: number) {
+function spawnTimedHazard(sim: Simulation, enemyDt: number) {
   sim.runtime.hazardTimer -= enemyDt;
   if (!sim.isBossWave && enemyDt > 0 && sim.runtime.hazardTimer <= 0) {
     sim.spawnHazard();
@@ -124,7 +124,7 @@ export function spawnTimedHazard(sim: Simulation, enemyDt: number) {
   }
 }
 
-export function advancePickups(sim: Simulation, dt: number) {
+function advancePickups(sim: Simulation, dt: number) {
   for (const pickup of sim.world.pickups) {
     pickup.age += dt;
     pickup.life -= dt;
@@ -149,11 +149,7 @@ export function advancePickups(sim: Simulation, dt: number) {
   sim.world.pickups = sim.world.pickups.filter((pickup) => pickup.life > 0);
 }
 
-export function advanceProjectiles(
-  sim: Simulation,
-  dt: number,
-  enemyDt: number,
-) {
+function advanceProjectiles(sim: Simulation, dt: number, enemyDt: number) {
   for (const bullet of sim.world.bullets) {
     updateBullet(sim, bullet, dt);
   }
@@ -170,7 +166,7 @@ export function advanceProjectiles(
   sim.world.hazards = sim.world.hazards.filter((hazard) => hazard.life > 0);
 }
 
-export function advanceParticles(sim: Simulation, dt: number) {
+function advanceParticles(sim: Simulation, dt: number) {
   for (const particle of sim.world.particles) {
     particle.life -= dt;
     particle.x += particle.vx * dt;

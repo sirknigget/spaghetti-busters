@@ -40,7 +40,6 @@ import type {
 
 const BONUS_START_X = 1000;
 
-export { CODE_SLICES } from "#root/src/game/code/code-library.ts";
 export * from "#root/src/game/simulation/simulation-types.ts";
 
 /** Deterministic gameplay facade; systems own updates and state groups own data. */

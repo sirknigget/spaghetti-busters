@@ -1,5 +1,5 @@
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
-import { extents } from "#root/src/game/simulation/blocks/simulation-collision.ts";
+import { extents } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { clamp, SQUARED } from "#root/src/game/simulation/simulation-shared.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {

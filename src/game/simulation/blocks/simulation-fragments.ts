@@ -2,7 +2,7 @@ import type { Simulation } from "#root/src/game/simulation/simulation.ts";
 import {
   snapshot,
   visual,
-} from "#root/src/game/simulation/runtime/simulation-particles.ts";
+} from "#root/src/game/simulation/effects/simulation-particles.ts";
 import { HALF } from "#root/src/game/simulation/simulation-shared.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import type {
@@ -74,7 +74,7 @@ function fragmentIdentity(block: Block) {
   };
 }
 
-export function createFragment(
+function createFragment(
   sim: Simulation,
   plan: FracturePlan,
   part: FragmentPart,
@@ -106,7 +106,7 @@ export function createFragment(
   };
 }
 
-export function fragmentMotion(
+function fragmentMotion(
   plan: FracturePlan,
   bounds: FragmentBounds,
   sign: -1 | 1,
@@ -146,20 +146,20 @@ export interface SplitOptions {
   hitY: number;
 }
 
-export interface FracturePlan extends SplitOptions {
+interface FracturePlan extends SplitOptions {
   horizontal: boolean;
   cut: number;
   seed: number;
 }
 
-export interface FragmentBounds {
+interface FragmentBounds {
   centerX: number;
   centerY: number;
   width: number;
   height: number;
 }
 
-export interface FragmentPart {
+interface FragmentPart {
   cells: Cell[];
   index: number;
 }

@@ -1,14 +1,14 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
-import { loadGeometry } from "#root/src/game/rendering/models/model-assets.ts";
-import { type FractureVisual } from "#root/src/game/code/code-visual.ts";
+import { loadGeometry } from "#root/src/game/graphics/model-assets.ts";
+import { type FractureVisual } from "#root/src/game/code/common/code-visual.ts";
 import {
   HALF,
   DIAMETER,
   HEADER_HEIGHT,
   ATTACHMENT,
   ARMOR,
-} from "#root/src/game/code/code-settings.ts";
+} from "#root/src/game/code/common/code-settings.ts";
 
 const FRAME_METALNESS = 0.62;
 const FRAME_ROUGHNESS = 0.35;
@@ -187,7 +187,7 @@ function addStripes(layout: ArmorLayout, rail: number) {
   }
 }
 
-export function addReactor(
+function addReactor(
   armor: THREE.Group,
   visual: FractureVisual,
   gold: THREE.Material,

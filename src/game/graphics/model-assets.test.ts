@@ -5,9 +5,8 @@ import { disposeObject } from "#root/src/game/code/code-mesh.ts";
 import {
   instantiateModel,
   loadGeometry,
-  loadMesh,
   type ModelName,
-} from "#root/src/game/rendering/models/model-assets.ts";
+} from "#root/src/game/graphics/model-assets.ts";
 import {
   createCannon,
   createSpecialist,
@@ -38,11 +37,11 @@ it("loads all 39 authored groups and mesh templates from the real GLB", () => {
   }
 
   for (const name of shapes) {
-    const model = loadMesh(name);
+    const geometry = loadGeometry(name);
 
-    expect(model).toBeInstanceOf(THREE.Mesh);
-    expect(model.geometry.getAttribute("position").count).toBeGreaterThan(0);
-    disposeObject(model);
+    expect(geometry).toBeInstanceOf(THREE.BufferGeometry);
+    expect(geometry.getAttribute("position").count).toBeGreaterThan(0);
+    geometry.dispose();
   }
 });
 

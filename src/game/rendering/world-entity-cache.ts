@@ -1,4 +1,4 @@
-import { disposeObjectMap } from "#root/src/game/rendering/graphics-resources.ts";
+import { disposeObjectMap } from "#root/src/game/graphics/graphics-resources.ts";
 import * as THREE from "three";
 import { disposeObject } from "#root/src/game/code/code-mesh.ts";
 import { HEIGHT } from "#root/src/game/rendering/world-settings.ts";

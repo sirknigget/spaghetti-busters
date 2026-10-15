@@ -1,10 +1,10 @@
-import { createGlyphTexture } from "#root/src/game/rendering/glyph-texture.ts";
+import { createGlyphTexture } from "#root/src/game/graphics/glyph-texture.ts";
 import * as THREE from "three";
 import type {
   Simulation,
   Particle,
 } from "#root/src/game/simulation/simulation.ts";
-import { loadGeometry } from "#root/src/game/rendering/models/model-assets.ts";
+import { loadGeometry } from "#root/src/game/graphics/model-assets.ts";
 import { HEIGHT, PARTICLE } from "#root/src/game/rendering/world-settings.ts";
 
 const LETTER_TEXTURE_HEIGHT = 40;

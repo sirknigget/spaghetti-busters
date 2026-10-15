@@ -3,7 +3,7 @@ import * as THREE from "three";
 import {
   instantiateModel,
   loadGeometry,
-} from "#root/src/game/rendering/models/model-assets.ts";
+} from "#root/src/game/graphics/model-assets.ts";
 import { createEnvironment } from "#root/src/game/rendering/models/models3d.ts";
 import {
   VIEW,
