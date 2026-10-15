@@ -100,7 +100,7 @@ Runtime numeric literals, including defaults, class fields, object properties,
 and assignments, must use named scalar constants or declarative JSON tuning.
 Only `0`, `1`, and `-1` are allowed inline; numeric enum members and literal types
 remain semantic declarations. Existing browser and unit test fixtures retain
-their numeric exemption. Both ESLint and Oxlint enforce this source policy.
+their numeric exemption. ESLint enforces this source policy.
 Authored 3D geometry stays in glTF/GLB assets; the authored 2D crack paths use SVG.
 
 Literal colors belong in `src/game/palette.ts` or CSS custom-property definitions

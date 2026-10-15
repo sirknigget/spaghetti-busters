@@ -76,16 +76,6 @@
             "allow": ["arrowFunctions", "constructors", "privateConstructors"]
           }
         ],
-        "no-magic-numbers": [
-          "error",
-          {
-            "ignore": [0, 1, -1],
-            "detectObjects": true,
-            "enforceConst": true,
-            "ignoreEnums": true,
-            "ignoreNumericLiteralTypes": true
-          }
-        ],
         "no-dupe-class-members": "error",
         "default-param-last": "error",
         "no-unused-expressions": [
