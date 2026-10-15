@@ -1,0 +1,20 @@
+import settings from "#root/src/game/rendering/world-settings.json";
+
+export const HALF = 0.5;
+export const VIEW = settings.VIEW;
+export const LIGHT = settings.LIGHT;
+export const MARKER = settings.MARKER;
+export const LABEL = settings.LABEL;
+export const TUMBLE = settings.TUMBLE;
+export const PICKUP = settings.PICKUP;
+export const SPECIAL = settings.SPECIAL;
+export const HAZARD = settings.HAZARD;
+export const PULSE = settings.PULSE;
+export const PARTICLE = settings.PARTICLE;
+export const EXPLOSION = settings.EXPLOSION;
+export const PLAYER = settings.PLAYER;
+export const CAMERA_SHAKE = settings.CAMERA_SHAKE;
+export const RENDER_TIMING = settings.RENDER_TIMING;
+export const DANGER = settings.DANGER;
+export const WIDTH = 1280;
+export const HEIGHT = 720;

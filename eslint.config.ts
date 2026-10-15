@@ -2,9 +2,9 @@
  * Applies typed SonarJS and remaining ESLint-only checks in source and test scopes.
  * Uses a dedicated TypeScript project covering source, tests, and tools.
  */
-import { numericRules } from "./lint/numeric-policy";
-import { limitRules, restrictedSyntax } from "./lint/limits";
-import { spacingRules } from "./lint/spacing";
+import { numericRules } from "#root/lint/numeric-policy.ts";
+import { limitRules, restrictedSyntax } from "#root/lint/limits.ts";
+import { spacingRules } from "#root/lint/spacing.ts";
 import parser from "@typescript-eslint/parser";
 import sonarjs from "eslint-plugin-sonarjs";
 import unicorn from "eslint-plugin-unicorn";

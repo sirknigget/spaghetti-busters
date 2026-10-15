@@ -1,5 +1,5 @@
-import { $, HUD, specialTypes } from "./ui-dom";
-import type { Simulation } from "./game/simulation";
+import { $, HUD, specialTypes } from "#root/src/ui-dom.ts";
+import type { Simulation } from "#root/src/game/simulation/simulation.ts";
 
 export function updateHud(s: Simulation) {
   $("#score").textContent = String(s.progress.score).padStart(
