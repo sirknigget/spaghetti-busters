@@ -50,6 +50,7 @@ const edges = (polygon: Polygon): Edge[] =>
   polygon
     .map((a, i) => {
       const b = polygon[(i + 1) % polygon.length]!;
+
       return { a, b, low: Math.min(a.y, b.y), high: Math.max(a.y, b.y) };
     })
     .filter((e) => e.high - e.low > FRACTURE.edgeEpsilon);
@@ -59,14 +60,15 @@ export function fractureNoise(seed: number, index: number) {
   let v = seed ^ Math.imul(index + 1, FRACTURE.hashMultiplier);
   v = Math.imul(v ^ (v >>> FRACTURE.hashShift), FRACTURE.hashMultiplier);
   v = Math.imul(v ^ (v >>> FRACTURE.hashShift), FRACTURE.hashMultiplier);
+
   return ((v ^ (v >>> FRACTURE.hashShift)) >>> 0) / FRACTURE.maxHash;
 }
 
 export function chippedHole(x: number, y: number, seed: number): Polygon {
   const points: Polygon = [];
   for (let i = 0; i < CHIP.vertices; i++) {
-    const angle = (i * CHIP.revolution) / CHIP.vertices,
-      spread = CHIP.minSpread + fractureNoise(seed, i) * CHIP.spreadRange;
+    const angle = (i * CHIP.revolution) / CHIP.vertices;
+    const spread = CHIP.minSpread + fractureNoise(seed, i) * CHIP.spreadRange;
     points.push({
       x:
         x +
@@ -82,6 +84,7 @@ export function chippedHole(x: number, y: number, seed: number): Polygon {
           spread,
     });
   }
+
   return points;
 }
 
@@ -93,17 +96,17 @@ export function fractureMask(
   seed: number,
   bounds: { left: number; right: number; bottom: number; top: number },
 ): Polygon {
-  const vertical = axis === "x",
-    low = vertical ? bounds.bottom : bounds.left,
-    high = vertical ? bounds.top : bounds.right;
+  const vertical = axis === "x";
+  const low = vertical ? bounds.bottom : bounds.left;
+  const high = vertical ? bounds.top : bounds.right;
   const along: Polygon = [];
   const count = Math.max(
     FRACTURE.minSegments,
     Math.ceil((high - low) / FRACTURE.segmentLength),
   );
   for (let i = 0; i <= count; i++) {
-    const t = i / count,
-      parallel = low + (high - low) * t;
+    const t = i / count;
+    const parallel = low + (high - low) * t;
     const broken =
       cut +
       (i === 0 || i === count
@@ -114,7 +117,7 @@ export function fractureMask(
       vertical ? { x: broken, y: parallel } : { x: parallel, y: broken },
     );
   }
-  if (vertical)
+  if (vertical) {
     return side < 0
       ? [{ x: bounds.left, y: low }, ...along, { x: bounds.left, y: high }]
       : [
@@ -122,6 +125,8 @@ export function fractureMask(
           { x: bounds.right, y: high },
           ...along.reverse(),
         ];
+  }
+
   return side < 0
     ? [
         { x: low, y: bounds.bottom },
@@ -160,9 +165,9 @@ export function perforatedGeometry(
       Math.max(...polygon.map((p) => p.y)) >= limits.bottom &&
       Math.min(...polygon.map((p) => p.y)) <= limits.top,
   );
-  const regionEdges = regions.map((region) => edges(region)),
-    holeEdges = holes.map((hole) => edges(hole)),
-    allEdges = [...regionEdges.flat(), ...holeEdges.flat()];
+  const regionEdges = regions.map((region) => edges(region));
+  const holeEdges = holes.map((hole) => edges(hole));
+  const allEdges = [...regionEdges.flat(), ...holeEdges.flat()];
   const holeBands = holeEdges.map((polygonEdges) => ({
     edges: polygonEdges,
     low: Math.min(...polygonEdges.flatMap((e) => [e.a.y, e.b.y])),
@@ -173,51 +178,58 @@ export function perforatedGeometry(
   );
   const crossingCuts: number[] = [];
   const starts = [...allEdges].sort((a, b) => a.low - b.low);
-  let startIndex = 0,
-    activeEdges: Edge[] = [];
+  let startIndex = 0;
+  let activeEdges: Edge[] = [];
   // Split at edge intersections too, so overlapping chips form clean, watertight unions.
   for (let row = 0; row < ys.length - 1; row++) {
-    const low = ys[row]!,
-      high = ys[row + 1]!,
-      mid = (low + high) / HALF_DIVISOR;
-    while (startIndex < starts.length && starts[startIndex]!.low < mid)
+    const low = ys[row]!;
+    const high = ys[row + 1]!;
+    const mid = (low + high) / HALF_DIVISOR;
+    while (startIndex < starts.length && starts[startIndex]!.low < mid) {
       activeEdges.push(starts[startIndex++]!);
+    }
     activeEdges = activeEdges.filter((e) => e.high > mid);
     const active = activeEdges
       .map((e) => ({ e, l: at(e, low), h: at(e, high) }))
       .sort((a, b) => Math.min(a.l, a.h) - Math.min(b.l, b.h));
-    for (let i = 0; i < active.length; i++)
+    for (let i = 0; i < active.length; i++) {
       for (let j = i + 1; j < active.length; j++) {
-        const a = active[i]!,
-          b = active[j]!;
-        if (Math.min(b.l, b.h) > Math.max(a.l, a.h) + FRACTURE.gapEpsilon)
+        const a = active[i]!;
+        const b = active[j]!;
+        if (Math.min(b.l, b.h) > Math.max(a.l, a.h) + FRACTURE.gapEpsilon) {
           break;
-        const d0 = a.l - b.l,
-          d1 = a.h - b.h;
-        if (d0 * d1 < -FRACTURE.crossingEpsilon)
+        }
+        const d0 = a.l - b.l;
+        const d1 = a.h - b.h;
+        if (d0 * d1 < -FRACTURE.crossingEpsilon) {
           crossingCuts.push(low + ((high - low) * d0) / (d0 - d1));
+        }
       }
+    }
   }
   const cuts = [...new Set([...ys, ...crossingCuts])].sort((a, b) => a - b);
-  const positions: number[] = [],
-    normals: number[] = [],
-    uvs: number[] = [];
-  const frontTriangles: number[][][] = [],
-    walls: number[][][] = [];
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
+  const frontTriangles: number[][][] = [];
+  const walls: number[][][] = [];
   const span = (polygonEdges: Edge[], y: number): Interval[] => {
     const crossings = polygonEdges
       .filter((e) => y > e.low && y < e.high)
       .sort((a, b) => at(a, y) - at(b, y));
     const intervals: Interval[] = [];
-    for (let i = 0; i < crossings.length - 1; i += PAIR_SIZE)
+    for (let i = 0; i < crossings.length - 1; i += PAIR_SIZE) {
       intervals.push({ left: crossings[i]!, right: crossings[i + 1]! });
+    }
+
     return intervals;
   };
   const intersect = (a: Interval[], b: Interval[], y: number): Interval[] =>
     a.flatMap((aa) =>
       b.flatMap((bb) => {
-        const left = at(aa.left, y) > at(bb.left, y) ? aa.left : bb.left,
-          right = at(aa.right, y) < at(bb.right, y) ? aa.right : bb.right;
+        const left = at(aa.left, y) > at(bb.left, y) ? aa.left : bb.left;
+        const right = at(aa.right, y) < at(bb.right, y) ? aa.right : bb.right;
+
         return at(right, y) - at(left, y) > FRACTURE.gapEpsilon
           ? [{ left, right }]
           : [];
@@ -227,13 +239,16 @@ export function perforatedGeometry(
   const strips: Strip[] = [];
   let previous = new Map<Edge, Map<Edge, Strip>>();
   for (let row = 0; row < cuts.length - 1; row++) {
-    const y0 = cuts[row]!,
-      y1 = cuts[row + 1]!;
-    if (y1 - y0 < FRACTURE.edgeEpsilon) continue;
+    const y0 = cuts[row]!;
+    const y1 = cuts[row + 1]!;
+    if (y1 - y0 < FRACTURE.edgeEpsilon) {
+      continue;
+    }
     const mid = (y0 + y1) / HALF_DIVISOR;
     let solids = span(regionEdges[0]!, mid);
-    for (const region of regionEdges.slice(1))
+    for (const region of regionEdges.slice(1)) {
       solids = intersect(solids, span(region, mid), mid);
+    }
     const holesAt = holeBands
       .filter((band) => mid > band.low && mid < band.high)
       .flatMap((band) => span(band.edges, mid))
@@ -243,8 +258,12 @@ export function perforatedGeometry(
     for (const hole of holesAt) {
       const last = union.at(-1);
       if (last && at(hole.left, mid) <= at(last.right, mid)) {
-        if (at(hole.right, mid) > at(last.right, mid)) last.right = hole.right;
-      } else union.push({ ...hole });
+        if (at(hole.right, mid) > at(last.right, mid)) {
+          last.right = hole.right;
+        }
+      } else {
+        union.push({ ...hole });
+      }
     }
     const visible: Interval[] = [];
     let holeIndex = 0;
@@ -253,16 +272,18 @@ export function perforatedGeometry(
       while (
         holeIndex < union.length &&
         at(union[holeIndex]!.right, mid) <= at(left, mid)
-      )
+      ) {
         holeIndex++;
+      }
       let index = holeIndex;
       while (
         index < union.length &&
         at(union[index]!.left, mid) < at(solid.right, mid)
       ) {
         const hole = union[index]!;
-        if (at(hole.left, mid) > at(left, mid))
+        if (at(hole.left, mid) > at(left, mid)) {
           visible.push({ left, right: hole.left });
+        }
         if (at(hole.right, mid) >= at(solid.right, mid)) {
           left = solid.right;
           break;
@@ -271,8 +292,9 @@ export function perforatedGeometry(
         index++;
       }
       holeIndex = index;
-      if (at(left, mid) < at(solid.right, mid))
+      if (at(left, mid) < at(solid.right, mid)) {
         visible.push({ left, right: solid.right });
+      }
     }
     // Unrelated holes introduce global Y cuts. Straight, unchanged boundaries can span those
     // cuts in one exact trapezoid, avoiding millions of redundant triangles on worn slabs.
@@ -280,8 +302,11 @@ export function perforatedGeometry(
     for (const interval of visible) {
       const prior = previous.get(interval.left)?.get(interval.right);
       const strip = prior?.y1 === y0 ? prior : { ...interval, y0, y1 };
-      if (strip === prior) strip.y1 = y1;
-      else strips.push(strip);
+      if (strip === prior) {
+        strip.y1 = y1;
+      } else {
+        strips.push(strip);
+      }
       let rightEdges = current.get(interval.left);
       if (!rightEdges) {
         rightEdges = new Map();
@@ -292,11 +317,11 @@ export function perforatedGeometry(
     previous = current;
   }
   for (const s of strips) {
-    const { y0, y1 } = s,
-      x00 = at(s.left, y0),
-      x01 = at(s.right, y0),
-      x10 = at(s.left, y1),
-      x11 = at(s.right, y1);
+    const { y0, y1 } = s;
+    const x00 = at(s.left, y0);
+    const x01 = at(s.right, y0);
+    const x10 = at(s.left, y1);
+    const x11 = at(s.right, y1);
     frontTriangles.push([
       [x00, y0, depth],
       [x01, y0, depth],
@@ -364,49 +389,55 @@ export function perforatedGeometry(
   const inside = (p: Point, polygon: Polygon) => {
     let yes = false;
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const a = polygon[i]!,
-        b = polygon[j]!;
+      const a = polygon[i]!;
+      const b = polygon[j]!;
       if (
         a.y > p.y !== b.y > p.y &&
         p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x
-      )
+      ) {
         yes = !yes;
+      }
     }
+
     return yes;
   };
   const solid = (p: Point) =>
     regions.every((poly) => inside(p, poly)) &&
     !holes.some((poly) => inside(p, poly));
   for (const e of horizontal) {
-    const y = e.a.y,
-      xs = [
-        e.a.x,
-        e.b.x,
-        ...allEdges
-          .filter(
-            (a) => y >= Math.min(a.a.y, a.b.y) && y <= Math.max(a.a.y, a.b.y),
-          )
-          .map((a) => at(a, y)),
-      ]
+    const y = e.a.y;
+    const xs = [
+      e.a.x,
+      e.b.x,
+      ...allEdges
         .filter(
-          (x) =>
-            x >= Math.min(e.a.x, e.b.x) - FRACTURE.gapEpsilon &&
-            x <= Math.max(e.a.x, e.b.x) + FRACTURE.gapEpsilon,
+          (a) => y >= Math.min(a.a.y, a.b.y) && y <= Math.max(a.a.y, a.b.y),
         )
-        .sort((a, b) => a - b);
+        .map((a) => at(a, y)),
+    ]
+      .filter(
+        (x) =>
+          x >= Math.min(e.a.x, e.b.x) - FRACTURE.gapEpsilon &&
+          x <= Math.max(e.a.x, e.b.x) + FRACTURE.gapEpsilon,
+      )
+      .sort((a, b) => a - b);
     for (let i = 0; i < xs.length - 1; i++) {
-      const a = xs[i]!,
-        b = xs[i + 1]!;
-      if (b - a < FRACTURE.gapEpsilon) continue;
+      const a = xs[i]!;
+      const b = xs[i + 1]!;
+      if (b - a < FRACTURE.gapEpsilon) {
+        continue;
+      }
       const above = solid({
-          x: (a + b) / HALF_DIVISOR,
-          y: y + FRACTURE.gapEpsilon,
-        }),
-        below = solid({
-          x: (a + b) / HALF_DIVISOR,
-          y: y - FRACTURE.gapEpsilon,
-        });
-      if (above === below) continue;
+        x: (a + b) / HALF_DIVISOR,
+        y: y + FRACTURE.gapEpsilon,
+      });
+      const below = solid({
+        x: (a + b) / HALF_DIVISOR,
+        y: y - FRACTURE.gapEpsilon,
+      });
+      if (above === below) {
+        continue;
+      }
       quad(
         above
           ? [
@@ -444,6 +475,7 @@ export function perforatedGeometry(
     1,
   );
   geometry.computeBoundingSphere();
+
   return geometry;
 }
 

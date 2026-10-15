@@ -176,8 +176,8 @@ const RENDER_TIMING = {
 const DANGER = {
   threshold: 240,
 };
-const WIDTH = 1280,
-  HEIGHT = 720;
+const WIDTH = 1280;
+const HEIGHT = 720;
 type Entity = { id: number; x: number; y: number };
 export class WorldRenderer {
   readonly renderer: THREE.WebGLRenderer;
@@ -357,8 +357,10 @@ export class WorldRenderer {
   }
 
   private codeTumble(block: Block) {
-    if (block.boss)
+    if (block.boss) {
       return block.generation > 0 ? TUMBLE.bossFragment : TUMBLE.boss;
+    }
+
     return block.generation > 0 ? TUMBLE.fragment : TUMBLE.root;
   }
 
@@ -385,21 +387,25 @@ export class WorldRenderer {
         .map((event) => event.block.id),
     );
     for (const event of events) {
-      if (event.type === "impact")
+      if (event.type === "impact") {
         this.debris.impact(
           event.target === "code" && dying.has(event.blockId!)
             ? { ...event, removed: [] }
             : event,
         );
-      else if (event.type === "code-death") {
+      } else if (event.type === "code-death") {
         const cached = this.blocks.get(event.block.id);
         const mesh = cached ?? createCodeMesh(event.block);
-        if (!cached) this.placeCode(mesh, event.block);
+        if (!cached) {
+          this.placeCode(mesh, event.block);
+        }
         this.debris.dismantleCode(mesh, event.block, event.seed, {
           ...event,
           target: "code",
         });
-        if (!cached) disposeObject(mesh);
+        if (!cached) {
+          disposeObject(mesh);
+        }
       } else if (event.type === "robot-death") {
         let robot = this.robotMeshes.get(event.robot.id);
         if (!robot) {
@@ -408,7 +414,9 @@ export class WorldRenderer {
           animateRobot(robot, event.robot, false);
         }
         this.debris.dismantleRobot(robot, event.robot, event.seed);
-        if (!this.robotMeshes.has(event.robot.id)) disposeObject(robot);
+        if (!this.robotMeshes.has(event.robot.id)) {
+          disposeObject(robot);
+        }
       } else if (event.type === "split") {
         const old = this.blocks.get(event.parent.id);
         // Rebuild the damaged parent first so fractures retain its new holes and surface.
@@ -416,7 +424,9 @@ export class WorldRenderer {
         if (old) {
           parent.position.copy(old.position);
           parent.quaternion.copy(old.quaternion);
-        } else this.placeCode(parent, event.parent);
+        } else {
+          this.placeCode(parent, event.parent);
+        }
         parent.updateMatrixWorld(true);
         for (const child of event.children) {
           const fragment = createFragmentMesh(child, parent, event.parent);
@@ -442,7 +452,9 @@ export class WorldRenderer {
 
   private installBlock(id: number, fragment: THREE.Group) {
     const stale = this.blocks.get(id);
-    if (stale) disposeObject(stale);
+    if (stale) {
+      disposeObject(stale);
+    }
     this.blocks.set(id, fragment);
     this.scene.add(fragment);
   }
@@ -454,19 +466,29 @@ export class WorldRenderer {
     const dispositionChanged =
       mesh.userData.angry !== block.angry ||
       mesh.userData.exception !== block.exception;
+
     return damaged || dispositionChanged || mesh.userData.boss !== block.boss;
   }
 
   private lightCode(mesh: THREE.Group, block: Block, frozen: boolean) {
     const solid = mesh.getObjectByName("perforated-extruded-code");
-    if (!(solid instanceof THREE.Mesh) || !Array.isArray(solid.material))
+    if (!(solid instanceof THREE.Mesh) || !Array.isArray(solid.material)) {
       return;
+    }
     for (const [index, material] of solid.material.entries()) {
-      if (!(material instanceof THREE.MeshToonMaterial)) continue;
+      if (!(material instanceof THREE.MeshToonMaterial)) {
+        continue;
+      }
       let color = "#000000";
-      if (block.angry && index === 1) color = "#6a0f22";
-      if (block.boss && index === 1) color = "#7c2314";
-      if (frozen) color = "#286b97";
+      if (block.angry && index === 1) {
+        color = "#6a0f22";
+      }
+      if (block.boss && index === 1) {
+        color = "#7c2314";
+      }
+      if (frozen) {
+        color = "#286b97";
+      }
       material.emissive.set(color);
       material.emissiveIntensity = frozen
         ? TUMBLE.frozenGlow
@@ -481,11 +503,12 @@ export class WorldRenderer {
     update: (mesh: THREE.Group, entity: T) => void,
   ) {
     const alive = new Set(entities.map((e) => e.id));
-    for (const [id, mesh] of cache)
+    for (const [id, mesh] of cache) {
       if (!alive.has(id)) {
         disposeObject(mesh);
         cache.delete(id);
       }
+    }
     for (const entity of entities) {
       let mesh = cache.get(entity.id);
       if (!mesh) {
@@ -499,9 +522,10 @@ export class WorldRenderer {
   }
 
   private hazard(hazard: TimeoutHazard) {
-    const text = `await setTimeout(${hazard.durationMs});`,
-      { fontSize, charWidth, widthPadding, height, depth } = TIMEOUT_METRICS,
-      width = text.length * charWidth + widthPadding;
+    const text = `await setTimeout(${hazard.durationMs});`;
+    const { fontSize, charWidth, widthPadding, height, depth } =
+      TIMEOUT_METRICS;
+    const width = text.length * charWidth + widthPadding;
     const canvas = document.createElement("canvas");
     // Authored canvas typography uses pixel coordinates and supersampling.
     // oxlint-disable eslint/no-magic-numbers
@@ -558,6 +582,7 @@ export class WorldRenderer {
     trail.rotation.z = -Math.PI * HALF;
     trail.position.set(width * HALF + HAZARD.trailOffset, 0, HAZARD.trailDepth);
     group.add(trail);
+
     return group;
   }
 
@@ -579,6 +604,7 @@ export class WorldRenderer {
         texture.colorSpace = THREE.SRGBColorSpace;
         this.letterTextures.set(key, texture);
       }
+
       return new THREE.Mesh(
         loadGeometry("particle-letter"),
         new THREE.MeshBasicMaterial({
@@ -594,6 +620,7 @@ export class WorldRenderer {
       new THREE.MeshToonMaterial({ color: particle.color, transparent: true }),
     );
     mesh.castShadow = true;
+
     return mesh;
   }
 
@@ -607,11 +634,12 @@ export class WorldRenderer {
     this.visualEvents(sim);
     this.debris.update(effectsDt);
     const alive = new Set(sim.blocks.map((b) => b.id));
-    for (const [id, mesh] of this.blocks)
+    for (const [id, mesh] of this.blocks) {
       if (!alive.has(id)) {
         disposeObject(mesh);
         this.blocks.delete(id);
       }
+    }
     for (const block of sim.blocks) {
       let mesh = this.blocks.get(block.id);
       if (mesh && this.needsCodeRefresh(mesh, block)) {
@@ -658,22 +686,27 @@ export class WorldRenderer {
         const blend = Math.exp(-splitPose.age * TUMBLE.blendRate);
         mesh.position.addScaledVector(splitPose.offset, blend);
         mesh.quaternion.slerp(splitPose.quaternion, blend);
-        if (blend < TUMBLE.blendCutoff) delete mesh.userData.splitPose;
+        if (blend < TUMBLE.blendCutoff) {
+          delete mesh.userData.splitPose;
+        }
       }
       mesh.userData.frozen = sim.freezeRemaining > 0;
       mesh.getObjectByName("frozen-code-outline")!.visible =
         sim.freezeRemaining > 0;
       this.lightCode(mesh, block, sim.freezeRemaining > 0);
       const reactor = mesh.getObjectByName("factory-boss-reactor");
-      if (reactor) reactor.rotation.z = block.age * TUMBLE.reactorSpeed;
+      if (reactor) {
+        reactor.rotation.z = block.age * TUMBLE.reactorSpeed;
+      }
       const core = mesh.getObjectByName("factory-boss-core");
       if (
         core instanceof THREE.Mesh &&
         core.material instanceof THREE.MeshStandardMaterial
-      )
+      ) {
         core.material.emissiveIntensity =
           TUMBLE.coreBase +
           Math.sin(block.age * TUMBLE.coreFrequency) * TUMBLE.coreAmplitude;
+      }
     }
     this.sync(
       sim.robots,
@@ -730,15 +763,18 @@ export class WorldRenderer {
       [this.lintEffect, sim.lintPulse, PULSE.lintDuration],
     ] as const) {
       effect.visible = remaining > 0;
-      if (remaining <= 0) continue;
+      if (remaining <= 0) {
+        continue;
+      }
       {
         const progress = 1 - remaining / duration;
         for (const [index, child] of effect.children.entries()) {
           if (
             !(child instanceof THREE.Mesh) ||
             !(child.material instanceof THREE.MeshBasicMaterial)
-          )
+          ) {
             continue;
+          }
           const ring = child;
           ring.scale.setScalar(
             PULSE.minimumRadius +
@@ -752,12 +788,16 @@ export class WorldRenderer {
     this.reviewBeam.visible = sim.reviewPulse > PULSE.beamCutoff;
     if (this.reviewBeam.visible) {
       const a = new THREE.Vector3(
-          PULSE.beamX,
-          HEIGHT - sim.playerY,
-          PULSE.beamZ,
-        ),
-        b = new THREE.Vector3(sim.aimX, HEIGHT - sim.aimY, PULSE.beamTargetZ),
-        direction = b.clone().sub(a);
+        PULSE.beamX,
+        HEIGHT - sim.playerY,
+        PULSE.beamZ,
+      );
+      const b = new THREE.Vector3(
+        sim.aimX,
+        HEIGHT - sim.aimY,
+        PULSE.beamTargetZ,
+      );
+      const direction = b.clone().sub(a);
       this.reviewBeam.position.copy(a.add(b).multiplyScalar(HALF));
       this.reviewBeam.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 1, 0),
@@ -774,13 +814,16 @@ export class WorldRenderer {
       .filter((p) => !p.char)
       .slice(-PARTICLE.maximum);
     const livingParticles = new Set(particles);
-    for (const [particle, mesh] of this.particleMeshes)
+    for (const [particle, mesh] of this.particleMeshes) {
       if (!livingParticles.has(particle)) {
         mesh.geometry.dispose();
-        if (!Array.isArray(mesh.material)) mesh.material.dispose();
+        if (!Array.isArray(mesh.material)) {
+          mesh.material.dispose();
+        }
         mesh.removeFromParent();
         this.particleMeshes.delete(particle);
       }
+    }
     for (const particle of particles) {
       let mesh = this.particleMeshes.get(particle);
       if (!mesh) {
@@ -800,11 +843,12 @@ export class WorldRenderer {
         age * PARTICLE.spinY,
         particle.angle,
       );
-      if (!Array.isArray(mesh.material))
+      if (!Array.isArray(mesh.material)) {
         mesh.material.opacity = Math.min(
           1,
           (particle.life / particle.maxLife) * PARTICLE.fade,
         );
+      }
     }
     while (this.explosionMeshes.length < sim.explosions.length) {
       const mesh = new THREE.Mesh(
@@ -821,11 +865,13 @@ export class WorldRenderer {
     for (const [i, mesh] of this.explosionMeshes.entries()) {
       const explosion = sim.explosions[i];
       mesh.visible = !!explosion;
-      if (!explosion) continue;
-      const progress = 1 - explosion.life / explosion.maxLife,
-        radius =
-          explosion.radius *
-          (EXPLOSION.radiusBase + progress * EXPLOSION.radiusGrowth);
+      if (!explosion) {
+        continue;
+      }
+      const progress = 1 - explosion.life / explosion.maxLife;
+      const radius =
+        explosion.radius *
+        (EXPLOSION.radiusBase + progress * EXPLOSION.radiusGrowth);
       mesh.position.set(explosion.x, HEIGHT - explosion.y, EXPLOSION.z);
       mesh.rotation.set(
         progress * EXPLOSION.rotationX,
@@ -833,7 +879,9 @@ export class WorldRenderer {
         0,
       );
       mesh.scale.setScalar(radius);
-      if (!Array.isArray(mesh.material)) mesh.material.opacity = 1 - progress;
+      if (!Array.isArray(mesh.material)) {
+        mesh.material.opacity = 1 - progress;
+      }
     }
     const angle = -Math.atan2(
       sim.aimY - sim.playerY,
@@ -855,26 +903,30 @@ export class WorldRenderer {
     );
     this.muzzleLight.intensity = muzzle > 0 ? PLAYER.muzzleLight : 0;
     const flash = this.cannon.getObjectByName("muzzle-flash");
-    if (flash) flash.visible = muzzle > 0;
+    if (flash) {
+      flash.visible = muzzle > 0;
+    }
     const blast = sim.explosions[0];
     const impactIntensity =
       impact > EXPLOSION.impactThreshold ? EXPLOSION.impactLight : 0;
     this.explosionLight.intensity = blast
       ? (EXPLOSION.light * blast.life) / blast.maxLife
       : impactIntensity;
-    if (blast)
+    if (blast) {
       this.explosionLight.position.set(
         blast.x,
         HEIGHT - blast.y,
         EXPLOSION.lightZ,
       );
+    }
     this.reticle.position.set(sim.aimX, HEIGHT - sim.aimY, 0);
     this.stun.visible = sim.isStunned;
     this.stun.position.set(PLAYER.stunX, HEIGHT - sim.playerY, PLAYER.stunZ);
     if (sim.isStunned) {
-      for (let i = 0; i < PLAYER.stunRings; i++)
+      for (let i = 0; i < PLAYER.stunRings; i++) {
         this.stun.children[i]!.rotation.z =
           t * (i % VIEW.diameter ? -PLAYER.stunSpeed : PLAYER.stunSpeed);
+      }
       // SAFETY: the constructor creates this sprite texture from a label canvas.
       const canvas = this.stunLabel.material.map!.image as HTMLCanvasElement;
       const c = canvas.getContext("2d")!;
@@ -924,7 +976,9 @@ export class WorldRenderer {
     }
     for (const mesh of this.particleMeshes.values()) {
       mesh.geometry.dispose();
-      if (!Array.isArray(mesh.material)) mesh.material.dispose();
+      if (!Array.isArray(mesh.material)) {
+        mesh.material.dispose();
+      }
       mesh.removeFromParent();
     }
     this.particleMeshes.clear();

@@ -45,6 +45,7 @@ export async function createGame(
     world.dispose();
     throw error;
   }
+
   class PlayScene implements GameController {
     sim = new Simulation();
     world = world;
@@ -65,7 +66,9 @@ export async function createGame(
       );
       const point = (event: PointerEvent) => {
         const box = canvas.getBoundingClientRect();
-        if (box.width <= 0 || box.height <= 0) return;
+        if (box.width <= 0 || box.height <= 0) {
+          return;
+        }
         this.sim.aimX = Math.max(
           INPUT.pointerMinX,
           Math.min(
@@ -82,10 +85,14 @@ export async function createGame(
         );
       };
       canvas.addEventListener("pointermove", (event) => {
-        if (!this.paused) point(event);
+        if (!this.paused) {
+          point(event);
+        }
       });
       canvas.addEventListener("pointerdown", (event) => {
-        if (this.paused) return;
+        if (this.paused) {
+          return;
+        }
         event.preventDefault();
         point(event);
         canvas.setPointerCapture(event.pointerId);
@@ -105,21 +112,27 @@ export async function createGame(
       canvas.addEventListener("lostpointercapture", () => this.release());
       canvas.addEventListener("contextmenu", (event) => event.preventDefault());
       window.addEventListener("keydown", (event) => {
-        if (this.paused) return;
+        if (this.paused) {
+          return;
+        }
         if (
           ["Space", "ArrowUp", "ArrowDown", "KeyW", "KeyS"].includes(event.code)
         ) {
           event.preventDefault();
           this.keys.add(event.code);
         }
-        if (event.code === "Digit1" || event.code === "Numpad1")
+        if (event.code === "Digit1" || event.code === "Numpad1") {
           this.selectSpecial("homing");
-        if (event.code === "Digit2" || event.code === "Numpad2")
+        }
+        if (event.code === "Digit2" || event.code === "Numpad2") {
           this.selectSpecial("grenade");
-        if (event.code === "Digit3" || event.code === "Numpad3")
+        }
+        if (event.code === "Digit3" || event.code === "Numpad3") {
           this.selectSpecial("review");
-        if (event.code === "Digit4" || event.code === "Numpad4")
+        }
+        if (event.code === "Digit4" || event.code === "Numpad4") {
           this.selectSpecial("lint");
+        }
       });
       window.addEventListener("keyup", (event) => this.keys.delete(event.code));
       window.addEventListener("blur", () => this.release());
@@ -145,6 +158,7 @@ export async function createGame(
       this.holding = this.holdingSpecial = false;
       this.keys.clear();
     }
+
     reset() {
       this.sim.reset();
       this.world.reset();
@@ -153,6 +167,7 @@ export async function createGame(
       callbacks.onState(this.sim);
       this.draw();
     }
+
     setPaused(value: boolean) {
       this.paused = value;
       this.release();
@@ -162,15 +177,20 @@ export async function createGame(
         this.draw();
       }
     }
+
     selectSpecial(type: SpecialWeapon) {
       if (!this.paused) {
         this.sim.selectSpecial(type);
         callbacks.onState(this.sim);
       }
     }
+
     fireSpecial() {
-      if (!this.paused) this.sim.fireSpecial();
+      if (!this.paused) {
+        this.sim.fireSpecial();
+      }
     }
+
     draw() {
       this.world.render(this.sim, this.muzzle, this.impact);
     }
@@ -181,37 +201,63 @@ export async function createGame(
         INPUT.maxFrameSeconds,
       );
       this.lastFrame = now;
-      if (!this.paused) this.update(dt);
+      if (!this.paused) {
+        this.update(dt);
+      }
       requestAnimationFrame(this.frame);
     };
+
     update(dt: number) {
-      if (this.keys.has("ArrowUp") || this.keys.has("KeyW"))
+      if (this.keys.has("ArrowUp") || this.keys.has("KeyW")) {
         this.sim.aimY = Math.max(
           INPUT.keyboardMinY,
           this.sim.aimY - dt * INPUT.keyboardSpeed,
         );
-      if (this.keys.has("ArrowDown") || this.keys.has("KeyS"))
+      }
+      if (this.keys.has("ArrowDown") || this.keys.has("KeyS")) {
         this.sim.aimY = Math.min(
           INPUT.keyboardMaxY,
           this.sim.aimY + dt * INPUT.keyboardSpeed,
         );
-      if (this.holding || this.keys.has("Space")) this.sim.fire();
-      if (this.holdingSpecial) this.sim.fireSpecial();
+      }
+      if (this.holding || this.keys.has("Space")) {
+        this.sim.fire();
+      }
+      if (this.holdingSpecial) {
+        this.sim.fireSpecial();
+      }
       this.sim.update(dt);
       for (const event of this.sim.events.splice(0)) {
-        if (MUZZLE_EVENTS.has(event)) this.muzzle = 0.065;
-        if (event === "hit") this.impact = 3;
-        if (event === "robot-hit") this.impact = 2;
-        if (event === "robot-destroy") this.impact = 6;
-        if (event === "split" || event === "destroy") this.impact = 5;
-        if (event === "explosion" || event === "lint") this.impact = 8;
-        if (event === "generate") this.impact = 3;
-        if (event === "boss" || event === "boss-spawn")
+        if (MUZZLE_EVENTS.has(event)) {
+          this.muzzle = 0.065;
+        }
+        if (event === "hit") {
+          this.impact = 3;
+        }
+        if (event === "robot-hit") {
+          this.impact = 2;
+        }
+        if (event === "robot-destroy") {
+          this.impact = 6;
+        }
+        if (event === "split" || event === "destroy") {
+          this.impact = 5;
+        }
+        if (event === "explosion" || event === "lint") {
+          this.impact = 8;
+        }
+        if (event === "generate") {
+          this.impact = 3;
+        }
+        if (event === "boss" || event === "boss-spawn") {
           this.impact = window.matchMedia("(prefers-reduced-motion: reduce)")
             .matches
             ? 0
             : INPUT.bossImpact;
-        if (event === "stun") this.impact = 7;
+        }
+        if (event === "stun") {
+          this.impact = 7;
+        }
         callbacks.onEvent(event);
       }
       this.muzzle = Math.max(0, this.muzzle - dt);
@@ -228,6 +274,7 @@ export async function createGame(
       this.draw();
     }
   }
+
   const scene = new PlayScene();
   if (import.meta.env.DEV || import.meta.env.MODE === "test") {
     Object.assign(window, {
@@ -239,5 +286,6 @@ export async function createGame(
       },
     });
   }
+
   return scene;
 }

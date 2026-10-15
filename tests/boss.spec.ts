@@ -6,7 +6,9 @@ test("fifth wave announces a solid factory boss, tracks damage and produces code
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("response", (r) => {
-    if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`);
+    if (r.status() >= 400) {
+      errors.push(`${r.status()} ${r.url()}`);
+    }
   });
   await page.goto("/");
   await page.locator("#enter").click();
@@ -33,6 +35,7 @@ test("fifth wave announces a solid factory boss, tracks damage and produces code
     boss.y = 366;
     r.draw();
     const mesh = w.blocks.get(boss.id);
+
     return {
       wave: s.wave,
       total: s.waveTotal,
@@ -65,16 +68,16 @@ test("fifth wave announces a solid factory boss, tracks damage and produces code
   await page.screenshot({ path: testInfo.outputPath("boss-arrival.png") });
   await expect(page.locator("#boss-announcement")).toBeHidden();
   const timing = await page.evaluate(() => (window as any).__bossTiming);
-  const shown = timing.find((x: any) => !x.hidden),
-    hidden = timing.find((x: any) => x.hidden);
+  const shown = timing.find((x: any) => !x.hidden);
+  const hidden = timing.find((x: any) => x.hidden);
   expect(hidden.time - shown.time).toBeGreaterThan(900);
   expect(hidden.time - shown.time).toBeLessThan(1400);
   const battle = await page.evaluate(() => {
     const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
-    const boss = s.blocks.find((b: any) => b.boss),
-      cell = boss.cells.find(
-        (c: any) => c.alive && Math.abs(c.x) < 30 && Math.abs(c.y) < 30,
-      );
+    const boss = s.blocks.find((b: any) => b.boss);
+    const cell = boss.cells.find(
+      (c: any) => c.alive && Math.abs(c.x) < 30 && Math.abs(c.y) < 30,
+    );
     s.damage(boss, cell.x, cell.y, { vy: 0 }, 75, 3);
     const health = s.bossHealth;
     s.bossSpawnTimer = 0.01;
@@ -89,6 +92,7 @@ test("fifth wave announces a solid factory boss, tracks damage and produces code
     });
     r.draw();
     const timeout = w.scene.getObjectByName("timeout-solid");
+
     return {
       health,
       generated: !!generated,

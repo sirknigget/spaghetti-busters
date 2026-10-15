@@ -1,4 +1,5 @@
 import { CODE_SLICES } from "./code-library";
+
 export { CODE_SLICES } from "./code-library";
 
 export const GAME_WIDTH = 1280;
@@ -557,23 +558,51 @@ const WEAPON_SPREADS: Record<Weapon, number[]> = {
 /* oxlint-enable no-magic-numbers */
 
 function bonusKeyword(roll: number): string | undefined {
-  if (roll < TUNING.bonus.quintKeywordChance) return "QUINT_SHOT";
-  if (roll < TUNING.bonus.quadKeywordChance) return "QUAD_SHOT";
-  if (roll < TUNING.bonus.lintKeywordChance) return "LINT_BOMB";
-  if (roll < TUNING.bonus.reviewKeywordChance) return "CODE_REVIEW";
-  if (roll < TUNING.bonus.grenadeKeywordChance) return "RECYCLE_GRENADE";
-  if (roll < TUNING.bonus.homingKeywordChance) return "HOMING_MISSILE";
+  if (roll < TUNING.bonus.quintKeywordChance) {
+    return "QUINT_SHOT";
+  }
+  if (roll < TUNING.bonus.quadKeywordChance) {
+    return "QUAD_SHOT";
+  }
+  if (roll < TUNING.bonus.lintKeywordChance) {
+    return "LINT_BOMB";
+  }
+  if (roll < TUNING.bonus.reviewKeywordChance) {
+    return "CODE_REVIEW";
+  }
+  if (roll < TUNING.bonus.grenadeKeywordChance) {
+    return "RECYCLE_GRENADE";
+  }
+  if (roll < TUNING.bonus.homingKeywordChance) {
+    return "HOMING_MISSILE";
+  }
+
   return undefined;
 }
 
 function bonusType(roll: number): Pickup["type"] {
-  if (roll < TUNING.bonus.homingDropChance) return "homing";
-  if (roll < TUNING.bonus.grenadeDropChance) return "grenade";
-  if (roll < TUNING.bonus.reviewDropChance) return "review";
-  if (roll < TUNING.bonus.lintDropChance) return "lint";
-  if (roll < TUNING.bonus.doubleDropChance) return "double";
-  if (roll < TUNING.bonus.tripleDropChance) return "triple";
-  if (roll < TUNING.bonus.quadDropChance) return "quad";
+  if (roll < TUNING.bonus.homingDropChance) {
+    return "homing";
+  }
+  if (roll < TUNING.bonus.grenadeDropChance) {
+    return "grenade";
+  }
+  if (roll < TUNING.bonus.reviewDropChance) {
+    return "review";
+  }
+  if (roll < TUNING.bonus.lintDropChance) {
+    return "lint";
+  }
+  if (roll < TUNING.bonus.doubleDropChance) {
+    return "double";
+  }
+  if (roll < TUNING.bonus.tripleDropChance) {
+    return "triple";
+  }
+  if (roll < TUNING.bonus.quadDropChance) {
+    return "quad";
+  }
+
   return "quint";
 }
 
@@ -602,9 +631,13 @@ const CODE_KEYWORDS = new Set([
 
 function quotedTokenEnd(line: string, start: number): number {
   for (let end = start + 1; end < line.length; end++) {
-    if (line[end] === "\\") end++;
-    else if (line[end] === line[start]) return end + 1;
+    if (line[end] === "\\") {
+      end++;
+    } else if (line[end] === line[start]) {
+      return end + 1;
+    }
   }
+
   return start + 1;
 }
 
@@ -620,18 +653,26 @@ function highlightLine(line: string): string[] {
       color = COLORS.comment;
     } else if (line[start] === '"' || line[start] === "'") {
       end = quotedTokenEnd(line, start);
-      if (end > start + 1) color = COLORS.string;
+      if (end > start + 1) {
+        color = COLORS.string;
+      }
     } else if (/\w/.test(line[start]!)) {
-      while (end < line.length && /\w/.test(line[end]!)) end++;
+      while (end < line.length && /\w/.test(line[end]!)) {
+        end++;
+      }
       const token = line.slice(start, end);
-      if (CODE_KEYWORDS.has(token)) color = COLORS.keyword;
-      else if (/^\d+$/.test(token)) color = COLORS.number;
+      if (CODE_KEYWORDS.has(token)) {
+        color = COLORS.keyword;
+      } else if (/^\d+$/.test(token)) {
+        color = COLORS.number;
+      }
     } else if (/[{}()[\];.,?:=+!<>|]/.test(line[start]!)) {
       color = COLORS.punctuation;
     }
     colors.fill(color, start, end);
     start = end;
   }
+
   return colors;
 }
 
@@ -713,16 +754,21 @@ export class Simulation {
   get waveRemaining() {
     return this.blocks.length + this.pendingBlocks;
   }
+
   get isBossWave() {
     return this.wave % TUNING.wave.bossInterval === 0;
   }
+
   get bossHealth(): { current: number; max: number } | undefined {
-    if (this.activeBossRoot === undefined || this.bossRewarded)
+    if (this.activeBossRoot === undefined || this.bossRewarded) {
       return undefined;
+    }
     const fragments = this.blocks.filter(
       (block) => block.boss && block.bossRoot === this.activeBossRoot,
     );
-    if (fragments.length === 0) return undefined;
+    if (fragments.length === 0) {
+      return undefined;
+    }
     const current = fragments.reduce(
       (health, block) =>
         health +
@@ -732,8 +778,10 @@ export class Simulation {
         ),
       0,
     );
+
     return { current, max: this.bossMaxHealth };
   }
+
   private get bossDriftSpeed() {
     return Math.min(
       TUNING.wave.bossSpeedCap,
@@ -742,6 +790,7 @@ export class Simulation {
           TUNING.wave.bossSpeedPerTier,
     );
   }
+
   get waveTotal() {
     return this.isBossWave
       ? 1
@@ -751,9 +800,11 @@ export class Simulation {
             Math.floor((this.wave - 1) * TUNING.wave.blocksPerLevel),
         );
   }
+
   get isStunned() {
     return this.stunRemaining > 0;
   }
+
   get driftSpeed() {
     return Math.min(
       TUNING.wave.speedCap,
@@ -762,6 +813,7 @@ export class Simulation {
         this.wave * this.wave * TUNING.wave.speedAcceleration,
     );
   }
+
   get waveLabel() {
     return `WAVE ${String(this.wave).padStart(TUNING.wave.labelDigits, "0")}`;
   }
@@ -840,8 +892,9 @@ export class Simulation {
     if (!options.code && id > 1) {
       const roll = this.random();
       const keyword = bonusKeyword(roll);
-      if (keyword)
+      if (keyword) {
         code.push(`const ${keyword} = proxyFactory(await import("legacy"));`);
+      }
     }
     const toughness = options.boss
       ? TUNING.block.bossBaseToughness +
@@ -871,16 +924,19 @@ export class Simulation {
         ["AMMO_CACHE", "ammo"],
       ] as const) {
         const start = line.indexOf(keyword);
-        if (start >= 0)
+        if (start >= 0) {
           magics.push({
             start,
             end: start + keyword.length,
             type,
             id: `${id}:${row}:${start}`,
           });
+        }
       }
       for (const [column, char] of Array.from(line).entries()) {
-        if (char === " ") continue;
+        if (char === " ") {
+          continue;
+        }
         const magic = magics.find(
           (item) => column >= item.start && column < item.end,
         );
@@ -942,11 +998,13 @@ export class Simulation {
       bossRoot: options.boss ? id : undefined,
     };
     this.blocks.push(block);
+
     return block;
   }
 
   private blockIsAngry(options: SpawnBlockOptions, id: number): boolean {
     const canBeAngry = !options.exception && !options.boss;
+
     return (
       canBeAngry &&
       (options.angry ?? (id > 1 && this.random() < TUNING.block.angryChance))
@@ -957,7 +1015,9 @@ export class Simulation {
     const existing = this.blocks.find(
       (block) => block.boss && block.bossRoot === this.activeBossRoot,
     );
-    if (existing) return existing;
+    if (existing) {
+      return existing;
+    }
     const boss = this.spawnBlock({
       boss: true,
       x: 1300,
@@ -997,11 +1057,14 @@ export class Simulation {
     this.robots = [];
     this.hazards = [];
     this.events.push("boss");
+
     return boss;
   }
 
   private updateBoss(dt: number) {
-    if (this.activeBossRoot === undefined || this.bossRewarded) return;
+    if (this.activeBossRoot === undefined || this.bossRewarded) {
+      return;
+    }
     const fragments = this.blocks.filter(
       (block) => block.boss && block.bossRoot === this.activeBossRoot,
     );
@@ -1022,16 +1085,20 @@ export class Simulation {
         TUNING.boss.specialRewardY,
       );
       this.events.push("boss-defeated");
+
       return;
     }
     this.bossSpawnTimer -= dt;
-    if (dt <= 0 || this.bossSpawnTimer > 0) return;
+    if (dt <= 0 || this.bossSpawnTimer > 0) {
+      return;
+    }
     const minions = this.blocks.filter(
       (block) => block.bossMinion && block.bossRoot === this.activeBossRoot,
     );
     // One timer for the original factory: fragmentation cannot multiply production.
     if (minions.length >= TUNING.boss.minionCap) {
       this.bossSpawnTimer = 1;
+
       return;
     }
     const source = fragments.reduce(
@@ -1086,9 +1153,12 @@ export class Simulation {
   }
 
   fire(): boolean {
-    if (this.status !== "playing" || this.isStunned || this.cooldown > 0)
+    if (this.status !== "playing" || this.isStunned || this.cooldown > 0) {
       return false;
-    if (this.weapon !== "single" && this.ammo <= 0) this.weapon = "single";
+    }
+    if (this.weapon !== "single" && this.ammo <= 0) {
+      this.weapon = "single";
+    }
     const angle = Math.atan2(
       this.aimY - this.playerY,
       Math.max(
@@ -1109,10 +1179,13 @@ export class Simulation {
         weapon: this.weapon,
       });
     }
-    if (this.weapon !== "single") this.ammo--;
+    if (this.weapon !== "single") {
+      this.ammo--;
+    }
     this.cooldown = 0.135;
     this.shotsFired++;
     this.events.push("shot");
+
     return true;
   }
 
@@ -1121,8 +1194,9 @@ export class Simulation {
       this.status === "playing" &&
       !this.isStunned &&
       type in SPECIAL_AMMO_CAPS
-    )
+    ) {
       this.specialWeapon = type;
+    }
   }
 
   fireSpecial(): boolean {
@@ -1132,8 +1206,9 @@ export class Simulation {
       this.isStunned ||
       this.specialCooldown > 0 ||
       this.specialAmmo[type] <= 0
-    )
+    ) {
       return false;
+    }
     if (type === "review" || type === "lint") {
       this.specialAmmo[type]--;
       this.specialCooldown = 0.8;
@@ -1146,6 +1221,7 @@ export class Simulation {
         this.lintBlocks();
         this.events.push("lint");
       }
+
       return true;
     }
     const angle = Math.atan2(
@@ -1199,6 +1275,7 @@ export class Simulation {
         ? TUNING.weapon.homingCooldown
         : TUNING.weapon.grenadeCooldown;
     this.events.push(type === "homing" ? "missile" : "grenade");
+
     return true;
   }
 
@@ -1206,10 +1283,13 @@ export class Simulation {
     // Each original block is handled once; new halves wait for the next bomb.
     for (const block of this.blocks) {
       const extent = this.extents(block);
-      if (block.x + extent.x < 0 || block.x - extent.x > GAME_WIDTH) continue;
+      if (block.x + extent.x < 0 || block.x - extent.x > GAME_WIDTH) {
+        continue;
+      }
       const cells = block.cells.filter((cell) => cell.alive);
-      if (cells.length > LINT_SMALL_BLOCK_CELLS) this.split(block, cells, 0, 0);
-      else {
+      if (cells.length > LINT_SMALL_BLOCK_CELLS) {
+        this.split(block, cells, 0, 0);
+      } else {
         // Remaining letters define size, so chipped slabs and armored fragments clear too.
         this.damage(
           block,
@@ -1253,6 +1333,7 @@ export class Simulation {
     };
     this.robots.push(robot);
     this.events.push("robot");
+
     return robot;
   }
 
@@ -1276,16 +1357,18 @@ export class Simulation {
     };
     this.pickups.push(pickup);
     this.events.push("bonus");
+
     return pickup;
   }
 
   private visual(event: VisualEvent) {
     this.visualEvents.push(event);
-    if (this.visualEvents.length > TUNING.bounds.visualEventCap)
+    if (this.visualEvents.length > TUNING.bounds.visualEventCap) {
       this.visualEvents.splice(
         0,
         this.visualEvents.length - TUNING.bounds.visualEventCap,
       );
+    }
   }
 
   private snapshot(block: Block): Block {
@@ -1304,7 +1387,9 @@ export class Simulation {
     vx: number,
     vy: number,
   ) {
-    if (robot.health <= 0) return;
+    if (robot.health <= 0) {
+      return;
+    }
     robot.health = Math.max(0, robot.health - power);
     robot.hitFlash = 0.2;
     this.visual({
@@ -1344,12 +1429,14 @@ export class Simulation {
       [ax - robot.x, bx - ax, TUNING.robot.halfWidth],
       [ay - robot.y, by - ay, TUNING.robot.halfHeight],
     ]) {
-      if (Math.abs(delta!) > TUNING.collision.parallelEpsilon)
+      if (Math.abs(delta!) > TUNING.collision.parallelEpsilon) {
         t = Math.max(
           t,
           Math.min((-half! - start!) / delta!, (half! - start!) / delta!),
         );
+      }
     }
+
     return { x: ax + (bx - ax) * t, y: ay + (by - ay) * t };
   }
 
@@ -1425,8 +1512,9 @@ export class Simulation {
         robot.state = "leaving";
         robot.stateTime = 0;
         this.events.push("generate");
-      } else if (robot.state === "leaving")
+      } else if (robot.state === "leaving") {
         robot.x += TUNING.robot.exitSpeed * dt;
+      }
     }
     this.robots = this.robots.filter((robot) => robot.x < TUNING.robot.exitX);
   }
@@ -1506,14 +1594,17 @@ export class Simulation {
     };
     this.hazards.push(hazard);
     this.events.push("hazard");
+
     return hazard;
   }
 
   private updateHazards(dt: number) {
     for (const hazard of this.hazards) {
-      if (hazard.life <= 0) continue;
-      const oldX = hazard.x,
-        oldY = hazard.y;
+      if (hazard.life <= 0) {
+        continue;
+      }
+      const oldX = hazard.x;
+      const oldY = hazard.y;
       hazard.age += dt;
       hazard.life -= dt;
       hazard.x += hazard.vx * dt;
@@ -1541,13 +1632,17 @@ export class Simulation {
         );
         this.events.push("stun");
       }
-      if (hazard.x < TUNING.hazard.exitX) hazard.life = 0;
+      if (hazard.x < TUNING.hazard.exitX) {
+        hazard.life = 0;
+      }
     }
     this.hazards = this.hazards.filter((hazard) => hazard.life > 0);
   }
 
   private updateSpecials(dt: number) {
-    for (const explosion of this.explosions) explosion.life -= dt;
+    for (const explosion of this.explosions) {
+      explosion.life -= dt;
+    }
     this.explosions = this.explosions.filter((explosion) => explosion.life > 0);
     for (const special of this.specials) {
       this.updateSpecial(special, dt);
@@ -1559,9 +1654,11 @@ export class Simulation {
 
   private updateSpecial(special: SpecialProjectile, dt: number) {
     special.life -= dt;
-    if (special.life <= 0) return;
-    const oldX = special.x,
-      oldY = special.y;
+    if (special.life <= 0) {
+      return;
+    }
+    const oldX = special.x;
+    const oldY = special.y;
     if (special.type === "homing") {
       this.steerHoming(special, dt);
     } else {
@@ -1595,6 +1692,7 @@ export class Simulation {
       const blast = SPECIAL_BLASTS[special.type];
       this.explode(contact.x, contact.y, blast.radius, blast.power);
       special.life = 0;
+
       return;
     }
     const collision = this.blocks.some((block) =>
@@ -1618,8 +1716,9 @@ export class Simulation {
         block.x + extent.x < 0 ||
         edge > GAME_WIDTH ||
         !block.cells.some((cell) => cell.alive)
-      )
+      ) {
         continue;
+      }
       if (edge < leftEdge) {
         leftEdge = edge;
         targetBlock = block;
@@ -1629,10 +1728,12 @@ export class Simulation {
     let nearest = Infinity;
     if (targetBlock) {
       const block = targetBlock;
-      const cos = Math.cos(block.angle),
-        sin = Math.sin(block.angle);
+      const cos = Math.cos(block.angle);
+      const sin = Math.sin(block.angle);
       for (const cell of block.cells) {
-        if (!cell.alive) continue;
+        if (!cell.alive) {
+          continue;
+        }
         const x = block.x + cell.x * cos - cell.y * sin;
         const y = block.y + cell.x * sin + cell.y * cos;
         const distance =
@@ -1671,10 +1772,11 @@ export class Simulation {
         block.width + TUNING.weapon.specialBroadphaseX ||
       Math.abs(block.y - special.y) >
         block.height + TUNING.weapon.specialBroadphaseY
-    )
+    ) {
       return false;
-    const cos = Math.cos(block.angle),
-      sin = Math.sin(block.angle);
+    }
+    const cos = Math.cos(block.angle);
+    const sin = Math.sin(block.angle);
     const ax = (oldX - block.x) * cos + (oldY - block.y) * sin;
     const ay = -(oldX - block.x) * sin + (oldY - block.y) * cos;
     const bx = (special.x - block.x) * cos + (special.y - block.y) * sin;
@@ -1689,6 +1791,7 @@ export class Simulation {
     ) {
       return true;
     }
+
     return false;
   }
 
@@ -1697,7 +1800,9 @@ export class Simulation {
     this.events.push("explosion");
     this.burst(x, y, "#8cf5cd", TUNING.particles.explosionBurstCount);
     for (const hazard of this.hazards) {
-      if (Math.hypot(hazard.x - x, hazard.y - y) < radius) hazard.life = 0;
+      if (Math.hypot(hazard.x - x, hazard.y - y) < radius) {
+        hazard.life = 0;
+      }
     }
     for (const robot of this.robots) {
       const nearX = clamp(
@@ -1722,8 +1827,8 @@ export class Simulation {
       }
     }
     for (const block of this.blocks) {
-      const cos = Math.cos(block.angle),
-        sin = Math.sin(block.angle);
+      const cos = Math.cos(block.angle);
+      const sin = Math.sin(block.angle);
       const localX = (x - block.x) * cos + (y - block.y) * sin;
       const localY = -(x - block.x) * sin + (y - block.y) * cos;
       if (
@@ -1746,7 +1851,9 @@ export class Simulation {
   }
 
   update(dt: number) {
-    if (!Number.isFinite(dt) || dt <= 0 || this.status !== "playing") return;
+    if (!Number.isFinite(dt) || dt <= 0 || this.status !== "playing") {
+      return;
+    }
     // Fixed-size substeps prevent tunneling and unstable impulses on slow devices.
     let remaining = Math.min(dt, TUNING.timing.maxFrameDelta);
     while (remaining > 0 && this.status === "playing") {
@@ -1762,12 +1869,15 @@ export class Simulation {
     this.specialCooldown = Math.max(0, this.specialCooldown - dt);
     if (this.stunRemaining > 0) {
       this.stunRemaining = Math.max(0, this.stunRemaining - dt);
-      if (this.stunRemaining === 0) this.events.push("recover");
-    } else
+      if (this.stunRemaining === 0) {
+        this.events.push("recover");
+      }
+    } else {
       this.playerY +=
         (clamp(this.aimY, TUNING.timing.playerMinY, TUNING.timing.playerMaxY) -
           this.playerY) *
         (1 - Math.exp(-dt * TUNING.timing.playerAimResponse));
+    }
     const enemyDt = Math.min(dt, Math.max(0, dt - this.freezeRemaining));
     this.freezeRemaining = Math.max(0, this.freezeRemaining - dt);
     this.reviewPulse = Math.max(0, this.reviewPulse - dt);
@@ -1806,7 +1916,9 @@ export class Simulation {
         this.random() * TUNING.timing.hazardDelayRange;
     }
     this.comboTimer -= dt;
-    if (this.comboTimer <= 0) this.combo = 0;
+    if (this.comboTimer <= 0) {
+      this.combo = 0;
+    }
     this.spawnTimer -= enemyDt;
     if (
       enemyDt > 0 &&
@@ -1814,8 +1926,9 @@ export class Simulation {
       this.spawnTimer <= 0 &&
       this.blocks.length < TUNING.bounds.blockCap
     ) {
-      if (this.isBossWave) this.spawnBoss();
-      else {
+      if (this.isBossWave) {
+        this.spawnBoss();
+      } else {
         this.spawnBlock();
         this.pendingBlocks--;
       }
@@ -1843,12 +1956,16 @@ export class Simulation {
         this.waveTimer = 0;
         this.events.push("wave");
       }
-    } else this.waveTimer = 0;
+    } else {
+      this.waveTimer = 0;
+    }
 
     // Newly thrown exceptions must wait until the next simulation step.
     // oxlint-disable-next-line unicorn/no-useless-spread
     for (const block of [...this.blocks]) {
-      if (enemyDt <= 0) continue;
+      if (enemyDt <= 0) {
+        continue;
+      }
       block.age += enemyDt;
       if (block.angry) {
         block.throwTimer -= enemyDt;
@@ -1917,10 +2034,13 @@ export class Simulation {
       if (block.x + extent.x < 0) {
         this.status = "gameover";
         this.events.push("gameover");
+
         return;
       }
     }
-    if (enemyDt > 0) this.collideBlocks();
+    if (enemyDt > 0) {
+      this.collideBlocks();
+    }
     if (enemyDt > 0) {
       this.updateRobots(enemyDt);
       this.updateHazards(enemyDt);
@@ -2037,8 +2157,8 @@ export class Simulation {
       // Broad-phase rejection and first-hit termination are distinct collision-loop exits.
       // oxlint-disable-next-line sonarjs/too-many-break-or-continue-in-loop
       for (const block of candidates) {
-        const cos = Math.cos(block.angle),
-          sin = Math.sin(block.angle);
+        const cos = Math.cos(block.angle);
+        const sin = Math.sin(block.angle);
         const ax = (oldX - block.x) * cos + (oldY - block.y) * sin;
         const ay = -(oldX - block.x) * sin + (oldY - block.y) * cos;
         const bx = (bullet.x - block.x) * cos + (bullet.y - block.y) * sin;
@@ -2052,8 +2172,9 @@ export class Simulation {
             -block.height * HALF - TUNING.weapon.bulletBroadphaseY ||
           Math.min(ay, by) >
             block.height * HALF + TUNING.weapon.bulletBroadphaseY
-        )
+        ) {
           continue;
+        }
         const cell = block.cells.find(
           (item) =>
             item.alive &&
@@ -2067,7 +2188,9 @@ export class Simulation {
         }
       }
     }
-    if (hit) bullet.life = 0;
+    if (hit) {
+      bullet.life = 0;
+    }
   }
 
   private collectPickup(pickup: Pickup) {
@@ -2109,8 +2232,8 @@ export class Simulation {
   ) {
     // Keep the last visible surface, including old holes, even when this hit clears every glyph.
     const surfaceBeforeHit = this.snapshot(block);
-    const cos = Math.cos(block.angle),
-      sin = Math.sin(block.angle);
+    const cos = Math.cos(block.angle);
+    const sin = Math.sin(block.angle);
     const radius =
       blastRadius ??
       (block.cells.filter((cell) => cell.alive).length <
@@ -2127,9 +2250,13 @@ export class Simulation {
     // Skip absent glyphs and surviving armor before emitting destruction effects.
     // oxlint-disable-next-line sonarjs/too-many-break-or-continue-in-loop
     for (const cell of block.cells) {
-      if (!cell.alive || Math.hypot(cell.x - x, cell.y - y) > radius) continue;
+      if (!cell.alive || Math.hypot(cell.x - x, cell.y - y) > radius) {
+        continue;
+      }
       cell.health -= power;
-      if (cell.health > 0) continue;
+      if (cell.health > 0) {
+        continue;
+      }
       cell.alive = false;
       removed++;
       const worldX = block.x + cell.x * cos - cell.y * sin;
@@ -2285,8 +2412,8 @@ export class Simulation {
     const cut = horizontal
       ? (sorted[middle - 1]!.y + sorted[middle]!.y) * HALF
       : (sorted[middle - 1]!.x + sorted[middle]!.x) * HALF;
-    const cos = Math.cos(block.angle),
-      sin = Math.sin(block.angle);
+    const cos = Math.cos(block.angle);
+    const sin = Math.sin(block.angle);
     const parent = this.snapshot(block);
     const children: Block[] = [];
     const seed = ++this.visualSeed;
@@ -2299,8 +2426,8 @@ export class Simulation {
       const centerX = (minX + maxX) * HALF;
       const centerY = (minY + maxY) * HALF;
       const sign: -1 | 1 = index === 0 ? -1 : 1;
-      const width = maxX - minX + TUNING.split.widthPadding,
-        height = maxY - minY + TUNING.split.heightPadding;
+      const width = maxX - minX + TUNING.split.widthPadding;
+      const height = maxY - minY + TUNING.split.heightPadding;
       const child: Block = {
         id: this.nextId++,
         title: block.title,
@@ -2363,7 +2490,9 @@ export class Simulation {
   private collideBlocks() {
     for (let i = 0; i < this.blocks.length; i++) {
       const a = this.blocks[i]!;
-      if (a.age < TUNING.collision.minimumAge) continue;
+      if (a.age < TUNING.collision.minimumAge) {
+        continue;
+      }
       const ae = this.extents(a);
       // Reject offscreen/new bodies before testing overlap; continue keeps each pair independent.
       // oxlint-disable-next-line sonarjs/too-many-break-or-continue-in-loop
@@ -2373,21 +2502,24 @@ export class Simulation {
           b.age < TUNING.collision.minimumAge ||
           a.x > GAME_WIDTH + ae.x ||
           b.x > GAME_WIDTH + b.width * HALF
-        )
+        ) {
           continue;
+        }
         const be = this.extents(b);
         const overlapX = ae.x + be.x - Math.abs(b.x - a.x);
         const overlapY = ae.y + be.y - Math.abs(b.y - a.y);
-        if (overlapX <= 0 || overlapY <= 0) continue;
+        if (overlapX <= 0 || overlapY <= 0) {
+          continue;
+        }
         const horizontalDirection = b.x >= a.x ? 1 : -1;
         const verticalDirection = b.y >= a.y ? 1 : -1;
         const nx = overlapX < overlapY ? horizontalDirection : 0;
         const ny = nx === 0 ? verticalDirection : 0;
         const overlap = Math.min(overlapX, overlapY);
-        const massA = Math.max(TUNING.collision.minimumMass, a.cells.length),
-          massB = Math.max(TUNING.collision.minimumMass, b.cells.length);
-        const inverseA = 1 / massA,
-          inverseB = 1 / massB;
+        const massA = Math.max(TUNING.collision.minimumMass, a.cells.length);
+        const massB = Math.max(TUNING.collision.minimumMass, b.cells.length);
+        const inverseA = 1 / massA;
+        const inverseB = 1 / massB;
         const separation =
           (Math.max(0, overlap - TUNING.collision.penetrationSlop) *
             TUNING.collision.positionCorrection) /
@@ -2412,8 +2544,9 @@ export class Simulation {
   }
 
   private extents(block: Block) {
-    const cos = Math.abs(Math.cos(block.angle)),
-      sin = Math.abs(Math.sin(block.angle));
+    const cos = Math.abs(Math.cos(block.angle));
+    const sin = Math.abs(Math.sin(block.angle));
+
     return {
       x: cos * block.width * HALF + sin * block.height * HALF,
       y: sin * block.width * HALF + cos * block.height * HALF,
@@ -2437,14 +2570,15 @@ export class Simulation {
     hazard: TimeoutHazard,
   ) {
     const angle = Math.atan2(hazard.vy, -hazard.vx) * TUNING.hazard.angleFactor;
-    const cos = Math.cos(angle),
-      sin = Math.sin(angle);
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
     const local = (x: number, y: number) => ({
       x: (x - hazard.x) * cos + (y - hazard.y) * sin,
       y: -(x - hazard.x) * sin + (y - hazard.y) * cos,
     });
-    const a = local(ax, ay),
-      b = local(bx, by);
+    const a = local(ax, ay);
+    const b = local(bx, by);
+
     return this.segmentRectangle(
       a.x,
       a.y,
@@ -2463,22 +2597,27 @@ export class Simulation {
     halfWidth: number,
     halfHeight: number,
   ) {
-    let min = 0,
-      max = 1;
+    let min = 0;
+    let max = 1;
     for (const [start, delta, half] of [
       [ax, bx - ax, halfWidth],
       [ay, by - ay, halfHeight],
     ]) {
       if (Math.abs(delta!) < TUNING.collision.parallelEpsilon) {
-        if (Math.abs(start!) > half!) return false;
+        if (Math.abs(start!) > half!) {
+          return false;
+        }
       } else {
-        const t1 = (-half! - start!) / delta!,
-          t2 = (half! - start!) / delta!;
+        const t1 = (-half! - start!) / delta!;
+        const t2 = (half! - start!) / delta!;
         min = Math.max(min, Math.min(t1, t2));
         max = Math.min(max, Math.max(t1, t2));
-        if (min > max) return false;
+        if (min > max) {
+          return false;
+        }
       }
     }
+
     return true;
   }
 
@@ -2490,13 +2629,14 @@ export class Simulation {
     px: number,
     py: number,
   ) {
-    const dx = bx - ax,
-      dy = by - ay;
+    const dx = bx - ax;
+    const dy = by - ay;
     const length = dx * dx + dy * dy;
     const t =
       length === 0
         ? 0
         : clamp(((px - ax) * dx + (py - ay) * dy) / length, 0, 1);
+
     return Math.hypot(ax + dx * t - px, ay + dy * t - py);
   }
 

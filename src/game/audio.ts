@@ -86,7 +86,9 @@ export class AudioEngine {
     this.scene = "menu";
     this.start();
     this.fadeMusic();
-    if (opening) this.play("menu-open");
+    if (opening) {
+      this.play("menu-open");
+    }
   }
 
   /** Keep the same musical transport while the title arrangement blooms into gameplay. */
@@ -99,7 +101,9 @@ export class AudioEngine {
   /** Repeated HUD calls are harmless; a new run resets the score to its opening cue. */
   setWave(wave: number): void {
     const next = Math.max(1, Math.floor(wave));
-    if (next === this.wave) return;
+    if (next === this.wave) {
+      return;
+    }
     const newRun = next === 1 && this.wave > 1;
     this.wave = next;
     if (newRun) {
@@ -107,17 +111,24 @@ export class AudioEngine {
       this.clearDecks();
       this.transport = 0;
       this.trackIndex = 0;
-      if (this.started && !this.paused && this.enabled) this.startMusic();
+      if (this.started && !this.paused && this.enabled) {
+        this.startMusic();
+      }
     }
   }
 
   /** Call from Start, pointerdown, or another trusted browser gesture. */
   start(): void {
     if (this.started) {
-      if (this.paused) this.resume();
+      if (this.paused) {
+        this.resume();
+      }
+
       return;
     }
-    if (!this.initialize()) return;
+    if (!this.initialize()) {
+      return;
+    }
     this.started = true;
     this.paused = false;
     this.unlock();
@@ -135,8 +146,9 @@ export class AudioEngine {
         MIX.gainRamp,
       );
     }
-    if (!enabled) this.stopSounds();
-    else if (this.started && !this.paused) {
+    if (!enabled) {
+      this.stopSounds();
+    } else if (this.started && !this.paused) {
       this.unlock();
       this.startMusic();
     }
@@ -145,8 +157,9 @@ export class AudioEngine {
   pause(): void {
     this.paused = true;
     this.stopSounds();
-    if (this.context && this.master)
+    if (this.context && this.master) {
       this.master.gain.setValueAtTime(0, this.context.currentTime);
+    }
   }
 
   /** Stop the groove but let the final descending sting finish naturally. */
@@ -162,9 +175,12 @@ export class AudioEngine {
   resume(): void {
     if (!this.started) {
       this.start();
+
       return;
     }
-    if (!this.paused) return;
+    if (!this.paused) {
+      return;
+    }
     this.paused = false;
     this.unlock();
     this.startMusic();
@@ -174,11 +190,14 @@ export class AudioEngine {
   play(event: string): void {
     const context = this.context;
     const inactive = !this.enabled || this.paused || !this.started;
-    if (!context || !this.effects || inactive) return;
+    if (!context || !this.effects || inactive) {
+      return;
+    }
     const time = context.currentTime;
     const previous = this.lastEffects.get(event) ?? -Infinity;
-    if (time - previous < (EFFECT_INTERVALS.get(event) ?? MIX.effectInterval))
+    if (time - previous < (EFFECT_INTERVALS.get(event) ?? MIX.effectInterval)) {
       return;
+    }
     this.lastEffects.set(event, time);
     const bus = this.effects;
     switch (event) {
@@ -473,11 +492,15 @@ export class AudioEngine {
   /* oxlint-enable no-magic-numbers */
 
   private initialize(): boolean {
-    if (this.context) return true;
+    if (this.context) {
+      return true;
+    }
     try {
       const BrowserAudioContext =
         window.AudioContext ?? window.webkitAudioContext;
-      if (!BrowserAudioContext) return false;
+      if (!BrowserAudioContext) {
+        return false;
+      }
       const context = new BrowserAudioContext();
       this.context = context;
       this.master = context.createGain();
@@ -519,8 +542,9 @@ export class AudioEngine {
         context.sampleRate,
       );
       const data = this.noiseBuffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++)
+      for (let i = 0; i < data.length; i++) {
         data[i] = Math.random() * MIX.bipolarRange - 1;
+      }
       // Decode once while the opening screen plays. Never start a delayed voice
       // from this promise: a pause, mute, or finished run must stay quiet.
       void fetch("/assets/audio/boss-fight.wav")
@@ -536,21 +560,25 @@ export class AudioEngine {
         .catch(() => {
           /* The synthesized warning remains available if audio cannot load. */
         });
+
       return true;
     } catch {
       this.context = null;
+
       return false;
     }
   }
 
   private unlock(): void {
-    if (this.context?.state === "suspended")
+    if (this.context?.state === "suspended") {
       void this.context.resume().catch(() => undefined);
+    }
   }
 
   private startMusic(): void {
-    if (!this.context || !this.enabled || this.paused || this.timer !== null)
+    if (!this.context || !this.enabled || this.paused || this.timer !== null) {
       return;
+    }
     this.anchor = this.context.currentTime;
     this.master!.gain.setTargetAtTime(
       MIX.masterVolume,
@@ -561,13 +589,17 @@ export class AudioEngine {
       this.scene === "menu" ? MIX.menuVolume : MIX.gameVolume,
       this.anchor,
     );
-    if (this.decks.length === 0) this.addDeck(this.trackIndex, this.transport);
+    if (this.decks.length === 0) {
+      this.addDeck(this.trackIndex, this.transport);
+    }
     this.schedule();
     this.timer = setInterval(() => this.schedule(), MIX.schedulerMs);
   }
 
   private fadeMusic(): void {
-    if (!this.context || !this.music || !this.enabled || this.paused) return;
+    if (!this.context || !this.music || !this.enabled || this.paused) {
+      return;
+    }
     const now = this.context.currentTime;
     this.music.gain.cancelScheduledValues(now);
     this.music.gain.setTargetAtTime(
@@ -578,7 +610,9 @@ export class AudioEngine {
   }
 
   private advanceTransport(): void {
-    if (this.timer === null || !this.context) return;
+    if (this.timer === null || !this.context) {
+      return;
+    }
     const now = this.context.currentTime;
     this.transport += Math.max(0, now - this.anchor);
     this.anchor = now;
@@ -586,10 +620,13 @@ export class AudioEngine {
 
   private stopSounds(): void {
     this.advanceTransport();
-    if (this.timer !== null) clearInterval(this.timer);
+    if (this.timer !== null) {
+      clearInterval(this.timer);
+    }
     this.timer = null;
-    if (this.context && this.music)
+    if (this.context && this.music) {
       this.music.gain.setValueAtTime(0, this.context.currentTime);
+    }
     for (const source of this.sources) {
       try {
         source.stop();
@@ -602,7 +639,9 @@ export class AudioEngine {
   }
 
   private clearDecks(): void {
-    for (const deck of this.decks) deck.bus.disconnect();
+    for (const deck of this.decks) {
+      deck.bus.disconnect();
+    }
     this.decks = [];
   }
 
@@ -615,7 +654,9 @@ export class AudioEngine {
   }
 
   private schedule(): void {
-    if (!this.context || !this.music || !this.enabled || this.paused) return;
+    if (!this.context || !this.music || !this.enabled || this.paused) {
+      return;
+    }
     this.advanceTransport();
     const now = this.context.currentTime;
     const current = this.decks.at(-1);
@@ -631,6 +672,7 @@ export class AudioEngine {
     this.decks = this.decks.filter((deck) => {
       if (deck.retireAt !== undefined && this.transport >= deck.retireAt) {
         deck.bus.disconnect();
+
         return false;
       }
       const track = MUSIC_TRACKS[deck.track]!;
@@ -650,8 +692,9 @@ export class AudioEngine {
             );
       deck.bus.gain.setTargetAtTime(fade, now, MIX.deckFadeRamp);
       // Skip stale notes after hidden-tab throttling; never emit a catch-up burst.
-      if (deck.nextStep * sixteenth < age - MIX.staleNoteSeconds)
+      if (deck.nextStep * sixteenth < age - MIX.staleNoteSeconds) {
         deck.nextStep = Math.ceil(age / sixteenth);
+      }
       while (deck.nextStep * sixteenth < age + MIX.lookaheadSeconds) {
         this.musicStep(
           deck,
@@ -660,6 +703,7 @@ export class AudioEngine {
         );
         deck.nextStep++;
       }
+
       return true;
     });
   }
@@ -812,11 +856,12 @@ export class AudioEngine {
     const envelope = context.createGain();
     oscillator.type = type;
     oscillator.frequency.setValueAtTime(frequency, time);
-    if (endFrequency)
+    if (endFrequency) {
       oscillator.frequency.exponentialRampToValueAtTime(
         endFrequency,
         time + duration,
       );
+    }
     envelope.gain.setValueAtTime(SYNTH.attackFloor, time);
     envelope.gain.exponentialRampToValueAtTime(
       volume,
@@ -844,7 +889,9 @@ export class AudioEngine {
     destination: AudioNode,
     highpass = false,
   ): void {
-    if (!this.noiseBuffer) return;
+    if (!this.noiseBuffer) {
+      return;
+    }
     const context = this.context!;
     const source = context.createBufferSource();
     source.buffer = this.noiseBuffer;

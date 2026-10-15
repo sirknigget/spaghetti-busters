@@ -97,9 +97,11 @@ export function createFragmentMesh(
   // SAFETY: createCodeMesh stores only FractureVisual values under this private key.
   const inherited = parent.userData.fractureVisual as
     FractureVisual | undefined;
-  if (!inherited || !block.fracture) return createCodeMesh(block);
-  const f = block.fracture,
-    axis = f.axis;
+  if (!inherited || !block.fracture) {
+    return createCodeMesh(block);
+  }
+  const f = block.fracture;
+  const axis = f.axis;
   const bounds = {
     left: -inherited.width * HALF - 1,
     right: inherited.width * HALF + 1,
@@ -130,6 +132,7 @@ export function createFragmentMesh(
     holes: new Map(parentVisual.holes),
     fractured: true,
   };
+
   return createCodeMesh(block, undefined, visual);
 }
 
@@ -148,8 +151,9 @@ export function createDeathFragments(
     !visual ||
     !(solid instanceof THREE.Mesh) ||
     solid.geometry.getAttribute("position").count === 0
-  )
+  ) {
     return [];
+  }
   const rootBounds = {
     left: -visual.width * HALF - DEATH_FRACTURE.boundsPadding,
     right: visual.width * HALF + DEATH_FRACTURE.boundsPadding,
@@ -173,8 +177,8 @@ export function createDeathFragments(
     cutIndex++
   ) {
     // Always break the largest surviving piece, so a tiny edge chip cannot monopolize cuts.
-    let selected = -1,
-      largest = 0;
+    let selected = -1;
+    let largest = 0;
     for (let i = 0; i < leaves.length; i++) {
       const leaf = leaves[i]!;
       leaf.geometry.computeBoundingBox();
@@ -188,10 +192,12 @@ export function createDeathFragments(
         largest = area;
       }
     }
-    if (selected < 0) break;
-    const leaf = leaves[selected]!,
-      box = leaf.geometry.boundingBox!,
-      size = box.getSize(new THREE.Vector3());
+    if (selected < 0) {
+      break;
+    }
+    const leaf = leaves[selected]!;
+    const box = leaf.geometry.boundingBox!;
+    const size = box.getSize(new THREE.Vector3());
     const axis =
       size.x >
       size.y *
@@ -239,6 +245,7 @@ export function createDeathFragments(
     leaf.geometry.dispose();
     leaves.splice(selected, 1, ...halves);
   }
+
   // oxlint-enable sonarjs/too-many-break-or-continue-in-loop
   return leaves.map((leaf, index) => {
     const group = new THREE.Group();
@@ -265,10 +272,11 @@ export function createDeathFragments(
       // Root housing is clipped by the same contours, retaining each original bolt/core once.
       createBossArmor(group, visual.width, visual.height, visual.depth);
       clipBossArmor(group, fragmentVisual, visual.depth);
-      const originalReactor = source.getObjectByName("factory-boss-reactor"),
-        reactor = group.getObjectByName("factory-boss-reactor");
-      if (originalReactor && reactor)
+      const originalReactor = source.getObjectByName("factory-boss-reactor");
+      const reactor = group.getObjectByName("factory-boss-reactor");
+      if (originalReactor && reactor) {
         reactor.quaternion.copy(originalReactor.quaternion);
+      }
     }
     const face = source.getObjectByName("angry-code-face");
     if (
@@ -284,13 +292,18 @@ export function createDeathFragments(
       const copy = face.clone(true);
       copy.position.sub(center);
       copy.traverse((object) => {
-        if (!(object instanceof THREE.Mesh)) return;
+        if (!(object instanceof THREE.Mesh)) {
+          return;
+        }
         const part = object;
-        if (part.geometry) part.geometry = part.geometry.clone();
-        if (part.material)
+        if (part.geometry) {
+          part.geometry = part.geometry.clone();
+        }
+        if (part.material) {
           part.material = Array.isArray(part.material)
             ? part.material.map(cloneOwnedMaterial)
             : cloneOwnedMaterial(part.material);
+        }
       });
       group.add(copy);
     }
@@ -299,6 +312,7 @@ export function createDeathFragments(
     group.userData.deathFragmentRootOffset = { ...fragmentVisual.offset };
     group.userData.solidDepth = visual.depth * DIAMETER;
     group.userData.fragmentArea = frontArea(leaf.geometry);
+
     return group;
   });
 }
@@ -306,23 +320,32 @@ export function createDeathFragments(
 export function cloneOwnedMaterial(source: THREE.Material): THREE.Material {
   const material = source.clone();
   for (const [key, value] of Object.entries(source)) {
-    if (!(value instanceof THREE.Texture)) continue;
+    if (!(value instanceof THREE.Texture)) {
+      continue;
+    }
     const texture = value.clone();
     texture.needsUpdate = true;
     Object.assign(material, { [key]: texture });
   }
+
   return material;
 }
 
 function frontArea(geometry: THREE.BufferGeometry) {
   const p = geometry.getAttribute("position");
   let area = 0;
-  for (let i = 0; i < (geometry.groups[0]?.count ?? 0); i += TRIANGLE_VERTICES)
+  for (
+    let i = 0;
+    i < (geometry.groups[0]?.count ?? 0);
+    i += TRIANGLE_VERTICES
+  ) {
     area +=
       Math.abs(
         (p.getX(i + 1) - p.getX(i)) * (p.getY(i + DIAMETER) - p.getY(i)) -
           (p.getY(i + 1) - p.getY(i)) * (p.getX(i + DIAMETER) - p.getX(i)),
       ) * HALF;
+  }
+
   return area;
 }
 
@@ -340,12 +363,14 @@ function addDamageScars(visual: FractureVisual, block: Block) {
     visual.width * scale * HALF,
     (visual.height * HALF + 26) * scale,
   );
-  for (const cell of block.cells)
+  for (const cell of block.cells) {
     if (cell.alive && cell.health < cell.maxHealth) {
-      const x = cell.x + visual.offset.x,
-        y = cell.y - visual.offset.y,
-        key = `${x}:${y}:${cell.health}`;
-      if (visual.scars.has(key)) continue;
+      const x = cell.x + visual.offset.x;
+      const y = cell.y - visual.offset.y;
+      const key = `${x}:${y}:${cell.health}`;
+      if (visual.scars.has(key)) {
+        continue;
+      }
       visual.scars.add(key);
       // Cracks accumulate in the original sheet's coordinates, including on surviving armor.
       context.lineWidth = 0.75;
@@ -367,17 +392,18 @@ function addDamageScars(visual: FractureVisual, block: Block) {
       context.lineTo(x + 4, y + 7);
       context.stroke();
     }
+  }
   context.restore();
 }
 
 // oxlint-enable eslint/no-magic-numbers
 function addRemovedCells(visual: FractureVisual, block: Block) {
-  for (const cell of block.cells)
+  for (const cell of block.cells) {
     if (!cell.alive) {
-      const x = cell.x + visual.offset.x,
-        y = -cell.y + visual.offset.y,
-        key = `${x.toFixed(DECIMAL_PRECISION)}:${y.toFixed(DECIMAL_PRECISION)}`;
-      if (!visual.holes.has(key))
+      const x = cell.x + visual.offset.x;
+      const y = -cell.y + visual.offset.y;
+      const key = `${x.toFixed(DECIMAL_PRECISION)}:${y.toFixed(DECIMAL_PRECISION)}`;
+      if (!visual.holes.has(key)) {
         visual.holes.set(
           key,
           chippedHole(
@@ -390,7 +416,9 @@ function addRemovedCells(visual: FractureVisual, block: Block) {
             ),
           ),
         );
+      }
     }
+  }
 }
 
 /** A real, perforated solid: removed code cells remove both faces and expose the cut edges. */
@@ -401,10 +429,10 @@ export function createCodeMesh(
 ): THREE.Group {
   const group = new THREE.Group();
   group.name = `code-solid-${block.id}`;
-  const w = block.width,
-    h = block.height,
-    top = h * HALF + HEADER_HEIGHT,
-    bottom = -h * HALF;
+  const w = block.width;
+  const h = block.height;
+  const top = h * HALF + HEADER_HEIGHT;
+  const bottom = -h * HALF;
   // SAFETY: previous is a mesh from this factory, which owns the fractureVisual key.
   const prior =
     inherited ??
@@ -456,7 +484,9 @@ export function createCodeMesh(
     context.font = "14px monospace";
     context.textAlign = "center";
     for (const cell of block.cells) {
-      if (!cell.alive) continue;
+      if (!cell.alive) {
+        continue;
+      }
       if (cell.magic) {
         context.fillStyle = "#ffe75b2b";
         context.fillRect(cell.x - 4.5, cell.y - 9, 9, 18);
@@ -519,7 +549,9 @@ export function createCodeMesh(
   group.add(mesh);
   if (block.boss) {
     createBossArmor(group, visual.width, visual.height, z);
-    if (visual.fractured) clipBossArmor(group, visual, z);
+    if (visual.fractured) {
+      clipBossArmor(group, visual, z);
+    }
   }
   if (block.angry && !visual.fractured) {
     const face = new THREE.Group();
@@ -530,8 +562,8 @@ export function createCodeMesh(
       z + ATTACHMENT.faceDepth,
     );
     group.add(face);
-    const eyeMaterial = new THREE.MeshBasicMaterial({ color: "#fff4ba" }),
-      browMaterial = new THREE.MeshToonMaterial({ color: "#44122a" });
+    const eyeMaterial = new THREE.MeshBasicMaterial({ color: "#fff4ba" });
+    const browMaterial = new THREE.MeshToonMaterial({ color: "#44122a" });
     for (const side of [-1, 1]) {
       const eye = new THREE.Mesh(loadGeometry("angry-eye"), eyeMaterial);
       eye.scale.set(1, ATTACHMENT.eyeSquash, HALF);
@@ -569,7 +601,7 @@ export function createCodeMesh(
     transparent: true,
     opacity: 0.85,
   });
-  for (const x of [-w * HALF, w * HALF])
+  for (const x of [-w * HALF, w * HALF]) {
     for (const y of [-h * HALF, h * HALF + HEADER_HEIGHT]) {
       const crystal = new THREE.Mesh(
         loadGeometry("ice-crystal"),
@@ -583,6 +615,7 @@ export function createCodeMesh(
       );
       ice.add(crystal);
     }
+  }
   group.add(ice);
   group.userData.fractureVisual = visual;
   group.userData.fractured = visual.fractured;
@@ -594,6 +627,7 @@ export function createCodeMesh(
   group.userData.exception = block.exception;
   group.userData.boss = block.boss;
   group.userData.bossTitle = block.boss ? "FactoryFactoryFactory" : undefined;
+
   return group;
 }
 
@@ -601,14 +635,16 @@ function insideRegions(point: { x: number; y: number }, regions: Polygon[]) {
   return regions.every((polygon) => {
     let inside = false;
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const a = polygon[i]!,
-        b = polygon[j]!;
+      const a = polygon[i]!;
+      const b = polygon[j]!;
       if (
         a.y > point.y !== b.y > point.y &&
         point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x
-      )
+      ) {
         inside = !inside;
+      }
     }
+
     return inside;
   });
 }
@@ -648,32 +684,47 @@ function clipBossArmor(group: THREE.Group, visual: FractureVisual, z: number) {
       removed.push(child);
     }
   }
-  for (const child of removed) child.removeFromParent();
-  const liveGeometries = new Set<THREE.BufferGeometry>(),
-    liveMaterials = new Set<THREE.Material>();
+  for (const child of removed) {
+    child.removeFromParent();
+  }
+  const liveGeometries = new Set<THREE.BufferGeometry>();
+  const liveMaterials = new Set<THREE.Material>();
   armor.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
+    if (!(object instanceof THREE.Mesh)) {
+      return;
+    }
     const mesh = object;
-    if (mesh.geometry) liveGeometries.add(mesh.geometry);
+    if (mesh.geometry) {
+      liveGeometries.add(mesh.geometry);
+    }
     for (const material of Array.isArray(mesh.material)
       ? mesh.material
-      : [mesh.material])
-      if (material) liveMaterials.add(material);
+      : [mesh.material]) {
+      if (material) {
+        liveMaterials.add(material);
+      }
+    }
   });
-  const deadGeometries = new Set<THREE.BufferGeometry>(),
-    deadMaterials = new Set<THREE.Material>();
+  const deadGeometries = new Set<THREE.BufferGeometry>();
+  const deadMaterials = new Set<THREE.Material>();
   for (const object of removed) {
     object.traverse((child) => {
-      if (!(child instanceof THREE.Mesh || child instanceof THREE.LineSegments))
+      if (!(
+        child instanceof THREE.Mesh || child instanceof THREE.LineSegments
+      )) {
         return;
+      }
       const mesh = child;
-      if (mesh.geometry && !liveGeometries.has(mesh.geometry))
+      if (mesh.geometry && !liveGeometries.has(mesh.geometry)) {
         deadGeometries.add(mesh.geometry);
+      }
       for (const material of Array.isArray(mesh.material)
         ? mesh.material
-        : [mesh.material])
-        if (material && !liveMaterials.has(material))
+        : [mesh.material]) {
+        if (material && !liveMaterials.has(material)) {
           deadMaterials.add(material);
+        }
+      }
     });
   }
   for (const geometry of deadGeometries) {
@@ -722,6 +773,7 @@ function createBossArmor(group: THREE.Group, w: number, h: number, z: number) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     armor.add(mesh);
+
     return mesh;
   };
   const rail = Math.min(
@@ -751,7 +803,7 @@ function createBossArmor(group: THREE.Group, w: number, h: number, z: number) {
     h * ARMOR.plateHeightRatio,
   );
 
-  for (const x of [-w * HALF + plate * HALF, w * HALF - plate * HALF])
+  for (const x of [-w * HALF + plate * HALF, w * HALF - plate * HALF]) {
     for (const y of [
       -h * HALF + plate * HALF,
       h * HALF + HEADER_HEIGHT - plate * HALF,
@@ -763,6 +815,7 @@ function createBossArmor(group: THREE.Group, w: number, h: number, z: number) {
       bolt.castShadow = true;
       armor.add(bolt);
     }
+  }
   for (
     let y = -h * HALF + ARMOR.stripeStart;
     y < h * HALF - ARMOR.stripeEnd;
@@ -821,23 +874,27 @@ function createBossArmor(group: THREE.Group, w: number, h: number, z: number) {
 }
 
 export function disposeObject(object: THREE.Object3D) {
-  const geometries = new Set<THREE.BufferGeometry>(),
-    materials = new Set<THREE.Material>(),
-    textures = new Set<THREE.Texture>();
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  const textures = new Set<THREE.Texture>();
   object.traverse((child) => {
-    if (child instanceof THREE.Mesh || child instanceof THREE.LineSegments)
+    if (child instanceof THREE.Mesh || child instanceof THREE.LineSegments) {
       geometries.add(child.geometry);
+    }
     if (!(
       child instanceof THREE.Mesh ||
       child instanceof THREE.LineSegments ||
       child instanceof THREE.Sprite
-    ))
+    )) {
       return;
+    }
     const mesh = child;
     const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const material of list) {
       materials.add(material);
-      for (const texture of materialTextures(material)) textures.add(texture);
+      for (const texture of materialTextures(material)) {
+        textures.add(texture);
+      }
     }
   });
   for (const g of geometries) {
@@ -853,7 +910,7 @@ export function disposeObject(object: THREE.Object3D) {
 }
 
 function codePalette(block: Block) {
-  if (block.boss)
+  if (block.boss) {
     return {
       body: "#2f202a",
       header: "#8b3329",
@@ -861,7 +918,8 @@ function codePalette(block: Block) {
       side: "#bd492e",
       emissive: "#7c2314",
     };
-  if (block.angry)
+  }
+  if (block.angry) {
     return {
       body: "#421b2a",
       header: "#a23646",
@@ -869,7 +927,8 @@ function codePalette(block: Block) {
       side: "#e95860",
       emissive: "#6a0f22",
     };
-  if (block.exception)
+  }
+  if (block.exception) {
     return {
       body: "#382335",
       header: "#73506a",
@@ -877,6 +936,8 @@ function codePalette(block: Block) {
       side: "#9d6387",
       emissive: "#000000",
     };
+  }
+
   return {
     body: "#122d40",
     header: "#35556b",

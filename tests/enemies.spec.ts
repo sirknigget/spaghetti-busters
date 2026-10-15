@@ -15,8 +15,9 @@ test("a tough branded robot intercepts shots, thinks, and creates a huge solid b
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("response", (response) => {
-    if (response.status() >= 400)
+    if (response.status() >= 400) {
       errors.push(`${response.status()} ${response.url()}`);
+    }
   });
   await start(page);
   const shielding = await page.evaluate(() => {
@@ -40,8 +41,11 @@ test("a tough branded robot intercepts shots, thinks, and creates a huge solid b
     s.aimY = 360;
     s.aimX = 900;
     s.fire();
-    for (let i = 0; i < 4; i++) s.update(0.1);
+    for (let i = 0; i < 4; i++) {
+      s.update(0.1);
+    }
     r.draw();
+
     return {
       robots: s.robots.length,
       hitFlash: robot.hitFlash,
@@ -60,9 +64,12 @@ test("a tough branded robot intercepts shots, thinks, and creates a huge solid b
   });
   const generated = await page.evaluate(() => {
     const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
-    for (let i = 0; i < 9; i++) s.update(0.25);
+    for (let i = 0; i < 9; i++) {
+      s.update(0.25);
+    }
     r.draw();
     const huge = s.blocks.find((b: any) => b.cells.length > 450);
+
     return {
       state: s.robots[0].state,
       generated: s.events.includes("generate"),
@@ -83,9 +90,11 @@ test("a tough branded robot intercepts shots, thinks, and creates a huge solid b
         const robot = w.scene.getObjectByName("ai-code-robot-openai");
         let loaded = false;
         robot?.traverse((child: any) => {
-          if (child.material?.map?.image?.src?.includes("/brands/openai.svg"))
+          if (child.material?.map?.image?.src?.includes("/brands/openai.svg")) {
             loaded = true;
+          }
         });
+
         return loaded;
       }),
     )
@@ -94,6 +103,7 @@ test("a tough branded robot intercepts shots, thinks, and creates a huge solid b
     const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
     s.robots = [];
     r.draw();
+
     return !w.scene.getObjectByName("ai-code-robot-openai");
   });
   expect(removed).toBe(true);
@@ -116,9 +126,12 @@ test("angry code throws solid exceptions and code review visibly freezes the att
     const before = s.blocks.map((b: any) => [b.id, b.x, b.y, b.age]);
     s.selectSpecial("review");
     s.fireSpecial();
-    for (let i = 0; i < 4; i++) s.update(0.25);
+    for (let i = 0; i < 4; i++) {
+      s.update(0.25);
+    }
     r.draw();
     const after = s.blocks.map((b: any) => [b.id, b.x, b.y, b.age]);
+
     return {
       angry: w.blocks.get(angry.id).userData.angry,
       exception: !!exception,

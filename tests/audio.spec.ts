@@ -12,6 +12,7 @@ test("title music unlocks on a gesture, transitions into the run, and returns wi
     document.addEventListener("pointerdown", () => audio.enterMenu(), {
       once: true,
     });
+
     return { started: audio.started, context: audio.context };
   });
   expect(initial).toEqual({ started: false, context: null });
@@ -34,6 +35,7 @@ test("title music unlocks on a gesture, transitions into the run, and returns wi
     a.play("menu-hover");
     const hoverVoices = a.sources.size;
     a.play("menu-hover");
+
     return {
       state: a.context.state,
       scene: a.scene,
@@ -55,6 +57,7 @@ test("title music unlocks on a gesture, transitions into the run, and returns wi
     const transport = a.transport;
     a.enterGame();
     a.play("menu-click");
+
     return {
       scene: a.scene,
       sameTimer: a.timer === timer,
@@ -73,6 +76,7 @@ test("title music unlocks on a gesture, transitions into the run, and returns wi
     a.enterMenu();
     a.pause();
     a.resume();
+
     return {
       scene: a.scene,
       timer: a.timer !== null,
@@ -89,6 +93,7 @@ test("title music unlocks on a gesture, transitions into the run, and returns wi
     a.enterMenu();
     a.play("menu-click");
     a.play("menu-hover");
+
     return { timer: a.timer, voices: a.sources.size };
   });
   expect(muted).toEqual({ timer: null, voices: 0 });
@@ -98,6 +103,7 @@ test("title music unlocks on a gesture, transitions into the run, and returns wi
     const result = { timer: a.timer !== null, scene: a.scene };
     a.pause();
     void a.context.close();
+
     return result;
   });
   expect(unmuted).toEqual({ timer: true, scene: "menu" });
@@ -115,6 +121,7 @@ test("real audio context crossfades scores and preserves transport through pause
     (window as any).__audioTest = audio;
     audio.start();
     await audio.context.resume();
+
     return {
       state: audio.context.state,
       name: audio.trackName,
@@ -134,6 +141,7 @@ test("real audio context crossfades scores and preserves transport through pause
     a.transport = 32.1;
     a.anchor = a.context.currentTime;
     a.schedule();
+
     return {
       decks: a.decks.length,
       name: a.trackName,
@@ -152,6 +160,7 @@ test("real audio context crossfades scores and preserves transport through pause
     .toBeGreaterThan(0);
   const crossfade = await page.evaluate(() => {
     const a = (window as any).__audioTest;
+
     return a.decks.map((d: any) => d.bus.gain.value);
   });
   expect(crossfade[0]).toBeGreaterThan(0);
@@ -160,6 +169,7 @@ test("real audio context crossfades scores and preserves transport through pause
   const paused = await page.evaluate(() => {
     const a = (window as any).__audioTest;
     a.pause();
+
     return { transport: a.transport, clock: a.context.currentTime };
   });
   // The audio clock keeps processing while the musical transport remains paused.
@@ -171,6 +181,7 @@ test("real audio context crossfades scores and preserves transport through pause
   expect(
     await page.evaluate(() => {
       const a = (window as any).__audioTest;
+
       return {
         transport: a.transport,
         timer: a.timer,
@@ -190,6 +201,7 @@ test("real audio context crossfades scores and preserves transport through pause
     ["missile", "grenade", "explosion", "stun", "hazard", "recover"].forEach(
       (e) => a.play(e),
     );
+
     return {
       singleTimer: timer === a.timer,
       voices: a.sources.size,
@@ -202,6 +214,7 @@ test("real audio context crossfades scores and preserves transport through pause
   const muted = await page.evaluate(() => {
     const a = (window as any).__audioTest;
     a.setEnabled(false);
+
     return { transport: a.transport, clock: a.context.currentTime };
   });
   await expect
@@ -212,6 +225,7 @@ test("real audio context crossfades scores and preserves transport through pause
   expect(
     await page.evaluate(() => {
       const a = (window as any).__audioTest;
+
       return { transport: a.transport, timer: a.timer, voices: a.sources.size };
     }),
   ).toEqual({ transport: muted.transport, timer: null, voices: 0 });
@@ -226,6 +240,7 @@ test("real audio context crossfades scores and preserves transport through pause
     a.pause();
     a.clearDecks();
     void a.context.close();
+
     return { name, sting, stopped: a.timer === null };
   });
   expect(end.name).toBe("Prism Circuit");
@@ -261,6 +276,7 @@ test("bundled boss voice decodes, plays once with its cue and stops on pause or 
       played: !!source,
     };
     a.pause();
+
     return { ...result, stopped: a.sources.size === 0 };
   });
   expect(voice).toMatchObject({
@@ -280,6 +296,7 @@ test("bundled boss voice decodes, plays once with its cue and stops on pause or 
       const muted = a.sources.size === 0;
       a.pause();
       void a.context.close();
+
       return muted;
     }),
   ).toBe(true);

@@ -22,9 +22,9 @@ const hit = {
 };
 describe("isolated physical debris", () => {
   it("reproduces local entropy while different seeds create different trajectories", () => {
-    const a = debrisRandom(14),
-      b = debrisRandom(14),
-      c = debrisRandom(15);
+    const a = debrisRandom(14);
+    const b = debrisRandom(14);
+    const c = debrisRandom(15);
     const samples = Array.from({ length: 12 }, () => a());
     expect(samples).toEqual(Array.from({ length: 12 }, () => b()));
     expect(samples).not.toEqual(Array.from({ length: 12 }, () => c()));
@@ -33,26 +33,32 @@ describe("isolated physical debris", () => {
   it("integrates real gravity, bounces above the floor, then comes to rest", async () => {
     const debris = await DebrisPhysics.create(new THREE.Scene());
     debris.impact(hit);
-    const start = debris.bodySnapshots[0]!,
-      velocities: number[] = [];
+    const start = debris.bodySnapshots[0]!;
+    const velocities: number[] = [];
     let bounced = false;
     for (let i = 0; i < 360; i++) {
       debris.update(1 / 120);
       const body = debris.bodySnapshots[0]!;
       velocities.push(body.vy);
-      if (i > 15 && velocities[i - 1]! < -100 && body.vy > 0) bounced = true;
+      if (i > 15 && velocities[i - 1]! < -100 && body.vy > 0) {
+        bounced = true;
+      }
       expect(body.y).toBeGreaterThan(40);
     }
     expect(bounced).toBe(true);
     expect(debris.bodySnapshots[0]!.y).toBeLessThan(start.y - 200);
-    for (let i = 0; i < 300; i++) debris.update(1 / 120);
+    for (let i = 0; i < 300; i++) {
+      debris.update(1 / 120);
+    }
     expect(debris.diagnostics.settled).toBeGreaterThan(0);
     debris.dispose();
   });
   it("does not advance at pause, bounds effects, and fully resets ownership", async () => {
-    const scene = new THREE.Scene(),
-      debris = await DebrisPhysics.create(scene);
-    for (let i = 0; i < 80; i++) debris.impact({ ...hit, seed: i });
+    const scene = new THREE.Scene();
+    const debris = await DebrisPhysics.create(scene);
+    for (let i = 0; i < 80; i++) {
+      debris.impact({ ...hit, seed: i });
+    }
     expect(debris.diagnostics.rigidBodies).toBeLessThanOrEqual(92);
     expect(debris.diagnostics.particles).toBeLessThanOrEqual(640);
     const before = debris.bodySnapshots;
@@ -65,9 +71,9 @@ describe("isolated physical debris", () => {
     expect(scene.children).toHaveLength(0);
   });
   it("dismantles actual posed robot parts without reusing original resources", async () => {
-    const scene = new THREE.Scene(),
-      debris = await DebrisPhysics.create(scene),
-      robot = new THREE.Group();
+    const scene = new THREE.Scene();
+    const debris = await DebrisPhysics.create(scene);
+    const robot = new THREE.Group();
     robot.position.set(600, 300, 0);
     robot.rotation.z = 0.2;
     const arm = new THREE.Group();

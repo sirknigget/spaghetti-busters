@@ -247,17 +247,19 @@ const DRAW = {
   smokeFadeOut: 0.22,
   sparkStretch: 2.7,
 };
-const FLOOR = 42,
-  MAX_BODIES = 92,
-  MAX_FLECKS = 640;
+const FLOOR = 42;
+const MAX_BODIES = 92;
+const MAX_FLECKS = 640;
 /** Local seeded entropy never consumes gameplay randomness. */
 export function debrisRandom(seed: number) {
   let state = seed >>> 0;
+
   return () => {
     state += ENTROPY.increment;
     let n = state;
     n = Math.imul(n ^ (n >>> ENTROPY.firstShift), n | 1);
     n ^= n + Math.imul(n ^ (n >>> ENTROPY.secondShift), n | ENTROPY.multiplier);
+
     return ((n ^ (n >>> ENTROPY.finalShift)) >>> 0) / ENTROPY.normalizer;
   };
 }
@@ -283,8 +285,10 @@ export class DebrisPhysics {
 
   static async create(scene: THREE.Scene) {
     await RAPIER.init();
+
     return new DebrisPhysics(scene);
   }
+
   private constructor(private readonly scene: THREE.Scene) {
     this.world = new RAPIER.World({ x: 0, y: -640, z: 0 });
     this.world.timestep = STEP.interval;
@@ -350,10 +354,12 @@ export class DebrisPhysics {
   }
 
   impact(hit: DebrisImpact) {
-    if (this.disposed) return;
+    if (this.disposed) {
+      return;
+    }
     this.totalImpacts++;
-    const random = debrisRandom(hit.seed),
-      metal = hit.target === "robot";
+    const random = debrisRandom(hit.seed);
+    const metal = hit.target === "robot";
     const count = Math.min(
       IMPACT.maxFlecks,
       IMPACT.baseFlecks + Math.ceil(hit.radius * IMPACT.radiusFlecks),
@@ -361,10 +367,10 @@ export class DebrisPhysics {
     for (let i = 0; i < count; i++) {
       const nonSmokeKind = i < IMPACT.sparkEnd ? "spark" : "shard";
       const kind = i < IMPACT.smokeEnd ? "smoke" : nonSmokeKind;
-      const angle = random() * TAU,
-        speed =
-          IMPACT.baseSpeed +
-          random() * (metal ? IMPACT.metalSpeed : IMPACT.codeSpeed);
+      const angle = random() * TAU;
+      const speed =
+        IMPACT.baseSpeed +
+        random() * (metal ? IMPACT.metalSpeed : IMPACT.codeSpeed);
       const radius =
         Math.sqrt(random()) *
         Math.min(IMPACT.maxRadius, hit.radius * IMPACT.radiusScale);
@@ -379,10 +385,13 @@ export class DebrisPhysics {
         (random() - IMPACT.depthBias) * IMPACT.depthSpeed,
       );
       let size;
-      if (kind === "smoke")
+      if (kind === "smoke") {
         size = IMPACT.smokeSize + random() * IMPACT.smokeSizeJitter;
-      else if (kind === "spark") size = 1 + random() * IMPACT.sparkSizeJitter;
-      else size = IMPACT.shardSize + random() * IMPACT.shardSizeJitter;
+      } else if (kind === "spark") {
+        size = 1 + random() * IMPACT.sparkSizeJitter;
+      } else {
+        size = IMPACT.shardSize + random() * IMPACT.shardSizeJitter;
+      }
       this.addFleck({
         position,
         velocity,
@@ -413,8 +422,8 @@ export class DebrisPhysics {
     }
     // A few larger physical fragments collide with the floor and one another.
     for (let i = 0; i < IMPACT.rigidCount; i++) {
-      const size = IMPACT.rigidSize + random() * IMPACT.rigidSizeJitter,
-        mesh = new THREE.Group();
+      const size = IMPACT.rigidSize + random() * IMPACT.rigidSizeJitter;
+      const mesh = new THREE.Group();
       const fragment = new THREE.Mesh(
         loadGeometry("solid-impact-shard").scale(size, size, size),
         new THREE.MeshStandardMaterial({
@@ -448,8 +457,9 @@ export class DebrisPhysics {
     }
     for (const letter of (hit.removed ?? [])
       .filter((c) => c.char.trim())
-      .slice(0, IMPACT.maxLetters))
+      .slice(0, IMPACT.maxLetters)) {
       this.addLetter(letter, hit, random);
+    }
     this.renderParticles();
   }
 
@@ -493,7 +503,9 @@ export class DebrisPhysics {
           LETTER.depth + random() * LETTER.depthJitter,
         ),
     );
-    if (rotation) group.quaternion.copy(rotation);
+    if (rotation) {
+      group.quaternion.copy(rotation);
+    }
     this.addRigid(
       group,
       new THREE.Vector3(LETTER.halfWidth, LETTER.halfHeight, LETTER.halfDepth),
@@ -515,14 +527,16 @@ export class DebrisPhysics {
     seed: number,
     hit: DebrisImpact,
   ) {
-    if (this.disposed) return;
+    if (this.disposed) {
+      return;
+    }
     this.totalCodeDeaths++;
-    const random = debrisRandom(seed),
-      live = block.cells.filter((cell) => cell.alive && cell.char.trim());
+    const random = debrisRandom(seed);
+    const live = block.cells.filter((cell) => cell.alive && cell.char.trim());
     const peeled = new Set<Block["cells"][number]>();
     // Stratified entropy scatters loose glyphs across the entire sheet, not its first row.
     const count = Math.min(COLLAPSE.maxPeeledLetters, live.length);
-    for (let i = 0; i < count; i++)
+    for (let i = 0; i < count; i++) {
       peeled.add(
         live[
           Math.min(
@@ -531,6 +545,7 @@ export class DebrisPhysics {
           )
         ]!,
       );
+    }
     // A heavily perforated sheet is already the exact visible surface. Reuse its triangles;
     // resweeping hundreds of old holes here would stall the final-hit frame.
     const reuseSurface =
@@ -549,16 +564,20 @@ export class DebrisPhysics {
         );
     mesh.updateWorldMatrix(true, false);
     mesh.matrixWorld.decompose(shell.position, shell.quaternion, shell.scale);
-    const oldReactor = mesh.getObjectByName("factory-boss-reactor"),
-      reactor = shell.getObjectByName("factory-boss-reactor");
-    if (oldReactor && reactor) reactor.quaternion.copy(oldReactor.quaternion);
+    const oldReactor = mesh.getObjectByName("factory-boss-reactor");
+    const reactor = shell.getObjectByName("factory-boss-reactor");
+    if (oldReactor && reactor) {
+      reactor.quaternion.copy(oldReactor.quaternion);
+    }
     shell.updateMatrixWorld(true);
-    const pieces = createDeathFragments(shell, seed),
-      origin = shell.position.clone();
+    const pieces = createDeathFragments(shell, seed);
+    const origin = shell.position.clone();
     for (const piece of pieces) {
       // The fragment starts in its original assembled pose; Rapier supplies every later pose.
       const solid = piece.getObjectByName("perforated-extruded-code");
-      if (!(solid instanceof THREE.Mesh)) continue;
+      if (!(solid instanceof THREE.Mesh)) {
+        continue;
+      }
       const geometry = solid.geometry;
       geometry.computeBoundingBox();
       const size = geometry.boundingBox!.getSize(new THREE.Vector3());
@@ -632,21 +651,23 @@ export class DebrisPhysics {
         removed: [],
       });
     }
-    if (!reuseSurface) disposeObject(shell);
+    if (!reuseSurface) {
+      disposeObject(shell);
+    }
   }
 
   /** A small convex contact hull follows each jagged slab's silhouette, including its depth. */
   private codeHull(geometry: THREE.BufferGeometry) {
-    const positions = geometry.getAttribute("position"),
-      points: number[] = [];
+    const positions = geometry.getAttribute("position");
+    const points: number[] = [];
     for (let direction = 0; direction < HULL.directions; direction++) {
-      const a = (direction * Math.PI) / HULL.halfDirections,
-        dx = Math.cos(a),
-        dy = Math.sin(a);
-      let best = -Infinity,
-        x = 0,
-        y = 0,
-        z = 0;
+      const a = (direction * Math.PI) / HULL.halfDirections;
+      const dx = Math.cos(a);
+      const dy = Math.sin(a);
+      let best = -Infinity;
+      let x = 0;
+      let y = 0;
+      let z = 0;
       for (let i = 0; i < positions.count; i++) {
         const score = positions.getX(i) * dx + positions.getY(i) * dy;
         if (score > best) {
@@ -658,6 +679,7 @@ export class DebrisPhysics {
       }
       points.push(x, y, z, x, y, -z);
     }
+
     return new Float32Array(points);
   }
 
@@ -667,7 +689,9 @@ export class DebrisPhysics {
     robot: { x: number; y: number; vx?: number; vy?: number },
     seed: number,
   ) {
-    if (this.disposed) return;
+    if (this.disposed) {
+      return;
+    }
     this.totalRobotDeaths++;
     const random = debrisRandom(seed);
     mesh.updateWorldMatrix(true, true);
@@ -704,9 +728,9 @@ export class DebrisPhysics {
       group.name = `fallen-${child.name || "robot-shell-part"}`;
       group.add(clone);
       group.updateMatrixWorld(true);
-      const bounds = new THREE.Box3().setFromObject(group),
-        center = bounds.getCenter(new THREE.Vector3()),
-        size = bounds.getSize(new THREE.Vector3());
+      const bounds = new THREE.Box3().setFromObject(group);
+      const center = bounds.getCenter(new THREE.Vector3());
+      const size = bounds.getSize(new THREE.Vector3());
       if (!Number.isFinite(center.x) || size.length() < ROBOT.minSize) {
         this.disposeMesh(group);
         continue;
@@ -757,7 +781,9 @@ export class DebrisPhysics {
     life: number,
     hull?: Float32Array,
   ) {
-    while (this.rigid.length >= MAX_BODIES) this.removeRigid(0);
+    while (this.rigid.length >= MAX_BODIES) {
+      this.removeRigid(0);
+    }
     const body = this.world.createRigidBody(
       RAPIER.RigidBodyDesc.dynamic()
         .setTranslation(
@@ -804,13 +830,18 @@ export class DebrisPhysics {
       seed: Math.floor(random() * BODY.maxSeed),
     });
   }
+
   private addFleck(fleck: Fleck) {
-    if (this.flecks.length >= MAX_FLECKS) this.flecks.shift();
+    if (this.flecks.length >= MAX_FLECKS) {
+      this.flecks.shift();
+    }
     this.flecks.push(fleck);
   }
 
   update(dt: number) {
-    if (this.disposed || dt <= 0) return;
+    if (this.disposed || dt <= 0) {
+      return;
+    }
     this.accumulator += Math.min(dt, STEP.maxDelta);
     while (this.accumulator >= STEP.interval) {
       this.world.step();
@@ -824,9 +855,9 @@ export class DebrisPhysics {
         this.removeRigid(i);
         continue;
       }
-      const p = item.body.translation(),
-        q = item.body.rotation(),
-        v = item.body.linvel();
+      const p = item.body.translation();
+      const q = item.body.rotation();
+      const v = item.body.linvel();
       const freshCode =
         item.kind === "code" && !item.crumbled && item.age > STEP.crumbleAge;
       if (
@@ -845,22 +876,23 @@ export class DebrisPhysics {
     }
     this.renderParticles();
   }
+
   /** Secondary chips are emitted by an actual collision impulse, not an animation timer. */
   private crumble(
     item: RigidDebris,
     position: { x: number; y: number; z: number },
   ) {
-    const random = debrisRandom(item.seed),
-      energy = Math.min(
-        CRUMBLE.maxEnergy,
-        Math.abs(item.lastVelocity.y) * CRUMBLE.energyScale,
-      );
+    const random = debrisRandom(item.seed);
+    const energy = Math.min(
+      CRUMBLE.maxEnergy,
+      Math.abs(item.lastVelocity.y) * CRUMBLE.energyScale,
+    );
     for (let i = 0; i < CRUMBLE.count; i++) {
-      const kind = i < CRUMBLE.smokeCount ? "smoke" : "shard",
-        size =
-          kind === "smoke"
-            ? CRUMBLE.smokeSize + random() * CRUMBLE.smokeSizeJitter
-            : 1 + random() * CRUMBLE.shardSizeJitter;
+      const kind = i < CRUMBLE.smokeCount ? "smoke" : "shard";
+      const size =
+        kind === "smoke"
+          ? CRUMBLE.smokeSize + random() * CRUMBLE.smokeSizeJitter
+          : 1 + random() * CRUMBLE.shardSizeJitter;
       this.addFleck({
         position: new THREE.Vector3(
           position.x + (random() - HALF) * CRUMBLE.positionJitter,
@@ -945,6 +977,7 @@ export class DebrisPhysics {
       );
     }
   }
+
   private settleFleck(p: Fleck) {
     if (
       p.bounces > FLECK.settleBounces &&
@@ -954,6 +987,7 @@ export class DebrisPhysics {
       p.velocity.x *= FLECK.settleDamping;
     }
   }
+
   private renderParticles() {
     const counts = { shard: 0, spark: 0, smoke: 0 };
     for (const p of this.flecks) {
@@ -962,8 +996,8 @@ export class DebrisPhysics {
         spark: this.sparks,
         smoke: this.smoke,
       };
-      const mesh = meshes[p.kind],
-        index = counts[p.kind]++;
+      const mesh = meshes[p.kind];
+      const index = counts[p.kind]++;
       this.transform.position.copy(p.position);
       this.transform.quaternion.copy(p.rotation);
       const fade = Math.min(1, (p.life - p.age) * DRAW.fadeRate);
@@ -990,21 +1024,27 @@ export class DebrisPhysics {
       }
       this.transform.updateMatrix();
       mesh.setMatrixAt(index, this.transform.matrix);
-      if (p.kind !== "smoke") mesh.setColorAt(index, p.color);
+      if (p.kind !== "smoke") {
+        mesh.setColorAt(index, p.color);
+      }
     }
     this.shards.count = counts.shard;
     this.sparks.count = counts.spark;
     this.smoke.count = counts.smoke;
     for (const mesh of [this.shards, this.sparks, this.smoke]) {
       mesh.instanceMatrix.needsUpdate = true;
-      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      if (mesh.instanceColor) {
+        mesh.instanceColor.needsUpdate = true;
+      }
     }
     this.smokeAlpha.needsUpdate = true;
   }
+
   get bodySnapshots() {
     return this.rigid.map((item) => {
-      const p = item.body.translation(),
-        v = item.body.linvel();
+      const p = item.body.translation();
+      const v = item.body.linvel();
+
       return {
         kind: item.kind,
         x: p.x,
@@ -1017,6 +1057,7 @@ export class DebrisPhysics {
       };
     });
   }
+
   get diagnostics() {
     return {
       rigidBodies: this.rigid.length,
@@ -1039,29 +1080,37 @@ export class DebrisPhysics {
       floorY: FLOOR,
     };
   }
+
   private removeRigid(index: number) {
     const item = this.rigid[index]!;
     this.world.removeRigidBody(item.body);
     this.disposeMesh(item.mesh);
     this.rigid.splice(index, 1);
   }
+
   private disposeMesh(mesh: THREE.Object3D) {
     disposeObject(mesh);
   }
 
   reset() {
-    while (this.rigid.length) this.removeRigid(this.rigid.length - 1);
+    while (this.rigid.length) {
+      this.removeRigid(this.rigid.length - 1);
+    }
     this.flecks.length = 0;
     this.accumulator = 0;
     this.totalImpacts = this.totalRobotDeaths = this.totalCodeDeaths = 0;
     this.renderParticles();
   }
+
   dispose() {
-    if (this.disposed) return;
+    if (this.disposed) {
+      return;
+    }
     this.reset();
     this.disposed = true;
-    for (const mesh of [this.shards, this.sparks, this.smoke])
+    for (const mesh of [this.shards, this.sparks, this.smoke]) {
       this.disposeMesh(mesh);
+    }
     this.world.free();
   }
 }
@@ -1071,14 +1120,23 @@ function impactColor(
   metal: boolean,
   random: () => number,
 ) {
-  if (kind === "spark") return random() < HALF ? "#fff4b5" : "#ffae41";
-  if (metal) return random() < HALF ? "#bdcbd0" : "#dba149";
+  if (kind === "spark") {
+    return random() < HALF ? "#fff4b5" : "#ffae41";
+  }
+  if (metal) {
+    return random() < HALF ? "#bdcbd0" : "#dba149";
+  }
+
   return random() < IMPACT.darkShardChance ? "#203d49" : "#83c1ad";
 }
+
 function impactLife(kind: Fleck["kind"], random: () => number) {
-  if (kind === "smoke")
+  if (kind === "smoke") {
     return IMPACT.smokeLife + random() * IMPACT.smokeLifeJitter;
-  if (kind === "spark")
+  }
+  if (kind === "spark") {
     return IMPACT.sparkLife + random() * IMPACT.sparkLifeJitter;
+  }
+
   return IMPACT.shardLife + random() * IMPACT.shardLifeJitter;
 }

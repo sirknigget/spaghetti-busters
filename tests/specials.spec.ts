@@ -51,6 +51,7 @@ test("specials clear clutter, target the leftmost threat and render a wide blast
       life: 5,
     });
     r.update(1 / 120);
+
     return {
       target: s.specials[0].targetId,
       urgent: urgent.id,
@@ -67,6 +68,7 @@ test("specials clear clutter, target the leftmost threat and render a wide blast
     s.selectSpecial("lint");
     s.fireSpecial();
     r.update(0.08);
+
     return {
       count: s.blocks.length,
       destroyed: s.blocksDestroyed,
@@ -91,7 +93,7 @@ test("specials clear clutter, target the leftmost threat and render a wide blast
     for (const [x, y] of [
       [690, 350],
       [910, 390],
-    ])
+    ]) {
       s.spawnBlock({
         x,
         y,
@@ -100,6 +102,7 @@ test("specials clear clutter, target the leftmost threat and render a wide blast
         angle: 0.12,
         code: ['const armored = eval("oops");'],
       });
+    }
     s.spawnBlock({
       x: 1250,
       y: 560,
@@ -120,6 +123,7 @@ test("specials clear clutter, target the leftmost threat and render a wide blast
       fuse: 0.001,
     });
     r.update(0.08);
+
     return {
       radius: s.explosions[0].radius,
       alive: s.blocks.length,

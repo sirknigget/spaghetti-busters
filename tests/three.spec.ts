@@ -31,6 +31,7 @@ test("WebGL renders solid code and models with real three-axis rotation and dama
     const rotation = mesh.rotation.toArray().slice(0, 3);
     block.age += 1;
     runtime.draw();
+
     return {
       webgl: w.renderer.isWebGLRenderer,
       perspective: w.camera.isPerspectiveCamera,
@@ -81,21 +82,26 @@ test("WebGL renders solid code and models with real three-axis rotation and dama
     const frontCount = group.children[0].geometry.groups[0].count;
     let coversHole = false;
     for (let i = 0; i < frontCount; i += 3) {
-      const ax = positions.getX(i),
-        ay = positions.getY(i),
-        bx = positions.getX(i + 1),
-        by = positions.getY(i + 1),
-        cx = positions.getX(i + 2),
-        cy = positions.getY(i + 2);
+      const ax = positions.getX(i);
+      const ay = positions.getY(i);
+      const bx = positions.getX(i + 1);
+      const by = positions.getY(i + 1);
+      const cx = positions.getX(i + 2);
+      const cy = positions.getY(i + 2);
       const cross = (x1: number, y1: number, x2: number, y2: number) =>
         x1 * y2 - y1 * x2;
       const area = cross(bx - ax, by - ay, cx - ax, cy - ay);
-      if (Math.abs(area) < 0.00001) continue;
+      if (Math.abs(area) < 0.00001) {
+        continue;
+      }
       const u = cross(cell.x - ax, -cell.y - ay, cx - ax, cy - ay) / area;
       const v = cross(bx - ax, by - ay, cell.x - ax, -cell.y - ay) / area;
-      if (u >= 0 && v >= 0 && u + v <= 1) coversHole = true;
+      if (u >= 0 && v >= 0 && u + v <= 1) {
+        coversHole = true;
+      }
     }
     runtime.reset();
+
     return {
       removed: group.userData.removedCells,
       coversHole,
@@ -124,8 +130,9 @@ test("WebGL context loss pauses safely and restores the scene", async ({
     (window as any).__contextExtension = renderer
       .getContext()
       .getExtension("WEBGL_lose_context");
-    if (!(window as any).__contextExtension)
+    if (!(window as any).__contextExtension) {
       throw new Error("Browser has no context-loss testing extension");
+    }
     (window as any).__contextExtension.loseContext();
   });
   await expect(page.locator("#game-overlay")).toBeVisible();

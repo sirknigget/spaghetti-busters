@@ -7,20 +7,21 @@ const volume = (geometry: THREE.BufferGeometry) => {
   const p = geometry.getAttribute("position");
   let sum = 0;
   for (let i = 0; i < p.count; i += 3) {
-    const ax = p.getX(i),
-      ay = p.getY(i),
-      az = p.getZ(i),
-      bx = p.getX(i + 1),
-      by = p.getY(i + 1),
-      bz = p.getZ(i + 1),
-      cx = p.getX(i + 2),
-      cy = p.getY(i + 2),
-      cz = p.getZ(i + 2);
+    const ax = p.getX(i);
+    const ay = p.getY(i);
+    const az = p.getZ(i);
+    const bx = p.getX(i + 1);
+    const by = p.getY(i + 1);
+    const bz = p.getZ(i + 1);
+    const cx = p.getX(i + 2);
+    const cy = p.getY(i + 2);
+    const cz = p.getZ(i + 2);
     sum +=
       ax * (by * cz - bz * cy) +
       ay * (bz * cx - bx * cz) +
       az * (bx * cy - by * cx);
   }
+
   return Math.abs(sum / 6);
 };
 
@@ -55,18 +56,21 @@ describe("direct death surface clipping", () => {
         0,
       );
       for (const half of halves) {
-        const p = half.getAttribute("position"),
-          n = half.getAttribute("normal");
+        const p = half.getAttribute("position");
+        const n = half.getAttribute("normal");
         let seamWalls = 0;
-        for (let i = half.groups[0]!.count; i < p.count; i++)
+        for (let i = half.groups[0]!.count; i < p.count; i++) {
           if (
             Math.abs(n.getZ(i)) < 0.01 &&
             Math.abs(axis === "x" ? p.getX(i) : p.getY(i)) < 7
-          )
+          ) {
             seamWalls++;
+          }
+        }
         expect(seamWalls).toBeGreaterThan(12);
-        for (let i = 0; i < p.count; i++)
+        for (let i = 0; i < p.count; i++) {
           expect(Number.isFinite(p.getX(i) + p.getY(i) + p.getZ(i))).toBe(true);
+        }
         half.dispose();
       }
       solid.dispose();

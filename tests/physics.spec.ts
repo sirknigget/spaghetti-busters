@@ -34,9 +34,10 @@ test("hits create entropy-driven debris, falling letters, smoke and sparks witho
     );
     s.damage(block, cell.x, cell.y, { vx: 1080, vy: 0 });
     r.update(0.12);
-    const mesh = w.blocks.get(block.id),
-      v = mesh.userData.fractureVisual;
+    const mesh = w.blocks.get(block.id);
+    const v = mesh.userData.fractureVisual;
     const holes = [...v.holes.values()] as any[];
+
     return {
       effects: w.debris.diagnostics,
       holes: holes.length,
@@ -64,11 +65,14 @@ test("hits create entropy-driven debris, falling letters, smoke and sparks witho
         ammo: s.ammo,
         elapsed: s.elapsed,
       });
-    const before = gameplay(),
-      start = w.debris.bodySnapshots;
-    for (let i = 0; i < 240; i++) w.debris.update(1 / 120);
+    const before = gameplay();
+    const start = w.debris.bodySnapshots;
+    for (let i = 0; i < 240; i++) {
+      w.debris.update(1 / 120);
+    }
     const end = w.debris.bodySnapshots;
     r.draw();
+
     return {
       unchanged: gameplay() === before,
       start,
@@ -87,6 +91,7 @@ test("hits create entropy-driven debris, falling letters, smoke and sparks witho
     const before = w.debris.bodySnapshots;
     r.draw();
     r.draw();
+
     return JSON.stringify(before) === JSON.stringify(w.debris.bodySnapshots);
   });
   expect(paused).toBe(true);
@@ -125,12 +130,13 @@ test("fractures preserve the same surface and holes through repeated splits and 
     r.draw();
     const halves = s.blocks.map((b: any) => w.blocks.get(b.id));
     const a = halves.map((mesh: any) => mesh.userData.fractureVisual);
-    const child = s.blocks[0],
-      cell = child.cells.find((c: any) => c.alive);
+    const child = s.blocks[0];
+    const cell = child.cells.find((c: any) => c.alive);
     s.damage(child, cell.x, cell.y, { vx: 1080, vy: 0 });
     r.draw();
     const rebuilt = w.blocks.get(child.id).userData.fractureVisual;
     r.update(0.2);
+
     return {
       count: halves.length,
       inherited: a.every((v: any) => v.canvas === canvas),
@@ -157,10 +163,12 @@ test("fractures preserve the same surface and holes through repeated splits and 
     s.selectSpecial("lint");
     s.fireSpecial();
     r.update(0.18);
+
     return {
       count: s.blocks.length,
       inherited: s.blocks.every((b: any) => {
         const v = w.blocks.get(b.id).userData.fractureVisual;
+
         return v.canvas === original && v.regions.length === 3;
       }),
     };
@@ -210,6 +218,7 @@ test("fifteenth hit dismantles the actual robot into physical assemblies that se
     });
     s.update(1 / 120);
     r.draw();
+
     return {
       before,
       alive: s.robots.length,
@@ -226,8 +235,11 @@ test("fifteenth hit dismantles the actual robot into physical assemblies that se
   await page.screenshot({ path: testInfo.outputPath("robot-dismantles.png") });
   const settled = await page.evaluate(() => {
     const { scene: r, world: w } = (window as any).__spaghetti;
-    for (let i = 0; i < 600; i++) w.debris.update(1 / 120);
+    for (let i = 0; i < 600; i++) {
+      w.debris.update(1 / 120);
+    }
     r.draw();
+
     return { effects: w.debris.diagnostics, bodies: w.debris.bodySnapshots };
   });
   expect(settled.effects.settled).toBeGreaterThan(5);
@@ -242,6 +254,7 @@ test("fifteenth hit dismantles the actual robot into physical assemblies that se
   const reset = await page.evaluate(() => {
     const { scene: r, world: w } = (window as any).__spaghetti;
     r.reset();
+
     return w.debris.diagnostics;
   });
   expect(reset.rigidBodies).toBe(0);

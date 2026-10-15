@@ -85,8 +85,11 @@ function clearBossAnnouncement() {
   bossAnnouncementRemaining = 0;
   $("#boss-announcement").hidden = true;
 }
+
 function announceBoss() {
-  if (bossAnnounced) return;
+  if (bossAnnounced) {
+    return;
+  }
   bossAnnounced = true;
   clearBossAnnouncement();
   clearTimeout(toastTimeout);
@@ -111,15 +114,21 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
   "#menu button, #help-dialog button",
 )) {
   button.addEventListener("pointerenter", () => {
-    if (menuSoundUnlocked) audio.play("menu-hover");
+    if (menuSoundUnlocked) {
+      audio.play("menu-hover");
+    }
   });
   button.addEventListener("click", () => {
-    if (menuSoundUnlocked) audio.play("menu-click");
+    if (menuSoundUnlocked) {
+      audio.play("menu-click");
+    }
   });
 }
 
 function showToast(message: string) {
-  if (bossAnnouncementRemaining > 0) return;
+  if (bossAnnouncementRemaining > 0) {
+    return;
+  }
   $("#toast").textContent = message;
   $("#toast").classList.add("visible");
   clearTimeout(toastTimeout);
@@ -130,7 +139,9 @@ function showToast(message: string) {
 }
 
 async function start() {
-  if (starting) return;
+  if (starting) {
+    return;
+  }
   starting = true;
   clearBossAnnouncement();
   bossAnnounced = false;
@@ -147,7 +158,9 @@ async function start() {
           HUD.scoreDigits,
           "0",
         );
-        if (!s.isBossWave) bossAnnounced = false;
+        if (!s.isBossWave) {
+          bossAnnounced = false;
+        }
         const bossHealth = s.bossHealth;
         $("#boss-health").hidden = !bossHealth || bossHealth.current <= 0;
         if (bossHealth) {
@@ -193,46 +206,70 @@ async function start() {
         }
         $("#game-screen").classList.toggle("stunned", s.isStunned);
         $("#game-screen").classList.toggle("reviewing", s.freezeRemaining > 0);
-        if (s.freezeRemaining > 0)
+        if (s.freezeRemaining > 0) {
           $("#combo").textContent =
             `ENEMIES FROZEN · ${s.freezeRemaining.toFixed(1)}s`;
-        if (s.isStunned)
+        }
+        if (s.isStunned) {
           $("#combo").textContent =
             `EVENT LOOP BLOCKED · ${s.stunRemaining.toFixed(1)}s`;
+        }
         $<HTMLButtonElement>("#fire-special").disabled =
           s.isStunned || s.specialAmmo[s.specialWeapon] === 0;
         audio.setWave(s.wave);
         $("#track-name").textContent = audio.trackName.toUpperCase();
       },
       onEvent: (event) => {
-        if (event === "boss" && bossAnnounced) return;
-        if (event === "boss") announceBoss();
+        if (event === "boss" && bossAnnounced) {
+          return;
+        }
+        if (event === "boss") {
+          announceBoss();
+        }
         if (event === "boss-defeated") {
           clearBossAnnouncement();
           $("#boss-health").hidden = true;
           showToast("FACTORY SHUT DOWN // BUILD APPROVED");
         }
-        if (event !== "gameover")
+        if (event !== "gameover") {
           audio.play(event === "shoot" ? "shot" : event);
-        if (event === "wave") showToast("NEW WAVE // MORE CODE. LESS MERCY.");
-        if (event === "pickup") showToast("BONUS COLLECTED // LET IT RIP!");
-        if (event === "ammo") showToast("AMMO LOADED // BACK TO WORK");
-        if (event === "hazard")
+        }
+        if (event === "wave") {
+          showToast("NEW WAVE // MORE CODE. LESS MERCY.");
+        }
+        if (event === "pickup") {
+          showToast("BONUS COLLECTED // LET IT RIP!");
+        }
+        if (event === "ammo") {
+          showToast("AMMO LOADED // BACK TO WORK");
+        }
+        if (event === "hazard") {
           showToast("TIMEOUT INCOMING // SHOOT IT OR DODGE!");
-        if (event === "stun")
+        }
+        if (event === "stun") {
           showToast("EVENT LOOP BLOCKED // CLEANER PARALYZED");
-        if (event === "recover") showToast("BACK ONLINE // KEEP CLEANING");
-        if (event === "robot")
+        }
+        if (event === "recover") {
+          showToast("BACK ONLINE // KEEP CLEANING");
+        }
+        if (event === "robot") {
           showToast("AI AGENT INCOMING // ARMORED · 15 HITS TO DESTROY");
-        if (event === "robot-destroy")
+        }
+        if (event === "robot-destroy") {
           showToast("AI AGENT DISMANTLED // ARMOR BREACHED");
-        if (event === "generate")
+        }
+        if (event === "generate") {
           showToast("GENERATION COMPLETE // MORE TECH DEBT");
-        if (event === "review")
+        }
+        if (event === "review") {
           showToast("CODE REVIEW // ALL ENEMIES FROZEN FOR 2s");
-        if (event === "lint")
+        }
+        if (event === "lint") {
           showToast("LINT BOMB // BIG BLOCKS SPLIT · SMALL BLOCKS CLEARED");
-        if (event === "bonus") showToast("BONUS INCOMING // SHOOT TO COLLECT");
+        }
+        if (event === "bonus") {
+          showToast("BONUS INCOMING // SHOOT TO COLLECT");
+        }
       },
       onGameOver: (score, wave) => endRun(score, wave),
     });
@@ -257,7 +294,9 @@ async function start() {
 }
 
 function setPause(value: boolean) {
-  if (!controller || finished || $("#game-screen").hidden) return;
+  if (!controller || finished || $("#game-screen").hidden) {
+    return;
+  }
   paused = value;
   controller.setPaused(value);
   $("#game-overlay").hidden = !value;
@@ -270,7 +309,9 @@ function setPause(value: boolean) {
   if (value) {
     audio.pause();
     $("#resume").focus();
-  } else audio.resume();
+  } else {
+    audio.resume();
+  }
 }
 
 function endRun(score: number, wave: number) {
@@ -311,18 +352,20 @@ $("#close-help").addEventListener("click", () =>
   $<HTMLDialogElement>("#help-dialog").close(),
 );
 $<HTMLDialogElement>("#help-dialog").addEventListener("click", (e) => {
-  if (e.target === $<HTMLDialogElement>("#help-dialog"))
+  if (e.target === $<HTMLDialogElement>("#help-dialog")) {
     $<HTMLDialogElement>("#help-dialog").close();
+  }
 });
 $("#pause").addEventListener("click", () => setPause(!paused));
 $("#resume").addEventListener("click", () => setPause(false));
 $("#restart").addEventListener("click", () => {
   void start();
 });
-for (const type of specialTypes)
+for (const type of specialTypes) {
   $(`#select-${type}`).addEventListener("click", () =>
     controller?.selectSpecial(type),
   );
+}
 $("#fire-special").addEventListener("click", () => controller?.fireSpecial());
 $("#quit").addEventListener("click", () => {
   clearBossAnnouncement();
@@ -349,13 +392,17 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
       );
       b.classList.toggle("muted", !audio.enabled);
       const label = b.querySelector("span");
-      if (label) label.textContent = audio.enabled ? "SOUND ON" : "SOUND OFF";
+      if (label) {
+        label.textContent = audio.enabled ? "SOUND ON" : "SOUND OFF";
+      }
     }
   });
 }
 document.addEventListener("keydown", (e) => {
   if (e.code === "Escape" || e.code === "KeyP") {
-    if ($<HTMLDialogElement>("#help-dialog").open) return;
+    if ($<HTMLDialogElement>("#help-dialog").open) {
+      return;
+    }
     e.preventDefault();
     setPause(!paused);
   }
@@ -375,5 +422,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     audio.pause();
     setPause(true);
-  } else if (!$("#menu").hidden && menuSoundUnlocked) audio.enterMenu();
+  } else if (!$("#menu").hidden && menuSoundUnlocked) {
+    audio.enterMenu();
+  }
 });

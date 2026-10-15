@@ -10,6 +10,7 @@ async function start(page: Page) {
   await expect(page.locator("canvas")).toBeVisible();
   await page.waitForFunction(() => !!(window as any).__spaghetti);
 }
+
 async function point(page: Page, x: number, y: number) {
   const box = await page.locator("canvas").boundingBox();
   await page.mouse.move(
@@ -87,6 +88,7 @@ test("pointer fire chips code, scores points and renders without errors", async 
   await page.mouse.up();
   const state = await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
+
     return {
       shots: s.shotsFired,
       chipped: s.blocks.some((b: any) => b.hits > 0 || b.generation > 0),
@@ -137,6 +139,7 @@ test("pause freezes the simulation, resume and keyboard controls work", async ({
   await page.keyboard.up("Space");
   const state = await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
+
     return { y: s.playerY, shots: s.shotsFired, elapsed: s.elapsed };
   });
   expect(state.y).toBeGreaterThan(400);
@@ -327,6 +330,7 @@ test("timeout collision paralyzes movement and all weapons, then recovers", asyn
     // Keep slow software-WebGL input checks inside the stun window; recovery is
     // advanced explicitly below, independently of browser scheduling delays.
     s.stunRemaining = 30;
+
     return { y: s.playerY, shots: s.shotsFired, ammo: s.specialAmmo.homing };
   });
   await point(page, 900, 570);
@@ -343,6 +347,7 @@ test("timeout collision paralyzes movement and all weapons, then recovers", asyn
   await page.mouse.click(1000, 650, { button: "right" });
   const after = await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
+
     return { y: s.playerY, shots: s.shotsFired, ammo: s.specialAmmo.homing };
   });
   expect(after).toEqual(before);

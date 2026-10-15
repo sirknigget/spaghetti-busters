@@ -21,8 +21,11 @@ beforeAll(async () => {
 function meshes(object: THREE.Object3D): THREE.Mesh[] {
   const result: THREE.Mesh[] = [];
   object.traverse((child) => {
-    if (child instanceof THREE.Mesh) result.push(child);
+    if (child instanceof THREE.Mesh) {
+      result.push(child);
+    }
   });
+
   return result;
 }
 
@@ -124,8 +127,9 @@ describe("shipped glTF model library", () => {
       "robot-thinking",
       "robot-brand-mark",
       "robot-status-anchor",
-    ])
+    ]) {
       expect(robot.getObjectByName(name)).toBeDefined();
+    }
     expect(
       robot.getObjectByName("robot-status-anchor")!.position.toArray(),
     ).toEqual([0, 113, 0]);
@@ -157,8 +161,9 @@ describe("shipped glTF model library", () => {
     expect(windows).toHaveLength(1);
     const windowMesh = windows[0];
     expect(windowMesh).toBeInstanceOf(THREE.InstancedMesh);
-    if (windowMesh instanceof THREE.InstancedMesh)
+    if (windowMesh instanceof THREE.InstancedMesh) {
       expect(windowMesh.count).toBeGreaterThan(100);
+    }
     panel.dispose();
     disposeObject(city);
   });

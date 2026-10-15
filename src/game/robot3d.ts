@@ -71,7 +71,9 @@ export function createRobot(brand: Brand): THREE.Group {
     mark.material.needsUpdate = true;
   }
   const anchor = group.getObjectByName("robot-status-anchor");
-  if (!anchor) throw new Error("Robot model has no status anchor");
+  if (!anchor) {
+    throw new Error("Robot model has no status anchor");
+  }
   const labelCanvas = document.createElement("canvas");
   labelCanvas.width = anchor.userData.canvasWidth;
   labelCanvas.height = anchor.userData.canvasHeight;
@@ -86,16 +88,22 @@ export function createRobot(brand: Brand): THREE.Group {
   group.remove(anchor);
   group.add(label);
   group.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
+    if (!(object instanceof THREE.Mesh)) {
+      return;
+    }
     const materials = Array.isArray(object.material)
       ? object.material
       : [object.material];
-    for (const material of materials)
-      if (material.name === "robot-shell") group.userData.shell = material;
+    for (const material of materials) {
+      if (material.name === "robot-shell") {
+        group.userData.shell = material;
+      }
+    }
   });
   group.userData.brand = brand;
   group.userData.labelCanvas = labelCanvas;
   group.userData.labelTexture = texture;
+
   return group;
 }
 
@@ -104,8 +112,8 @@ export function animateRobot(
   robot: RobotPose,
   frozen: boolean,
 ) {
-  const running = robot.state !== "thinking",
-    phase = robot.age * ROBOT_MOTION.strideFrequency;
+  const running = robot.state !== "thinking";
+  const phase = robot.age * ROBOT_MOTION.strideFrequency;
   for (const side of [-1, 1]) {
     group.getObjectByName(`robot-leg-${side}`)!.rotation.x =
       running && !frozen
@@ -141,13 +149,16 @@ export function animateRobot(
   if (
     !(shield instanceof THREE.Mesh) ||
     !(shield.material instanceof THREE.MeshStandardMaterial)
-  )
+  ) {
     return;
+  }
   shield.material.opacity =
     robot.hitFlash > 0 ? ROBOT_MOTION.hitShieldOpacity : 0;
   shield.material.color.set(robot.hitFlash > 0 ? "#fff0ad" : "#74cfe2");
   const shell = group.userData.shell;
-  if (!(shell instanceof THREE.MeshStandardMaterial)) return;
+  if (!(shell instanceof THREE.MeshStandardMaterial)) {
+    return;
+  }
   const damageColor = robot.hitFlash > 0 ? "#bd8e35" : "#000000";
   shell.emissive.set(frozen ? "#286c9c" : damageColor);
   shell.emissiveIntensity = 0.45;
@@ -176,7 +187,9 @@ export function animateRobot(
   if (group.userData.labelState !== state) {
     group.userData.labelState = state;
     const canvas = group.userData.labelCanvas;
-    if (!(canvas instanceof HTMLCanvasElement)) return;
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return;
+    }
     const c = canvas.getContext("2d")!;
     c.clearRect(0, 0, canvas.width, canvas.height);
     c.fillStyle = "#173849";
@@ -200,7 +213,8 @@ export function animateRobot(
       LABEL_LAYOUT.statusY,
     );
     const labelTexture = group.userData.labelTexture;
-    if (labelTexture instanceof THREE.CanvasTexture)
+    if (labelTexture instanceof THREE.CanvasTexture) {
       labelTexture.needsUpdate = true;
+    }
   }
 }

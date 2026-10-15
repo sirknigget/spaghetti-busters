@@ -11,8 +11,11 @@ function renderingErrors(page: Page) {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
+    if (message.type() === "error") {
+      errors.push(message.text());
+    }
   });
+
   return errors;
 }
 
@@ -43,8 +46,8 @@ test("destroyed code collapses as its original perforated surface and physically
     oldHole.alive = false;
     block.hits++;
     r.draw();
-    const original = w.blocks.get(block.id),
-      canvas = original.userData.fractureVisual.canvas;
+    const original = w.blocks.get(block.id);
+    const canvas = original.userData.fractureVisual.canvas;
     const oldHoleKeys = [...original.userData.fractureVisual.holes.keys()];
     s.damage(block, 0, 0, { vx: 1080, vy: 0 }, 1000, 100);
     r.draw();
@@ -68,8 +71,11 @@ test("destroyed code collapses as its original perforated surface and physically
       sparks: w.scene.getObjectByName("physics-incandescent-sparks").count,
       cleared: !s.blocks.some((b: any) => b.id === block.id),
     };
-    for (let i = 0; i < 30; i++) w.debris.update(1 / 120);
+    for (let i = 0; i < 30; i++) {
+      w.debris.update(1 / 120);
+    }
     r.draw();
+
     return result;
   });
   expect(death.effects.codeDeaths).toBe(1);
@@ -101,15 +107,18 @@ test("destroyed code collapses as its original perforated surface and physically
         ammo: s.ammo,
         elapsed: s.elapsed,
       });
-    const before = gameplay(),
-      bodies = w.debris.bodySnapshots;
+    const before = gameplay();
+    const bodies = w.debris.bodySnapshots;
     r.draw();
     r.draw();
     const pauseSafe =
       JSON.stringify(bodies) === JSON.stringify(w.debris.bodySnapshots);
     const start = bodies.filter((body: any) => body.kind === "code");
-    for (let i = 0; i < 600; i++) w.debris.update(1 / 120);
+    for (let i = 0; i < 600; i++) {
+      w.debris.update(1 / 120);
+    }
     r.draw();
+
     return {
       unchanged: gameplay() === before,
       pauseSafe,
@@ -141,6 +150,7 @@ test("destroyed code collapses as its original perforated surface and physically
   const reset = await page.evaluate(() => {
     const { scene: r, world: w } = (window as any).__spaghetti;
     r.reset();
+
     return {
       effects: w.debris.diagnostics,
       fragments: w.scene.children.filter((mesh: any) =>
@@ -162,6 +172,7 @@ test("explosions, lint clearing and uncached boss deaths retain a surface even w
   await start(page);
   const results = await page.evaluate(() => {
     const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
+
     return ["explosion", "lint", "uncached-boss"].map((mode) => {
       r.reset();
       r.setPaused(true);
@@ -181,16 +192,21 @@ test("explosions, lint clearing and uncached boss deaths retain a surface even w
       });
       block.cells.forEach((cell: any) => (cell.health = 1));
       block.cells[0].alive = false;
-      if (mode !== "uncached-boss") r.draw();
+      if (mode !== "uncached-boss") {
+        r.draw();
+      }
       const wasCached = w.blocks.has(block.id);
       if (mode === "lint") {
         s.selectSpecial("lint");
         s.fireSpecial();
-      } else s.explode(block.x, block.y, 300, 5);
+      } else {
+        s.explode(block.x, block.y, 300, 5);
+      }
       r.draw();
       const parts = w.scene.children.filter((mesh: any) =>
         mesh.name.startsWith("code-death-fragment-"),
       );
+
       return {
         mode,
         wasCached,

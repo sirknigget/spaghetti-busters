@@ -29,12 +29,14 @@ type Output = {
 const clip = (polygon: Vertex[], distance: (v: Vertex) => number): Vertex[] => {
   const out: Vertex[] = [];
   for (let i = 0; i < polygon.length; i++) {
-    const a = polygon[i]!,
-      b = polygon[(i + 1) % polygon.length]!,
-      da = distance(a),
-      db = distance(b),
-      inside = da >= -SEAM.epsilon;
-    if (inside) out.push(a);
+    const a = polygon[i]!;
+    const b = polygon[(i + 1) % polygon.length]!;
+    const da = distance(a);
+    const db = distance(b);
+    const inside = da >= -SEAM.epsilon;
+    if (inside) {
+      out.push(a);
+    }
     if (
       (da > SEAM.epsilon && db < -SEAM.epsilon) ||
       (da < -SEAM.epsilon && db > SEAM.epsilon)
@@ -43,23 +45,27 @@ const clip = (polygon: Vertex[], distance: (v: Vertex) => number): Vertex[] => {
       out.push(a.map((v, k) => v + (b[k]! - v) * t));
     }
   }
+
   return out;
 };
+
 function append(output: Output, polygon: Vertex[]) {
   for (let i = 1; i < polygon.length - 1; i++) {
-    const a = polygon[0]!,
-      b = polygon[i]!,
-      c = polygon[i + 1]!;
-    const abx = b[COMPONENT.x]! - a[COMPONENT.x]!,
-      aby = b[COMPONENT.y]! - a[COMPONENT.y]!,
-      abz = b[COMPONENT.z]! - a[COMPONENT.z]!,
-      acx = c[COMPONENT.x]! - a[COMPONENT.x]!,
-      acy = c[COMPONENT.y]! - a[COMPONENT.y]!,
-      acz = c[COMPONENT.z]! - a[COMPONENT.z]!;
-    const cx = aby * acz - abz * acy,
-      cy = abz * acx - abx * acz,
-      cz = abx * acy - aby * acx;
-    if (cx * cx + cy * cy + cz * cz < SEAM.areaEpsilon) continue;
+    const a = polygon[0]!;
+    const b = polygon[i]!;
+    const c = polygon[i + 1]!;
+    const abx = b[COMPONENT.x]! - a[COMPONENT.x]!;
+    const aby = b[COMPONENT.y]! - a[COMPONENT.y]!;
+    const abz = b[COMPONENT.z]! - a[COMPONENT.z]!;
+    const acx = c[COMPONENT.x]! - a[COMPONENT.x]!;
+    const acy = c[COMPONENT.y]! - a[COMPONENT.y]!;
+    const acz = c[COMPONENT.z]! - a[COMPONENT.z]!;
+    const cx = aby * acz - abz * acy;
+    const cy = abz * acx - abx * acz;
+    const cz = abx * acy - aby * acx;
+    if (cx * cx + cy * cy + cz * cz < SEAM.areaEpsilon) {
+      continue;
+    }
     for (const v of [a, b, c]) {
       output.p.push(v[COMPONENT.x]!, v[COMPONENT.y]!, v[COMPONENT.z]!);
       output.n.push(v[COMPONENT.nx]!, v[COMPONENT.ny]!, v[COMPONENT.nz]!);
@@ -81,13 +87,13 @@ export function clipDeathSolid(
   parallelLow: number,
   parallelHigh: number,
 ): [THREE.BufferGeometry, THREE.BufferGeometry] {
-  const perpendicular = axis === "x" ? 0 : 1,
-    parallel = axis === "x" ? 1 : 0;
+  const perpendicular = axis === "x" ? 0 : 1;
+  const parallel = axis === "x" ? 1 : 0;
   const count = Math.max(
-      SEAM.minSegments,
-      Math.ceil((parallelHigh - parallelLow) / SEAM.segmentLength),
-    ),
-    step = (parallelHigh - parallelLow) / count;
+    SEAM.minSegments,
+    Math.ceil((parallelHigh - parallelLow) / SEAM.segmentLength),
+  );
+  const step = (parallelHigh - parallelLow) / count;
   const seam = Array.from(
     { length: count + 1 },
     (_, i) =>
@@ -100,21 +106,22 @@ export function clipDeathSolid(
     { p: [], n: [], uv: [], walls: [], frontCount: 0 },
     { p: [], n: [], uv: [], walls: [], frontCount: 0 },
   ];
-  const positions = geometry.getAttribute("position"),
-    normals = geometry.getAttribute("normal"),
-    uv = geometry.getAttribute("uv");
+  const positions = geometry.getAttribute("position");
+  const normals = geometry.getAttribute("normal");
+  const uv = geometry.getAttribute("uv");
   const frontCount = geometry.groups[0]!.count;
   for (
     let triangle = 0;
     triangle < positions.count;
     triangle += TRIANGLE_VERTICES
   ) {
-    if (triangle === frontCount)
+    if (triangle === frontCount) {
       for (const out of outputs) {
         out.frontCount = out.p.length / VECTOR_COMPONENTS;
       }
+    }
     const vertices: Vertex[] = [];
-    for (let i = triangle; i < triangle + TRIANGLE_VERTICES; i++)
+    for (let i = triangle; i < triangle + TRIANGLE_VERTICES; i++) {
       vertices.push([
         positions.getX(i),
         positions.getY(i),
@@ -125,10 +132,11 @@ export function clipDeathSolid(
         uv.getX(i),
         uv.getY(i),
       ]);
+    }
     // Most triangles lie nowhere near this seam. Preserve them verbatim, avoiding both
     // allocations and artificial band subdivisions of every historical hole wall.
-    const crossLow = Math.min(...vertices.map((v) => v[perpendicular]!)),
-      crossHigh = Math.max(...vertices.map((v) => v[perpendicular]!));
+    const crossLow = Math.min(...vertices.map((v) => v[perpendicular]!));
+    const crossHigh = Math.max(...vertices.map((v) => v[perpendicular]!));
     if (crossHigh < cut - SEAM.maxDisplacement) {
       append(outputs[0]!, vertices);
       continue;
@@ -137,32 +145,36 @@ export function clipDeathSolid(
       append(outputs[1]!, vertices);
       continue;
     }
-    const lo = Math.min(...vertices.map((v) => v[parallel]!)),
-      hi = Math.max(...vertices.map((v) => v[parallel]!));
+    const lo = Math.min(...vertices.map((v) => v[parallel]!));
+    const hi = Math.max(...vertices.map((v) => v[parallel]!));
     const start = Math.max(
-        0,
-        Math.min(count - 1, Math.floor((lo - parallelLow) / step)),
-      ),
-      end = Math.max(
-        start,
-        Math.min(count - 1, Math.floor((hi - parallelLow) / step)),
-      );
+      0,
+      Math.min(count - 1, Math.floor((lo - parallelLow) / step)),
+    );
+    const end = Math.max(
+      start,
+      Math.min(count - 1, Math.floor((hi - parallelLow) / step)),
+    );
     for (let band = start; band <= end; band++) {
-      const low = parallelLow + band * step,
-        high = low + step;
+      const low = parallelLow + band * step;
+      const high = low + step;
       let polygon = vertices;
-      if (lo < low - SEAM.epsilon)
+      if (lo < low - SEAM.epsilon) {
         polygon = clip(polygon, (v) => v[parallel]! - low);
-      if (hi > high + SEAM.epsilon)
+      }
+      if (hi > high + SEAM.epsilon) {
         polygon = clip(polygon, (v) => high - v[parallel]!);
-      if (polygon.length < TRIANGLE_VERTICES) continue;
-      const slope = (seam[band + 1]! - seam[band]!) / step,
-        intercept = seam[band]! - slope * low;
+      }
+      if (polygon.length < TRIANGLE_VERTICES) {
+        continue;
+      }
+      const slope = (seam[band + 1]! - seam[band]!) / step;
+      const intercept = seam[band]! - slope * low;
       const distance = (v: Vertex) =>
         v[perpendicular]! - slope * v[parallel]! - intercept;
-      const ds = polygon.map((vertex) => distance(vertex)),
-        min = Math.min(...ds),
-        max = Math.max(...ds);
+      const ds = polygon.map((vertex) => distance(vertex));
+      const min = Math.min(...ds);
+      const max = Math.max(...ds);
       if (max <= SEAM.epsilon) {
         append(outputs[0]!, polygon);
         continue;
@@ -176,24 +188,32 @@ export function clipDeathSolid(
         clip(polygon, (v) => -distance(v)),
       );
       append(outputs[1]!, clip(polygon, distance));
-      if (triangle >= frontCount) continue;
+      if (triangle >= frontCount) {
+        continue;
+      }
       const intersections: Vertex[] = [];
       for (let i = 0; i < polygon.length; i++) {
-        const a = polygon[i]!,
-          b = polygon[(i + 1) % polygon.length]!,
-          da = distance(a),
-          db = distance(b);
-        if (Math.abs(da) < SEAM.epsilon) intersections.push(a);
+        const a = polygon[i]!;
+        const b = polygon[(i + 1) % polygon.length]!;
+        const da = distance(a);
+        const db = distance(b);
+        if (Math.abs(da) < SEAM.epsilon) {
+          intersections.push(a);
+        }
         if (da * db < -SEAM.crossingEpsilon) {
           const t = da / (da - db);
           intersections.push(a.map((v, k) => v + (b[k]! - v) * t));
         }
       }
-      if (intersections.length < SEGMENT_VERTICES) continue;
+      if (intersections.length < SEGMENT_VERTICES) {
+        continue;
+      }
       intersections.sort((a, b) => a[parallel]! - b[parallel]!);
-      const a = intersections[0]!,
-        b = intersections.at(-1)!;
-      if (Math.abs(a[parallel]! - b[parallel]!) < SEAM.epsilon) continue;
+      const a = intersections[0]!;
+      const b = intersections.at(-1)!;
+      if (Math.abs(a[parallel]! - b[parallel]!) < SEAM.epsilon) {
+        continue;
+      }
       const normal = new THREE.Vector3(
         axis === "x" ? 1 : -slope,
         axis === "x" ? -slope : 1,
@@ -217,16 +237,19 @@ export function clipDeathSolid(
           vertex(b, -b[COMPONENT.z]!),
           vertex(b, b[COMPONENT.z]!),
         ];
-        const crossX = b[COMPONENT.y]! - a[COMPONENT.y]!,
-          crossY = -(b[COMPONENT.x]! - a[COMPONENT.x]!);
-        if (crossX * outward.x + crossY * outward.y < 0) wall.reverse();
+        const crossX = b[COMPONENT.y]! - a[COMPONENT.y]!;
+        const crossY = -(b[COMPONENT.x]! - a[COMPONENT.x]!);
+        if (crossX * outward.x + crossY * outward.y < 0) {
+          wall.reverse();
+        }
         outputs[side]!.walls.push(wall);
       }
     }
   }
   const build = (output: Output) => {
-    if (frontCount === positions.count)
+    if (frontCount === positions.count) {
       output.frontCount = output.p.length / VECTOR_COMPONENTS;
+    }
     for (const wall of output.walls) {
       append(output, wall);
     }
@@ -250,8 +273,10 @@ export function clipDeathSolid(
       1,
     );
     result.computeBoundingSphere();
+
     return result;
   };
+
   return [build(outputs[0]), build(outputs[1])];
 }
 

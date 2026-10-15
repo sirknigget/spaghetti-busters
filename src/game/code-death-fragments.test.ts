@@ -10,14 +10,17 @@ import {
 const area = (geometry: THREE.BufferGeometry) => {
   const p = geometry.getAttribute("position");
   let result = 0;
-  for (let i = 0; i < geometry.groups[0]!.count; i += 3)
+  for (let i = 0; i < geometry.groups[0]!.count; i += 3) {
     result +=
       Math.abs(
         (p.getX(i + 1) - p.getX(i)) * (p.getY(i + 2) - p.getY(i)) -
           (p.getY(i + 1) - p.getY(i)) * (p.getX(i + 2) - p.getX(i)),
       ) / 2;
+  }
+
   return result;
 };
+
 function slab() {
   const canvas = { width: 800, height: 452 } as HTMLCanvasElement;
   const regions: Polygon[] = [
@@ -37,11 +40,11 @@ function slab() {
     { width: 400, height: 200 },
   );
   const texture = new THREE.CanvasTexture(canvas);
-  const source = new THREE.Group(),
-    mesh = new THREE.Mesh(geometry, [
-      new THREE.MeshToonMaterial({ map: texture }),
-      new THREE.MeshToonMaterial(),
-    ]);
+  const source = new THREE.Group();
+  const mesh = new THREE.Mesh(geometry, [
+    new THREE.MeshToonMaterial({ map: texture }),
+    new THREE.MeshToonMaterial(),
+  ]);
   mesh.name = "perforated-extruded-code";
   source.add(mesh);
   source.userData.fractureVisual = {
@@ -55,13 +58,14 @@ function slab() {
     scars: new Set(),
     fractured: true,
   };
+
   return { source, mesh, canvas };
 }
 
 describe("code slab death partitioning", () => {
   it("partitions the actual surface into complementary centered pieces retaining holes and original UVs", () => {
-    const { source, mesh, canvas } = slab(),
-      originalArea = area(mesh.geometry);
+    const { source, mesh, canvas } = slab();
+    const originalArea = area(mesh.geometry);
     const pieces = createDeathFragments(source, 941);
     expect(pieces.length).toBeGreaterThanOrEqual(8);
     expect(pieces.length).toBeLessThanOrEqual(16);
@@ -72,8 +76,8 @@ describe("code slab death partitioning", () => {
       const part = piece.getObjectByName(
         "perforated-extruded-code",
       ) as THREE.Mesh;
-      const p = part.geometry.getAttribute("position"),
-        uv = part.geometry.getAttribute("uv");
+      const p = part.geometry.getAttribute("position");
+      const uv = part.geometry.getAttribute("uv");
       part.geometry.computeBoundingBox();
       expect(
         part.geometry.boundingBox!.getCenter(new THREE.Vector3()).length(),
@@ -101,8 +105,8 @@ describe("code slab death partitioning", () => {
     source.position.set(420, 370, 2);
     source.rotation.set(0.2, -0.3, 0.6);
     source.updateWorldMatrix(true, false);
-    const pieces = createDeathFragments(source, 11),
-      different = createDeathFragments(source, 12);
+    const pieces = createDeathFragments(source, 11);
+    const different = createDeathFragments(source, 12);
     expect(pieces.map((piece) => piece.position.toArray())).not.toEqual(
       different.map((piece) => piece.position.toArray()),
     );

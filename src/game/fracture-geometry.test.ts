@@ -15,15 +15,17 @@ const slab: Polygon = [
   { x: -100, y: 76 },
 ];
 const area = (geometry: ReturnType<typeof perforatedGeometry>) => {
-  const p = geometry.getAttribute("position"),
-    count = geometry.groups[0]!.count;
+  const p = geometry.getAttribute("position");
+  const count = geometry.groups[0]!.count;
   let sum = 0;
-  for (let i = 0; i < count; i += 3)
+  for (let i = 0; i < count; i += 3) {
     sum +=
       Math.abs(
         (p.getX(i + 1) - p.getX(i)) * (p.getY(i + 2) - p.getY(i)) -
           (p.getY(i + 1) - p.getY(i)) * (p.getX(i + 2) - p.getX(i)),
       ) / 2;
+  }
+
   return sum;
 };
 
@@ -46,12 +48,12 @@ describe("physical code fracture surfaces", () => {
     );
     const positions = geometry.getAttribute("position");
     for (let i = 0; i < geometry.groups[0]!.count; i += 3) {
-      const ax = positions.getX(i),
-        ay = positions.getY(i),
-        bx = positions.getX(i + 1),
-        by = positions.getY(i + 1),
-        cx = positions.getX(i + 2),
-        cy = positions.getY(i + 2);
+      const ax = positions.getX(i);
+      const ay = positions.getY(i);
+      const bx = positions.getX(i + 1);
+      const by = positions.getY(i + 1);
+      const cx = positions.getX(i + 2);
+      const cy = positions.getY(i + 2);
       // The hole center cannot fall inside any surviving surface triangle.
       const crosses = [ax * by - ay * bx, bx * cy - by * cx, cx * ay - cy * ax];
       expect(
@@ -82,10 +84,10 @@ describe("physical code fracture surfaces", () => {
       expect(area(halves[0]!) + area(halves[1]!)).toBeCloseTo(area(whole), 2);
       // Root UVs stay anchored even though a fragment's local origin is shifted.
       for (let sideIndex = 0; sideIndex < halves.length; sideIndex++) {
-        const geometry = halves[sideIndex]!,
-          p = geometry.getAttribute("position"),
-          uv = geometry.getAttribute("uv"),
-          offsetX = (sideIndex === 0 ? -1 : 1) * 45;
+        const geometry = halves[sideIndex]!;
+        const p = geometry.getAttribute("position");
+        const uv = geometry.getAttribute("uv");
+        const offsetX = (sideIndex === 0 ? -1 : 1) * 45;
         for (let i = 0; i < geometry.groups[0]!.count; i++) {
           expect(uv.getX(i)).toBeCloseTo((p.getX(i) + offsetX + 100) / 200, 5);
           expect(uv.getY(i)).toBeCloseTo((p.getY(i) + 12 + 50) / 126, 5);
@@ -113,20 +115,23 @@ describe("physical code fracture surfaces", () => {
     const crossings = (polygon: Polygon, y: number) => {
       const xs: number[] = [];
       for (let i = 0; i < polygon.length; i++) {
-        const a = polygon[i]!,
-          b = polygon[(i + 1) % polygon.length]!;
-        if (a.y > y !== b.y > y)
+        const a = polygon[i]!;
+        const b = polygon[(i + 1) % polygon.length]!;
+        if (a.y > y !== b.y > y) {
           xs.push(a.x + ((b.x - a.x) * (y - a.y)) / (b.y - a.y));
+        }
       }
       xs.sort((a, b) => a - b);
       const spans: [number, number][] = [];
-      for (let i = 0; i < xs.length - 1; i += 2)
+      for (let i = 0; i < xs.length - 1; i += 2) {
         spans.push([xs[i]!, xs[i + 1]!]);
+      }
+
       return spans;
     };
     let reference = 0;
-    const samples = 6000,
-      dy = 126 / samples;
+    const samples = 6000;
+    const dy = 126 / samples;
     for (let row = 0; row < samples; row++) {
       const y = -50 + (row + 0.5) * dy;
       const missing = holes
@@ -135,14 +140,18 @@ describe("physical code fracture surfaces", () => {
       const union: [number, number][] = [];
       for (const interval of missing) {
         const last = union[union.length - 1];
-        if (last && interval[0] <= last[1])
+        if (last && interval[0] <= last[1]) {
           last[1] = Math.max(last[1], interval[1]);
-        else union.push([...interval]);
+        } else {
+          union.push([...interval]);
+        }
       }
       for (const [from, to] of crossings(mask, y)) {
-        const left = Math.max(-100, from),
-          right = Math.min(100, to);
-        if (right <= left) continue;
+        const left = Math.max(-100, from);
+        const right = Math.min(100, to);
+        if (right <= left) {
+          continue;
+        }
         const removed = union.reduce(
           (sum, [a, b]) =>
             sum + Math.max(0, Math.min(right, b) - Math.max(left, a)),
@@ -154,8 +163,8 @@ describe("physical code fracture surfaces", () => {
     expect(area(geometry)).toBeCloseTo(reference, 0);
     // A global cut at every distant chip vertex must not retessellate unchanged spans.
     expect(geometry.groups[0]!.count).toBeLessThan(holes.length * 250);
-    const p = geometry.getAttribute("position"),
-      uv = geometry.getAttribute("uv");
+    const p = geometry.getAttribute("position");
+    const uv = geometry.getAttribute("uv");
     for (let i = 0; i < geometry.groups[0]!.count; i++) {
       expect(uv.getX(i)).toBeCloseTo((p.getX(i) + 12 + 100) / 200, 5);
       expect(uv.getY(i)).toBeCloseTo((p.getY(i) - 8 + 50) / 126, 5);

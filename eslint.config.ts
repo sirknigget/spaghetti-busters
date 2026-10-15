@@ -2,6 +2,7 @@
  * Applies typed SonarJS and remaining ESLint-only checks in source and test scopes.
  * Uses a dedicated TypeScript project covering source, tests, and tools.
  */
+import { spacingRules } from "./lint/spacing";
 import parser from "@typescript-eslint/parser";
 import sonarjs from "eslint-plugin-sonarjs";
 import unicorn from "eslint-plugin-unicorn";
@@ -108,6 +109,11 @@ const eslintConfig: TSESLint.FlatConfig.Config[] = [
       "@eslint-react": react,
       "@stylistic": stylistic,
     },
+  },
+  {
+    name: "quality/spacing",
+    files: ["**/*.{ts,tsx,js,jsx}"],
+    rules: spacingRules,
   },
   {
     name: "quality/source",

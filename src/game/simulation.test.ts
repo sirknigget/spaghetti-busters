@@ -19,8 +19,8 @@ function game() {
 
 /** Place a projectile immediately in front of a chosen moving glyph. */
 function hitCell(sim: Simulation, block: Block, cell: Cell) {
-  const cos = Math.cos(block.angle),
-    sin = Math.sin(block.angle);
+  const cos = Math.cos(block.angle);
+  const sin = Math.sin(block.angle);
   const x = block.x + cell.x * cos - cell.y * sin;
   const y = block.y + cell.x * sin + cell.y * cos;
   sim.bullets.push({
@@ -59,8 +59,9 @@ describe("arcade simulation", () => {
     );
     expect(sim.particles.some((particle) => particle.char)).toBe(true);
     expect(sim.score).toBeGreaterThan(0);
-    for (let i = 0; i < 4; i++)
+    for (let i = 0; i < 4; i++) {
       hitCell(sim, block, block.cells.filter((cell) => cell.alive)[35]!);
+    }
     expect(sim.blocks).toHaveLength(2);
     expect(sim.blocks.every((chunk) => chunk.generation === 1)).toBe(true);
     expect(sim.blocks[0]!.vy).not.toBe(sim.blocks[1]!.vy);
@@ -140,7 +141,9 @@ describe("arcade simulation", () => {
     const remainingMagic = block.cells.find(
       (cell) => cell.alive && cell.magic === "ammo",
     );
-    if (remainingMagic) hitCell(sim, block, remainingMagic);
+    if (remainingMagic) {
+      hitCell(sim, block, remainingMagic);
+    }
     expect(sim.ammo).toBe(8);
   });
 
@@ -157,7 +160,7 @@ describe("arcade simulation", () => {
       age: 1,
       type: "triple",
     });
-    for (let i = 0; i < 3; i++)
+    for (let i = 0; i < 3; i++) {
       sim.bullets.push({
         id: 800 + i,
         x: 490,
@@ -167,6 +170,7 @@ describe("arcade simulation", () => {
         life: 1,
         weapon: "triple",
       });
+    }
     sim.update(1 / 120);
     expect(sim.ammo).toBe(24);
     expect(sim.events.filter((event) => event === "pickup")).toHaveLength(1);
@@ -237,6 +241,7 @@ describe("arcade simulation", () => {
     let seed = 19;
     const sim = new Simulation(() => {
       seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+
       return seed / 4294967296;
     });
     let equipped = 0;
@@ -275,8 +280,8 @@ describe("arcade simulation", () => {
           (a, b) => a.x - a.width / 2 - (b.x - b.width / 2),
         )[0];
         if (block) {
-          const cos = Math.cos(block.angle),
-            sin = Math.sin(block.angle);
+          const cos = Math.cos(block.angle);
+          const sin = Math.sin(block.angle);
           target = block.cells
             .filter((cell) => cell.alive)
             .map((cell) => ({
@@ -287,8 +292,9 @@ describe("arcade simulation", () => {
               (a, b) =>
                 Math.abs(a.y - sim.playerY) - Math.abs(b.y - sim.playerY),
             )[0];
-          if (target)
+          if (target) {
             target.y += block.vy * Math.max(0, (target.x - 172) / 1080);
+          }
         }
       }
       if (target) {
@@ -312,7 +318,9 @@ describe("arcade simulation", () => {
     expect(sim.fire()).toBe(true);
     expect(sim.fire()).toBe(false);
     sim.aimY = -1000;
-    for (let i = 0; i < 20; i++) sim.update(0.05);
+    for (let i = 0; i < 20; i++) {
+      sim.update(0.05);
+    }
     expect(sim.playerY).toBeGreaterThanOrEqual(166);
     expect(sim.playerY).toBeLessThan(170);
     expect(sim.fire()).toBe(true);
@@ -383,7 +391,9 @@ describe("arcade simulation", () => {
       review: 1,
       lint: 1,
     });
-    for (let i = 0; i < 5; i++) sim.update(0.25);
+    for (let i = 0; i < 5; i++) {
+      sim.update(0.25);
+    }
     expect(sim.isStunned).toBe(false);
     expect(sim.events).toContain("recover");
     expect(sim.playerY).toBeGreaterThan(y);
@@ -409,7 +419,9 @@ describe("arcade simulation", () => {
     sim.update(0.02);
     expect(sim.hazards.some((item) => item.id === hazard.id)).toBe(false);
     expect(sim.score).toBeGreaterThanOrEqual(60);
-    for (let i = 0; i < 37; i++) sim.update(0.25);
+    for (let i = 0; i < 37; i++) {
+      sim.update(0.25);
+    }
     expect(sim.events).toContain("hazard");
     expect(sim.hazards.some((item) => item.age < 1)).toBe(true);
   });
@@ -443,7 +455,9 @@ describe("arcade simulation", () => {
     sim.update(0.08);
     expect(missile.targetId).toBe(second.id);
     expect(missile.vy).toBeGreaterThan(0);
-    for (let i = 0; i < 30 && sim.specials.length; i++) sim.update(0.05);
+    for (let i = 0; i < 30 && sim.specials.length; i++) {
+      sim.update(0.05);
+    }
     expect(sim.events).toContain("explosion");
   });
 
@@ -619,7 +633,9 @@ describe("arcade simulation", () => {
       const other = block.cells.find(
         (cell) => cell.alive && cell.magic === "ammo",
       );
-      if (other) hitCell(sim, block, other);
+      if (other) {
+        hitCell(sim, block, other);
+      }
     }
     expect(sim.ammo).toBe(60);
     expect(sim.specialAmmo).toEqual({
@@ -660,7 +676,9 @@ describe("arcade simulation", () => {
     sim.aimY = 450;
     sim.selectSpecial("grenade");
     sim.fireSpecial();
-    for (let i = 0; i < 130 && !sim.explosions.length; i++) sim.update(1 / 120);
+    for (let i = 0; i < 130 && !sim.explosions.length; i++) {
+      sim.update(1 / 120);
+    }
     expect(sim.explosions).toHaveLength(1);
     expect(Math.abs(sim.explosions[0]!.x - 800)).toBeLessThan(8);
     expect(Math.abs(sim.explosions[0]!.y - 450)).toBeLessThan(4);
@@ -702,13 +720,17 @@ describe("arcade simulation", () => {
     expect(sim.events.filter((event) => event === "robot-hit")).toHaveLength(2);
     expect(sim.robots).toContain(robot);
     expect(robot.hitFlash).toBeGreaterThan(0);
-    for (let i = 0; i < 8; i++) sim.update(0.25);
+    for (let i = 0; i < 8; i++) {
+      sim.update(0.25);
+    }
     expect(robot.state).toBe("leaving");
     const generated = sim.blocks.find((block) => block.cells.length > 500)!;
     expect(generated).toBeDefined();
     expect(generated.height).toBeGreaterThan(250);
     expect(sim.events).toContain("generate");
-    for (let i = 0; i < 10; i++) sim.update(0.25);
+    for (let i = 0; i < 10; i++) {
+      sim.update(0.25);
+    }
     expect(sim.robots).toHaveLength(0);
     expect(sim.status).toBe("playing");
   });
@@ -784,7 +806,9 @@ describe("arcade simulation", () => {
       timer: block.throwTimer,
       bonusX: bonus.x,
     };
-    for (let i = 0; i < 7; i++) sim.update(0.25);
+    for (let i = 0; i < 7; i++) {
+      sim.update(0.25);
+    }
     expect(block.x).toBe(original.x);
     expect(robot.x).toBe(original.robotX);
     expect(hazard.x).toBe(original.hazardX);
@@ -804,13 +828,14 @@ describe("arcade simulation", () => {
   it("lint clears small fragments instead of multiplying them and splits only large visible slabs once", () => {
     const sim = game();
     sim.blocks = [];
-    for (let i = 0; i < 52; i++)
+    for (let i = 0; i < 52; i++) {
       sim.spawnBlock({
         x: 500 + i * 5,
         y: 300,
         exception: i % 2 === 0,
         code: ["const nested = (((((x: any) => x)))))();"],
       });
+    }
     const large = sim.spawnBlock({
       x: 900,
       y: 450,
@@ -964,17 +989,22 @@ describe("arcade simulation", () => {
     let seed = 154;
     const sim = new Simulation(() => {
       seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+
       return seed / 4294967296;
     });
     const counts: Record<string, number> = {};
-    let quad = 0,
-      quint = 0;
+    let quad = 0;
+    let quint = 0;
     for (let i = 0; i < 1000; i++) {
       const bonus = sim.spawnBonus();
       counts[bonus.type] = (counts[bonus.type] ?? 0) + 1;
       const block = sim.spawnBlock();
-      if (block.cells.some((cell) => cell.magic === "quad")) quad++;
-      if (block.cells.some((cell) => cell.magic === "quint")) quint++;
+      if (block.cells.some((cell) => cell.magic === "quad")) {
+        quad++;
+      }
+      if (block.cells.some((cell) => cell.magic === "quint")) {
+        quint++;
+      }
       sim.blocks = [];
       sim.pickups = [];
     }
@@ -994,7 +1024,9 @@ describe("arcade simulation", () => {
     robot.stateTime = 1.95;
     sim.selectSpecial("review");
     sim.fireSpecial();
-    for (let i = 0; i < 8; i++) sim.update(0.25);
+    for (let i = 0; i < 8; i++) {
+      sim.update(0.25);
+    }
     expect(robot.stateTime).toBeCloseTo(1.95);
     expect(sim.events).not.toContain("generate");
     sim.update(0.1);
@@ -1045,7 +1077,9 @@ describe("arcade simulation", () => {
     sim.update(0.25);
     expect(sim.isStunned).toBe(false);
     expect(sim.hazards[0]!.x).toBe(170);
-    for (let i = 0; i < 8; i++) sim.update(0.25);
+    for (let i = 0; i < 8; i++) {
+      sim.update(0.25);
+    }
     expect(sim.isStunned).toBe(true);
   });
 
@@ -1075,7 +1109,9 @@ describe("arcade simulation", () => {
       expect(sim.events.filter((event) => event === "boss")).toHaveLength(1);
       expect(sim.robots).toHaveLength(0);
       expect(sim.hazards).toHaveLength(0);
-      for (let i = 0; i < 12; i++) sim.update(0.25);
+      for (let i = 0; i < 12; i++) {
+        sim.update(0.25);
+      }
       expect(sim.blocks).toHaveLength(1);
     }
   });
@@ -1099,7 +1135,9 @@ describe("arcade simulation", () => {
     expect(sim.blocks.filter((block) => block.boss)).toHaveLength(1);
     expect(sim.bossHealth!.current).toBeLessThan(baseline.current);
     expect(sim.bossHealth!.max).toBe(baseline.max);
-    for (let i = 0; i < 12; i++) sim.update(0.25);
+    for (let i = 0; i < 12; i++) {
+      sim.update(0.25);
+    }
     expect(Math.abs(boss.vx)).toBeLessThan(35);
     expect(Math.abs(boss.vx)).toBeLessThan(sim.driftSpeed / 4);
     expect(
@@ -1133,7 +1171,9 @@ describe("arcade simulation", () => {
       ),
     ).toBe(true);
     expect(sim.bossHealth).toEqual(health);
-    for (let i = 0; i < 17; i++) sim.update(0.25);
+    for (let i = 0; i < 17; i++) {
+      sim.update(0.25);
+    }
     expect(sim.events.filter((event) => event === "boss-spawn")).toHaveLength(
       1,
     );
@@ -1154,9 +1194,13 @@ describe("arcade simulation", () => {
     sim.spawnBoss();
     sim.selectSpecial("review");
     sim.fireSpecial();
-    for (let i = 0; i < 8; i++) sim.update(0.25);
+    for (let i = 0; i < 8; i++) {
+      sim.update(0.25);
+    }
     expect(sim.events).not.toContain("boss-spawn");
-    for (let i = 0; i < 15; i++) sim.update(0.25);
+    for (let i = 0; i < 15; i++) {
+      sim.update(0.25);
+    }
     expect(sim.events).not.toContain("boss-spawn");
     sim.update(0.25);
     sim.update(0.02);
@@ -1205,14 +1249,18 @@ describe("arcade simulation", () => {
     ).toHaveLength(1);
     expect(sim.pickups.map((pickup) => pickup.type)).toEqual(["quint", "lint"]);
     const score = sim.score;
-    for (let i = 0; i < 6; i++) sim.update(0.25);
+    for (let i = 0; i < 6; i++) {
+      sim.update(0.25);
+    }
     expect(sim.wave).toBe(5);
     expect(sim.score).toBe(score);
     expect(
       sim.events.filter((event) => event === "boss-defeated"),
     ).toHaveLength(1);
     sim.blocks = [];
-    for (let i = 0; i < 5; i++) sim.update(0.25);
+    for (let i = 0; i < 5; i++) {
+      sim.update(0.25);
+    }
     expect(sim.wave).toBe(6);
     expect(sim.isBossWave).toBe(false);
     expect(sim.waveTotal).toBeGreaterThan(1);
@@ -1274,7 +1322,9 @@ describe("arcade simulation", () => {
       });
       sim.update(1 / 120);
     };
-    for (let i = 0; i < 14; i++) hit();
+    for (let i = 0; i < 14; i++) {
+      hit();
+    }
     expect(robot.health).toBe(1);
     expect(sim.robots).toContain(robot);
     expect(sim.events).not.toContain("robot-destroy");
@@ -1293,7 +1343,9 @@ describe("arcade simulation", () => {
         (event) => event.type === "impact" && event.target === "robot",
       ),
     ).toHaveLength(15);
-    for (let i = 0; i < 9; i++) sim.update(0.25);
+    for (let i = 0; i < 9; i++) {
+      sim.update(0.25);
+    }
     expect(sim.events).not.toContain("generate");
     expect(sim.blocks).toHaveLength(0);
     sim.reset();
@@ -1348,8 +1400,9 @@ describe("arcade simulation", () => {
     sim.fireSpecial();
     const split = sim.visualEvents.find((event) => event.type === "split");
     expect(split?.type).toBe("split");
-    if (!split || split.type !== "split")
+    if (!split || split.type !== "split") {
       throw new Error("Missing split snapshot");
+    }
     expect(split.children).toHaveLength(2);
     expect(split.parent.cells.some((cell) => !cell.alive)).toBe(true);
     for (const child of split.children) {
@@ -1413,8 +1466,9 @@ describe("arcade simulation", () => {
     const impact = sim.visualEvents.find(
       (event) => event.type === "impact" && event.blockId === block.id,
     );
-    if (!impact || impact.type !== "impact")
+    if (!impact || impact.type !== "impact") {
       throw new Error("Missing final impact");
+    }
     expect(impact.removed).toHaveLength(
       before.filter((cell, i) => cell.alive && !block.cells[i]!.alive).length,
     );
