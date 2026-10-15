@@ -1,3 +1,4 @@
+import { preloadModels } from "./model-assets";
 import { Simulation, type SpecialWeapon } from "./simulation";
 import { WorldRenderer } from "./world3d";
 
@@ -7,6 +8,23 @@ export interface GameController {
   selectSpecial(type: SpecialWeapon): void;
   fireSpecial(): void;
 }
+const INPUT = {
+  viewportWidth: 1280,
+  viewportHeight: 720,
+  pointerMinX: 220,
+  pointerMinY: 130,
+  pointerMaxY: 640,
+  secondaryButton: 2,
+  keyboardMinY: 145,
+  keyboardMaxY: 630,
+  keyboardSpeed: 450,
+  millisecondsPerSecond: 1000,
+  maxFrameSeconds: 0.05,
+  impactDecay: 30,
+  hudInterval: 0.07,
+  bossImpact: 4,
+};
+const MUZZLE_EVENTS = new Set(["shot", "missile", "grenade", "review", "lint"]);
 interface Callbacks {
   onState: (s: Simulation) => void;
   onEvent: (event: string) => void;
@@ -19,6 +37,7 @@ export async function createGame(
   callbacks: Callbacks,
 ): Promise<GameController> {
   const host = document.getElementById(parent)!;
+  await preloadModels();
   const world = new WorldRenderer(host);
   try {
     await world.initialize();
@@ -48,12 +67,18 @@ export async function createGame(
         const box = canvas.getBoundingClientRect();
         if (box.width <= 0 || box.height <= 0) return;
         this.sim.aimX = Math.max(
-          220,
-          Math.min(1280, ((event.clientX - box.left) / box.width) * 1280),
+          INPUT.pointerMinX,
+          Math.min(
+            INPUT.viewportWidth,
+            ((event.clientX - box.left) / box.width) * INPUT.viewportWidth,
+          ),
         );
         this.sim.aimY = Math.max(
-          130,
-          Math.min(640, ((event.clientY - box.top) / box.height) * 720),
+          INPUT.pointerMinY,
+          Math.min(
+            INPUT.pointerMaxY,
+            ((event.clientY - box.top) / box.height) * INPUT.viewportHeight,
+          ),
         );
       };
       canvas.addEventListener("pointermove", (event) => {
@@ -64,7 +89,7 @@ export async function createGame(
         event.preventDefault();
         point(event);
         canvas.setPointerCapture(event.pointerId);
-        if (event.button === 2) {
+        if (event.button === INPUT.secondaryButton) {
           this.sim.fireSpecial();
           this.holdingSpecial = true;
         } else if (event.button === 0) {
@@ -74,7 +99,7 @@ export async function createGame(
       });
       window.addEventListener("pointerup", (event) => {
         this.holding = (event.buttons & 1) !== 0;
-        this.holdingSpecial = (event.buttons & 2) !== 0;
+        this.holdingSpecial = (event.buttons & INPUT.secondaryButton) !== 0;
       });
       canvas.addEventListener("pointercancel", () => this.release());
       canvas.addEventListener("lostpointercapture", () => this.release());
@@ -151,28 +176,30 @@ export async function createGame(
     }
 
     frame = (now: number) => {
-      const dt = Math.min(Math.max(0, (now - this.lastFrame) / 1000), 0.05);
+      const dt = Math.min(
+        Math.max(0, (now - this.lastFrame) / INPUT.millisecondsPerSecond),
+        INPUT.maxFrameSeconds,
+      );
       this.lastFrame = now;
       if (!this.paused) this.update(dt);
       requestAnimationFrame(this.frame);
     };
     update(dt: number) {
       if (this.keys.has("ArrowUp") || this.keys.has("KeyW"))
-        this.sim.aimY = Math.max(145, this.sim.aimY - dt * 450);
+        this.sim.aimY = Math.max(
+          INPUT.keyboardMinY,
+          this.sim.aimY - dt * INPUT.keyboardSpeed,
+        );
       if (this.keys.has("ArrowDown") || this.keys.has("KeyS"))
-        this.sim.aimY = Math.min(630, this.sim.aimY + dt * 450);
+        this.sim.aimY = Math.min(
+          INPUT.keyboardMaxY,
+          this.sim.aimY + dt * INPUT.keyboardSpeed,
+        );
       if (this.holding || this.keys.has("Space")) this.sim.fire();
       if (this.holdingSpecial) this.sim.fireSpecial();
       this.sim.update(dt);
       for (const event of this.sim.events.splice(0)) {
-        if (
-          event === "shot" ||
-          event === "missile" ||
-          event === "grenade" ||
-          event === "review" ||
-          event === "lint"
-        )
-          this.muzzle = 0.065;
+        if (MUZZLE_EVENTS.has(event)) this.muzzle = 0.065;
         if (event === "hit") this.impact = 3;
         if (event === "robot-hit") this.impact = 2;
         if (event === "robot-destroy") this.impact = 6;
@@ -183,14 +210,14 @@ export async function createGame(
           this.impact = window.matchMedia("(prefers-reduced-motion: reduce)")
             .matches
             ? 0
-            : 4;
+            : INPUT.bossImpact;
         if (event === "stun") this.impact = 7;
         callbacks.onEvent(event);
       }
       this.muzzle = Math.max(0, this.muzzle - dt);
-      this.impact = Math.max(0, this.impact - dt * 30);
+      this.impact = Math.max(0, this.impact - dt * INPUT.impactDecay);
       this.lastHud += dt;
-      if (this.lastHud > 0.07) {
+      if (this.lastHud > INPUT.hudInterval) {
         callbacks.onState(this.sim);
         this.lastHud = 0;
       }
@@ -203,12 +230,14 @@ export async function createGame(
   }
   const scene = new PlayScene();
   if (import.meta.env.DEV || import.meta.env.MODE === "test") {
-    (window as unknown as { __spaghetti: unknown }).__spaghetti = {
-      simulation: scene.sim,
-      scene,
-      renderer: scene.world.renderer,
-      world: scene.world,
-    };
+    Object.assign(window, {
+      __spaghetti: {
+        simulation: scene.sim,
+        scene,
+        renderer: scene.world.renderer,
+        world: scene.world,
+      },
+    });
   }
   return scene;
 }

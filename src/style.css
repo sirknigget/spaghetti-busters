@@ -43,6 +43,7 @@ button {
   font: inherit;
   color: inherit;
   cursor: pointer;
+  border: 0;
 }
 button:focus-visible,
 a:focus-visible {
@@ -55,9 +56,6 @@ button:disabled {
 button svg {
   width: 20px;
   height: 20px;
-}
-button {
-  border: 0;
 }
 button:hover {
   filter: brightness(1.04);
@@ -559,15 +557,18 @@ button:active {
 }
 .game-instruction {
   position: absolute;
-  bottom: 42px;
   right: 3.5%;
   font-size: 8px;
   letter-spacing: 1px;
   color: #50715b;
   pointer-events: none;
+  bottom: 45px;
+  max-width: 260px;
+  text-align: right;
+  line-height: 1.8;
 }
 .game-instruction > span {
-  margin: 0 10px;
+  margin: 0 5px;
 }
 kbd {
   font: inherit;
@@ -681,7 +682,8 @@ dialog::backdrop {
   backdrop-filter: blur(7px);
 }
 dialog h2 {
-  font-size: 59px;
+  font-size: 53px;
+  margin: 19px 0;
 }
 dialog .eyebrow {
   font-size: 8px;
@@ -989,13 +991,6 @@ dialog .help-intro {
   }
   .game-instruction {
     font-size: 6px;
-    bottom: 26px;
-    max-width: 130px;
-    line-height: 2;
-    text-align: right;
-  }
-  .game-instruction > span {
-    margin: 0 4px;
   }
   .game-toast {
     top: 95px;
@@ -1010,9 +1005,6 @@ dialog .help-intro {
   }
   dialog {
     padding: 30px 24px;
-  }
-  dialog h2 {
-    font-size: 48px;
   }
   .help-steps p {
     font-size: 10px;
@@ -1132,9 +1124,7 @@ dialog .help-intro {
     gap: 2px;
   }
   .game-instruction {
-    bottom: 20px;
     font-size: 6px;
-    max-width: none;
   }
   .game-toast {
     top: 59px;
@@ -1206,20 +1196,20 @@ dialog .help-intro {
 }
 .special-slots {
   display: flex;
-  gap: 8px;
   align-items: stretch;
+  gap: 6px;
 }
 .special-slot {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 11px 12px;
   background: #f1f4e6e8;
   border: 1px solid #173e3538;
   box-shadow: 0 3px 0 #173e3523;
   transition:
     background 0.15s,
     border-color 0.15s;
+  gap: 6px;
+  padding: 9px 8px;
 }
 .special-slot > kbd {
   align-self: flex-start;
@@ -1228,33 +1218,33 @@ dialog .help-intro {
   opacity: 0.65;
 }
 .special-slot > svg {
-  width: 23px;
-  height: 28px;
+  width: 21px;
+  height: 25px;
 }
 .backspace-icon {
-  font-size: 31px;
   line-height: 1;
+  font-size: 28px;
 }
 .special-name {
   display: flex;
   flex-direction: column;
-  font-size: 9px;
   font-weight: bold;
-  letter-spacing: 0.4px;
   text-align: left;
-  gap: 5px;
+  font-size: 7px;
+  letter-spacing: 0.25px;
+  gap: 4px;
 }
 .special-name small {
-  font-size: 6px;
   font-weight: 400;
-  letter-spacing: 0.8px;
   opacity: 0.6;
+  font-size: 5px;
+  letter-spacing: 0.3px;
 }
 .special-slot > b {
-  margin-left: 5px;
-  font-size: 20px;
   font-weight: 400;
   min-width: 13px;
+  font-size: 18px;
+  margin-left: 1px;
 }
 .special-slot.selected {
   background: #f9db48;
@@ -1274,15 +1264,6 @@ dialog .help-intro {
   font-size: 7px;
   letter-spacing: 0.8px;
   color: #688371;
-}
-.game-instruction {
-  bottom: 45px;
-  max-width: 260px;
-  text-align: right;
-  line-height: 1.8;
-}
-.game-instruction > span {
-  margin: 0 5px;
 }
 #fire-special {
   display: none;
@@ -1305,27 +1286,10 @@ dialog .help-intro {
 dialog .help-steps > div {
   padding: 12px 0;
 }
-dialog h2 {
-  font-size: 53px;
-  margin: 19px 0;
-}
 dialog .help-bottom {
   padding-top: 15px;
 }
 @media (max-width: 1100px) {
-  .special-slot {
-    padding: 10px 8px;
-    gap: 6px;
-  }
-  .special-name {
-    font-size: 8px;
-  }
-  .special-name small {
-    font-size: 5px;
-  }
-  .special-slot > b {
-    font-size: 18px;
-  }
   .special-hud {
     left: 53%;
   }
@@ -1346,30 +1310,8 @@ dialog .help-bottom {
     font-size: 6px;
     white-space: nowrap;
   }
-  .special-slot {
-    padding: 9px 10px;
-    gap: 7px;
-  }
-  .special-name {
-    font-size: 7px;
-  }
-  .special-name small {
-    font-size: 5px;
-  }
-  .special-slot > svg {
-    width: 21px;
-  }
-  .backspace-icon {
-    font-size: 27px;
-  }
-  .special-slot > b {
-    font-size: 18px;
-  }
   .special-slot > kbd {
     font-size: 6px;
-  }
-  .special-slots {
-    gap: 6px;
   }
   .now-playing {
     font-size: 6px;
@@ -1428,36 +1370,11 @@ dialog .help-bottom {
     margin-bottom: 4px;
     letter-spacing: 0.5px;
   }
-  .special-slot {
-    padding: 5px 7px;
-    gap: 5px;
-  }
-  .special-name {
-    font-size: 6px;
-    gap: 3px;
-  }
-  .special-name small {
-    font-size: 4px;
-  }
-  .special-slot > b {
-    font-size: 15px;
-    margin-left: 2px;
-  }
-  .special-slot > svg {
-    width: 17px;
-    height: 22px;
-  }
-  .backspace-icon {
-    font-size: 23px;
-  }
   .special-slot > kbd {
     font-size: 5px;
   }
   .special-caption kbd {
     font-size: 5px;
-  }
-  .special-slots {
-    gap: 5px;
   }
   .now-playing {
     bottom: 7px;
@@ -1489,33 +1406,6 @@ dialog .help-bottom {
   }
 }
 /* Four special tools stay along the lower edge, clear of the flight path. */
-.special-slot {
-  gap: 6px;
-  padding: 9px 8px;
-}
-.special-slot > svg {
-  width: 21px;
-  height: 25px;
-}
-.special-name {
-  font-size: 7px;
-  letter-spacing: 0.25px;
-  gap: 4px;
-}
-.special-name small {
-  font-size: 5px;
-  letter-spacing: 0.3px;
-}
-.special-slot > b {
-  font-size: 18px;
-  margin-left: 1px;
-}
-.backspace-icon {
-  font-size: 28px;
-}
-.special-slots {
-  gap: 6px;
-}
 .reviewing #combo {
   color: #287e9a;
 }

@@ -79,7 +79,11 @@ test("pointer fire chips code, scores points and renders without errors", async 
       page.evaluate(() => (window as any).__spaghetti.simulation.score),
     )
     .toBeGreaterThan(0);
-  await page.waitForTimeout(700);
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__spaghetti.simulation.shotsFired),
+    )
+    .toBeGreaterThan(3);
   await page.mouse.up();
   const state = await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
@@ -105,14 +109,30 @@ test("pause freezes the simulation, resume and keyboard controls work", async ({
   const time = await page.evaluate(
     () => (window as any).__spaghetti.simulation.elapsed,
   );
-  await page.waitForTimeout(350);
+  const pausedFrame = await page.evaluate(
+    () => (window as any).__spaghetti.scene.lastFrame,
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__spaghetti.scene.lastFrame),
+    )
+    .toBeGreaterThan(pausedFrame);
   expect(
     await page.evaluate(() => (window as any).__spaghetti.simulation.elapsed),
   ).toBe(time);
   await page.locator("#resume").click();
   await page.keyboard.down("ArrowDown");
   await page.keyboard.down("Space");
-  await page.waitForTimeout(450);
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__spaghetti.simulation.playerY),
+    )
+    .toBeGreaterThan(400);
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__spaghetti.simulation.shotsFired),
+    )
+    .toBeGreaterThan(1);
   await page.keyboard.up("ArrowDown");
   await page.keyboard.up("Space");
   const state = await page.evaluate(() => {
@@ -304,11 +324,21 @@ test("timeout collision paralyzes movement and all weapons, then recovers", asyn
   await expect(page.locator("#combo")).toContainText("EVENT LOOP BLOCKED");
   const before = await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
+    // Keep slow software-WebGL input checks inside the stun window; recovery is
+    // advanced explicitly below, independently of browser scheduling delays.
+    s.stunRemaining = 30;
     return { y: s.playerY, shots: s.shotsFired, ammo: s.specialAmmo.homing };
   });
   await point(page, 900, 570);
   await page.mouse.down();
-  await page.waitForTimeout(250);
+  const blockedTime = await page.evaluate(
+    () => (window as any).__spaghetti.simulation.elapsed,
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__spaghetti.simulation.elapsed),
+    )
+    .toBeGreaterThan(blockedTime + 0.1);
   await page.mouse.up();
   await page.mouse.click(1000, 650, { button: "right" });
   const after = await page.evaluate(() => {
@@ -316,6 +346,9 @@ test("timeout collision paralyzes movement and all weapons, then recovers", asyn
     return { y: s.playerY, shots: s.shotsFired, ammo: s.specialAmmo.homing };
   });
   expect(after).toEqual(before);
+  await page.evaluate(() => {
+    (window as any).__spaghetti.simulation.stunRemaining = 0.05;
+  });
   await expect(page.locator("#game-screen")).not.toHaveClass(/stunned/);
   await page.mouse.click(1000, 650);
   await expect
@@ -386,7 +419,16 @@ test("review and lint use keys 3 and 4, freeze enemies, then split large code an
       y: b.y,
     })),
   );
-  await page.waitForTimeout(160);
+  const freezeRemaining = await page.evaluate(
+    () => (window as any).__spaghetti.simulation.freezeRemaining,
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as any).__spaghetti.simulation.freezeRemaining,
+      ),
+    )
+    .toBeLessThan(freezeRemaining - 0.1);
   expect(
     await page.evaluate(() =>
       (window as any).__spaghetti.simulation.blocks.map((b: any) => ({

@@ -1,5 +1,51 @@
 import { MUSIC_CROSSFADE_SECONDS, MUSIC_TRACKS, trackDuration } from "./music";
 
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
+const EFFECT_INTERVALS = new Map(
+  Object.entries({
+    "menu-hover": 0.1,
+    hit: 0.032,
+    shot: 0.035,
+  }),
+);
+const HALF = 0.5;
+const MIX = {
+  masterVolume: 0.7,
+  gainRamp: 0.015,
+  menuVolume: 0.23,
+  gameVolume: 0.34,
+  sceneFade: 0.18,
+  schedulerMs: 25,
+  sixteenthsPerBeat: 4,
+  quarterTurn: Math.PI * HALF,
+  deckFadeRamp: 0.035,
+  staleNoteSeconds: 0.18,
+  lookaheadSeconds: 0.14,
+  effectInterval: 0.065,
+  echoLeftDelay: 0.28,
+  echoRightDelay: 0.43,
+  echoPan: 0.72,
+  bipolarRange: 2,
+};
+const SYNTH = {
+  attackFloor: 0.0001,
+  attackSeconds: 0.004,
+  sourceRelease: 0.01,
+  noiseOffset: 0.5,
+  referenceHz: 440,
+  semitoneRatio: 2,
+  referenceMidi: 69,
+  semitonesPerOctave: 12,
+  detuneParity: 2,
+  detuneCents: 4,
+  padAttack: 0.2,
+  padSustainVolume: 0.72,
+  padSustain: 0.65,
+};
 interface MusicDeck {
   track: number;
   start: number;
@@ -19,8 +65,8 @@ export class AudioEngine {
   private noiseBuffer: AudioBuffer | null = null;
   private bossVoice: AudioBuffer | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
-  private sources = new Set<AudioScheduledSourceNode>();
-  private lastEffects = new Map<string, number>();
+  private readonly sources = new Set<AudioScheduledSourceNode>();
+  private readonly lastEffects = new Map<string, number>();
   private started = false;
   private paused = false;
   private transport = 0;
@@ -84,9 +130,9 @@ export class AudioEngine {
     if (context && this.master) {
       this.master.gain.cancelScheduledValues(context.currentTime);
       this.master.gain.setTargetAtTime(
-        enabled && !this.paused ? 0.7 : 0,
+        enabled && !this.paused ? MIX.masterVolume : 0,
         context.currentTime,
-        0.015,
+        MIX.gainRamp,
       );
     }
     if (!enabled) this.stopSounds();
@@ -124,34 +170,20 @@ export class AudioEngine {
     this.startMusic();
   }
 
+  /* oxlint-disable no-magic-numbers -- Literal note, envelope, and pitch sequences are authored sound-effect scores. */
   play(event: string): void {
     const context = this.context;
-    if (
-      !context ||
-      !this.effects ||
-      !this.enabled ||
-      this.paused ||
-      !this.started
-    )
-      return;
+    const inactive = !this.enabled || this.paused || !this.started;
+    if (!context || !this.effects || inactive) return;
     const time = context.currentTime;
     const previous = this.lastEffects.get(event) ?? -Infinity;
-    if (
-      time - previous <
-      (event === "menu-hover"
-        ? 0.1
-        : event === "hit"
-          ? 0.032
-          : event === "shot"
-            ? 0.035
-            : 0.065)
-    )
+    if (time - previous < (EFFECT_INTERVALS.get(event) ?? MIX.effectInterval))
       return;
     this.lastEffects.set(event, time);
     const bus = this.effects;
     switch (event) {
       case "menu-open":
-        [67, 74, 79, 83].forEach((note, i) => {
+        for (const [i, note] of [67, 74, 79, 83].entries()) {
           this.tone(
             this.frequency(note),
             time + i * 0.13,
@@ -160,7 +192,7 @@ export class AudioEngine {
             0.065,
             bus,
           );
-        });
+        }
         break;
       case "menu-hover":
         this.tone(this.frequency(83), time, 0.08, "sine", 0.04, bus);
@@ -188,7 +220,7 @@ export class AudioEngine {
         this.noise(time, 0.09, 0.055, 1800, bus);
         break;
       case "boss-defeated":
-        [57, 64, 69, 76, 81, 88].forEach((note, i) => {
+        for (const [i, note] of [57, 64, 69, 76, 81, 88].entries()) {
           this.tone(
             this.frequency(note),
             time + i * 0.075,
@@ -197,7 +229,7 @@ export class AudioEngine {
             0.11,
             bus,
           );
-        });
+        }
         this.tone(this.frequency(93), time + 0.38, 0.7, "sine", 0.08, bus);
         break;
       case "missile":
@@ -210,7 +242,7 @@ export class AudioEngine {
         break;
       case "robot":
         // An irregular boot sequence gives the visiting agent a mechanical voice.
-        [52, 64, 59, 76].forEach((note, i) => {
+        for (const [i, note] of [52, 64, 59, 76].entries()) {
           this.tone(
             this.frequency(note),
             time + [0, 0.07, 0.21, 0.34][i]!,
@@ -219,10 +251,10 @@ export class AudioEngine {
             0.055,
             bus,
           );
-        });
+        }
         break;
       case "generate":
-        [48, 55, 62, 70, 79, 86].forEach((note, i) => {
+        for (const [i, note] of [48, 55, 62, 70, 79, 86].entries()) {
           this.tone(
             this.frequency(note),
             time + i * i * 0.014,
@@ -231,7 +263,7 @@ export class AudioEngine {
             0.075,
             bus,
           );
-        });
+        }
         this.noise(time + 0.3, 0.17, 0.09, 2300, bus, true);
         break;
       case "exception":
@@ -252,7 +284,7 @@ export class AudioEngine {
         this.noise(time, 0.045, 0.045, 2800, bus, true);
         break;
       case "review":
-        [86, 81, 74, 67].forEach((note, i) => {
+        for (const [i, note] of [86, 81, 74, 67].entries()) {
           this.tone(
             this.frequency(note),
             time + i * 0.085,
@@ -269,11 +301,11 @@ export class AudioEngine {
             0.025,
             bus,
           );
-        });
+        }
         break;
       case "lint":
         this.noise(time, 0.34, 0.13, 3600, bus, true);
-        [57, 69, 76, 81, 88].forEach((note, i) => {
+        for (const [i, note] of [57, 69, 76, 81, 88].entries()) {
           this.tone(
             this.frequency(note),
             time + i * 0.045,
@@ -282,10 +314,10 @@ export class AudioEngine {
             0.09,
             bus,
           );
-        });
+        }
         break;
       case "bonus":
-        [79, 86, 83, 91].forEach((note, i) => {
+        for (const [i, note] of [79, 86, 83, 91].entries()) {
           this.tone(
             this.frequency(note),
             time + i * 0.07,
@@ -294,7 +326,7 @@ export class AudioEngine {
             0.07,
             bus,
           );
-        });
+        }
         break;
       case "explosion":
         this.noise(time, 0.52, 0.3, 1500, bus);
@@ -302,7 +334,7 @@ export class AudioEngine {
         this.tone(540, time + 0.035, 0.22, "sawtooth", 0.035, bus, 95);
         break;
       case "hazard":
-        [83, 77].forEach((note, i) =>
+        for (const [i, note] of [83, 77].entries()) {
           this.tone(
             this.frequency(note),
             time + i * 0.09,
@@ -310,11 +342,11 @@ export class AudioEngine {
             "triangle",
             0.1,
             bus,
-          ),
-        );
+          );
+        }
         break;
       case "stun":
-        [94, 87, 82, 75, 70].forEach((note, i) =>
+        for (const [i, note] of [94, 87, 82, 75, 70].entries()) {
           this.tone(
             this.frequency(note),
             time + i * 0.045,
@@ -322,12 +354,12 @@ export class AudioEngine {
             "square",
             0.075,
             bus,
-          ),
-        );
+          );
+        }
         this.noise(time, 0.28, 0.08, 4000, bus, true);
         break;
       case "recover":
-        [67, 74, 79, 86].forEach((note, i) =>
+        for (const [i, note] of [67, 74, 79, 86].entries()) {
           this.tone(
             this.frequency(note),
             time + i * 0.05,
@@ -335,8 +367,8 @@ export class AudioEngine {
             "sine",
             0.15,
             bus,
-          ),
-        );
+          );
+        }
         break;
       case "shot":
         this.tone(720, time, 0.085, "square", 0.1, bus, 135);
@@ -361,7 +393,7 @@ export class AudioEngine {
         break;
       case "robot-destroy":
         this.noise(time, 0.48, 0.2, 1100, bus);
-        [210, 150, 92, 55].forEach((hz, i) =>
+        for (const [i, hz] of [210, 150, 92, 55].entries()) {
           this.tone(
             hz,
             time + i * 0.065,
@@ -370,13 +402,13 @@ export class AudioEngine {
             0.12,
             bus,
             hz * 0.45,
-          ),
-        );
+          );
+        }
         break;
       case "destroy":
         this.noise(time, 0.28, 0.2, 850, bus);
         this.tone(110, time, 0.25, "triangle", 0.28, bus, 32);
-        [76, 81, 88].forEach((note, index) => {
+        for (const [index, note] of [76, 81, 88].entries()) {
           this.tone(
             this.frequency(note),
             time + 0.045 * index,
@@ -385,10 +417,10 @@ export class AudioEngine {
             0.035,
             bus,
           );
-        });
+        }
         break;
       case "pickup":
-        [69, 72, 76, 81, 84].forEach((note, index) => {
+        for (const [index, note] of [69, 72, 76, 81, 84].entries()) {
           this.tone(
             this.frequency(note),
             time + index * 0.055,
@@ -397,10 +429,10 @@ export class AudioEngine {
             0.085,
             bus,
           );
-        });
+        }
         break;
       case "ammo":
-        [76, 81, 88].forEach((note, index) => {
+        for (const [index, note] of [76, 81, 88].entries()) {
           this.tone(
             this.frequency(note),
             time + index * 0.045,
@@ -409,10 +441,10 @@ export class AudioEngine {
             0.19,
             bus,
           );
-        });
+        }
         break;
       case "wave":
-        [57, 64, 69, 72, 76, 81].forEach((note, index) => {
+        for (const [index, note] of [57, 64, 69, 72, 76, 81].entries()) {
           this.tone(
             this.frequency(note),
             time + index * 0.075,
@@ -421,10 +453,10 @@ export class AudioEngine {
             0.07,
             bus,
           );
-        });
+        }
         break;
       case "gameover":
-        [69, 67, 64, 60, 57, 45].forEach((note, index) => {
+        for (const [index, note] of [69, 67, 64, 60, 57, 45].entries()) {
           this.tone(
             this.frequency(note),
             time + index * 0.14,
@@ -433,23 +465,23 @@ export class AudioEngine {
             0.2,
             bus,
           );
-        });
+        }
         break;
     }
   }
+
+  /* oxlint-enable no-magic-numbers */
 
   private initialize(): boolean {
     if (this.context) return true;
     try {
       const BrowserAudioContext =
-        window.AudioContext ??
-        (window as Window & { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
+        window.AudioContext ?? window.webkitAudioContext;
       if (!BrowserAudioContext) return false;
       const context = new BrowserAudioContext();
       this.context = context;
       this.master = context.createGain();
-      this.master.gain.value = this.enabled ? 0.7 : 0;
+      this.master.gain.value = this.enabled ? MIX.masterVolume : 0;
       const limiter = context.createDynamicsCompressor();
       limiter.threshold.value = -15;
       limiter.knee.value = 14;
@@ -459,11 +491,12 @@ export class AudioEngine {
       this.master.connect(limiter);
       limiter.connect(context.destination);
       this.music = context.createGain();
-      this.music.gain.value = this.scene === "menu" ? 0.23 : 0.34;
+      this.music.gain.value =
+        this.scene === "menu" ? MIX.menuVolume : MIX.gameVolume;
       // A quiet stereo dotted-eighth echo gives the chip palette space, without drums.
       for (const [delayTime, pan] of [
-        [0.28, -0.72],
-        [0.43, 0.72],
+        [MIX.echoLeftDelay, -MIX.echoPan],
+        [MIX.echoRightDelay, MIX.echoPan],
       ]) {
         const delay = context.createDelay(1);
         delay.delayTime.value = delayTime!;
@@ -486,7 +519,8 @@ export class AudioEngine {
         context.sampleRate,
       );
       const data = this.noiseBuffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < data.length; i++)
+        data[i] = Math.random() * MIX.bipolarRange - 1;
       // Decode once while the opening screen plays. Never start a delayed voice
       // from this promise: a pause, mute, or finished run must stay quiet.
       void fetch("/assets/audio/boss-fight.wav")
@@ -518,14 +552,18 @@ export class AudioEngine {
     if (!this.context || !this.enabled || this.paused || this.timer !== null)
       return;
     this.anchor = this.context.currentTime;
-    this.master!.gain.setTargetAtTime(0.7, this.anchor, 0.015);
+    this.master!.gain.setTargetAtTime(
+      MIX.masterVolume,
+      this.anchor,
+      MIX.gainRamp,
+    );
     this.music!.gain.setValueAtTime(
-      this.scene === "menu" ? 0.23 : 0.34,
+      this.scene === "menu" ? MIX.menuVolume : MIX.gameVolume,
       this.anchor,
     );
     if (this.decks.length === 0) this.addDeck(this.trackIndex, this.transport);
     this.schedule();
-    this.timer = setInterval(() => this.schedule(), 25);
+    this.timer = setInterval(() => this.schedule(), MIX.schedulerMs);
   }
 
   private fadeMusic(): void {
@@ -533,9 +571,9 @@ export class AudioEngine {
     const now = this.context.currentTime;
     this.music.gain.cancelScheduledValues(now);
     this.music.gain.setTargetAtTime(
-      this.scene === "menu" ? 0.23 : 0.34,
+      this.scene === "menu" ? MIX.menuVolume : MIX.gameVolume,
       now,
-      0.18,
+      MIX.sceneFade,
     );
   }
 
@@ -580,7 +618,7 @@ export class AudioEngine {
     if (!this.context || !this.music || !this.enabled || this.paused) return;
     this.advanceTransport();
     const now = this.context.currentTime;
-    const current = this.decks[this.decks.length - 1];
+    const current = this.decks.at(-1);
     if (
       current &&
       this.transport >=
@@ -596,27 +634,25 @@ export class AudioEngine {
         return false;
       }
       const track = MUSIC_TRACKS[deck.track]!;
-      const sixteenth = 60 / track.bpm / 4;
+      const sixteenth = 60 / track.bpm / MIX.sixteenthsPerBeat;
       const age = this.transport - deck.start;
       const fade =
-        deck.retireAt !== undefined
-          ? Math.cos(
-              (Math.min(
+        deck.retireAt === undefined
+          ? Math.sin(
+              Math.min(1, age / MUSIC_CROSSFADE_SECONDS) * MIX.quarterTurn,
+            )
+          : Math.cos(
+              Math.min(
                 1,
                 (this.transport - (deck.retireAt - MUSIC_CROSSFADE_SECONDS)) /
                   MUSIC_CROSSFADE_SECONDS,
-              ) *
-                Math.PI) /
-                2,
-            )
-          : Math.sin(
-              (Math.min(1, age / MUSIC_CROSSFADE_SECONDS) * Math.PI) / 2,
+              ) * MIX.quarterTurn,
             );
-      deck.bus.gain.setTargetAtTime(fade, now, 0.035);
+      deck.bus.gain.setTargetAtTime(fade, now, MIX.deckFadeRamp);
       // Skip stale notes after hidden-tab throttling; never emit a catch-up burst.
-      if (deck.nextStep * sixteenth < age - 0.18)
+      if (deck.nextStep * sixteenth < age - MIX.staleNoteSeconds)
         deck.nextStep = Math.ceil(age / sixteenth);
-      while (deck.nextStep * sixteenth < age + 0.14) {
+      while (deck.nextStep * sixteenth < age + MIX.lookaheadSeconds) {
         this.musicStep(
           deck,
           deck.nextStep,
@@ -628,9 +664,10 @@ export class AudioEngine {
     });
   }
 
+  /* oxlint-disable no-magic-numbers -- Beat positions, MIDI offsets, and velocities form the authored musical arrangement. */
   private musicStep(deck: MusicDeck, step: number, time: number): void {
     const track = MUSIC_TRACKS[deck.track]!;
-    const sixteenth = 60 / track.bpm / 4;
+    const sixteenth = 60 / track.bpm / MIX.sixteenthsPerBeat;
     const beat = step % 16;
     const bar = Math.floor(step / 16) % track.bars;
     const chord = track.chords[bar % track.chords.length]!;
@@ -638,30 +675,33 @@ export class AudioEngine {
     const quiet = bar >= 8 && bar < 12;
     const title = this.scene === "menu";
     const phrase = track.phrases[bar % track.phrases.length]!;
+    const padVolume = quiet ? 0.034 : 0.028;
+    const leadDuration = quiet ? 3.4 : 2.1;
+    const leadVolume = quiet ? 0.07 : 0.1;
     if (beat === 0) {
-      chord.forEach((note, i) =>
+      for (const [i, note] of chord.entries()) {
         this.pad(
           note,
           time + i * (title ? 0.09 : 0.03),
           sixteenth * 18,
-          title ? 0.024 : quiet ? 0.034 : 0.028,
+          title ? 0.024 : padVolume,
           deck.bus,
-        ),
-      );
+        );
+      }
     }
     const note = phrase[beat]!;
-    if (
-      note > 0 &&
-      (!title || beat % 4 === 0 || beat === 7) &&
-      (!quiet || beat === 0 || beat === 8 || (bar === 11 && beat >= 12))
-    ) {
+    const titleNote = !title || beat % 4 === 0 || beat === 7;
+    const quietEnding = bar === 11 && beat >= 12;
+    const quietDownbeat = beat === 0 || beat === 8;
+    const quietNote = !quiet || quietDownbeat || quietEnding;
+    if (note > 0 && titleNote && quietNote) {
       const variation = bar >= 12 && beat >= 8 ? 12 : 0;
       this.melodicTone(
         note + variation,
         time,
-        sixteenth * (title ? 4.2 : quiet ? 3.4 : 2.1),
+        sixteenth * (title ? 4.2 : leadDuration),
         title ? "sine" : track.lead,
-        title ? 0.085 : quiet ? 0.07 : 0.1,
+        title ? 0.085 : leadVolume,
         deck.bus,
         bar % 2 ? 0.24 : -0.24,
       );
@@ -692,6 +732,8 @@ export class AudioEngine {
     }
   }
 
+  /* oxlint-enable no-magic-numbers */
+
   private pad(
     note: number,
     time: number,
@@ -704,19 +746,23 @@ export class AudioEngine {
     const envelope = context.createGain();
     oscillator.type = "sine";
     oscillator.frequency.value = this.frequency(note);
-    oscillator.detune.value = note % 2 ? -4 : 4;
+    oscillator.detune.value =
+      note % SYNTH.detuneParity ? -SYNTH.detuneCents : SYNTH.detuneCents;
     envelope.gain.setValueAtTime(0, time);
-    envelope.gain.linearRampToValueAtTime(volume, time + duration * 0.2);
     envelope.gain.linearRampToValueAtTime(
-      volume * 0.72,
-      time + duration * 0.65,
+      volume,
+      time + duration * SYNTH.padAttack,
+    );
+    envelope.gain.linearRampToValueAtTime(
+      volume * SYNTH.padSustainVolume,
+      time + duration * SYNTH.padSustain,
     );
     envelope.gain.linearRampToValueAtTime(0, time + duration);
     oscillator.connect(envelope);
     envelope.connect(bus);
     this.track(oscillator, () => envelope.disconnect());
     oscillator.start(time);
-    oscillator.stop(time + duration + 0.01);
+    oscillator.stop(time + duration + SYNTH.sourceRelease);
   }
 
   private melodicTone(
@@ -744,7 +790,11 @@ export class AudioEngine {
   }
 
   private frequency(midi: number): number {
-    return 440 * 2 ** ((midi - 69) / 12);
+    return (
+      SYNTH.referenceHz *
+      SYNTH.semitoneRatio **
+        ((midi - SYNTH.referenceMidi) / SYNTH.semitonesPerOctave)
+    );
   }
 
   private tone(
@@ -767,9 +817,15 @@ export class AudioEngine {
         endFrequency,
         time + duration,
       );
-    envelope.gain.setValueAtTime(0.0001, time);
-    envelope.gain.exponentialRampToValueAtTime(volume, time + 0.004);
-    envelope.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    envelope.gain.setValueAtTime(SYNTH.attackFloor, time);
+    envelope.gain.exponentialRampToValueAtTime(
+      volume,
+      time + SYNTH.attackSeconds,
+    );
+    envelope.gain.exponentialRampToValueAtTime(
+      SYNTH.attackFloor,
+      time + duration,
+    );
     oscillator.connect(envelope);
     envelope.connect(destination);
     this.track(oscillator, () => {
@@ -777,7 +833,7 @@ export class AudioEngine {
       cleanup?.();
     });
     oscillator.start(time);
-    oscillator.stop(time + duration + 0.01);
+    oscillator.stop(time + duration + SYNTH.sourceRelease);
   }
 
   private noise(
@@ -797,7 +853,10 @@ export class AudioEngine {
     filter.frequency.value = cutoff;
     const envelope = context.createGain();
     envelope.gain.setValueAtTime(volume, time);
-    envelope.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    envelope.gain.exponentialRampToValueAtTime(
+      SYNTH.attackFloor,
+      time + duration,
+    );
     source.connect(filter);
     filter.connect(envelope);
     envelope.connect(destination);
@@ -805,8 +864,8 @@ export class AudioEngine {
       filter.disconnect();
       envelope.disconnect();
     });
-    source.start(time, Math.random() * 0.5);
-    source.stop(time + duration + 0.01);
+    source.start(time, Math.random() * SYNTH.noiseOffset);
+    source.stop(time + duration + SYNTH.sourceRelease);
   }
 
   private track(source: AudioScheduledSourceNode, cleanup: () => void): void {

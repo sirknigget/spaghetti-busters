@@ -355,7 +355,7 @@ describe("arcade simulation", () => {
     late.vx = late.vy = late.angle = 0;
     const before = late.cells.filter((cell) => cell.alive).length;
     hitCell(sim, late, late.cells[30]!);
-    expect(late.cells.filter((cell) => cell.alive).length).toBe(before);
+    expect(late.cells.filter((cell) => cell.alive)).toHaveLength(before);
     expect(late.cells.some((cell) => cell.health < cell.maxHealth)).toBe(true);
     hitCell(sim, late, late.cells[30]!);
     hitCell(sim, late, late.cells[30]!);

@@ -1,0 +1,125 @@
+/*
+ * Applies typed SonarJS and remaining ESLint-only checks in source and test scopes.
+ * Uses a dedicated TypeScript project covering source, tests, and tools.
+ */
+import parser from "@typescript-eslint/parser";
+import sonarjs from "eslint-plugin-sonarjs";
+import unicorn from "eslint-plugin-unicorn";
+import react from "@eslint-react/eslint-plugin";
+import stylistic from "@stylistic/eslint-plugin";
+import type { TSESLint } from "@typescript-eslint/utils";
+import type { Linter } from "eslint";
+
+// Checks source and tool code with typed SonarJS and remaining ESLint-only rules.
+const sourceRules: Linter.RulesRecord = {
+  "sonarjs/prefer-immediate-return": "error",
+  "sonarjs/no-ignored-return": "error",
+  "sonarjs/arguments-order": "error",
+  "sonarjs/index-of-compare-to-positive-number": "error",
+  "sonarjs/no-useless-intersection": "error",
+  "sonarjs/no-undefined-argument": "error",
+  "sonarjs/disabled-resource-integrity": "error",
+  "sonarjs/empty-string-repetition": "error",
+  "sonarjs/regex-complexity": ["error", { threshold: 20 }],
+  "sonarjs/anchor-precedence": "error",
+  "sonarjs/slow-regex": "error",
+  "sonarjs/no-invalid-regexp": "error",
+  "sonarjs/unused-named-groups": "error",
+  "sonarjs/no-misleading-character-class": "error",
+  "sonarjs/duplicates-in-character-class": "error",
+  "@eslint-react/no-access-state-in-setstate": "error",
+  "sonarjs/prefer-read-only-props": "error",
+  "sonarjs/reduce-initial-value": "error",
+  "sonarjs/no-small-switch": "error",
+  "no-octal": "error",
+  "sonarjs/bitwise-operators": "error",
+  "sonarjs/constructor-for-side-effects": "error",
+  "sonarjs/sql-queries": "error",
+  "sonarjs/no-selector-parameter": "error",
+  "sonarjs/no-empty-character-class": "error",
+  "sonarjs/post-message": "error",
+  "sonarjs/no-alphabetical-sort": "error",
+  "sonarjs/new-operator-misuse": ["error", { considerJSDoc: false }],
+  "sonarjs/no-incorrect-string-concat": "error",
+  "sonarjs/no-associative-arrays": "error",
+  "sonarjs/void-use": "error",
+  "sonarjs/no-inconsistent-returns": "error",
+  "sonarjs/no-collection-size-mischeck": "error",
+  "sonarjs/no-in-misuse": "error",
+  "sonarjs/no-redundant-optional": "error",
+  "sonarjs/no-try-promise": "error",
+  "sonarjs/no-empty-after-reluctant": "error",
+  "sonarjs/single-character-alternation": "error",
+  "sonarjs/single-char-in-character-classes": "error",
+  "sonarjs/jsx-no-leaked-render": "error",
+  "no-octal-escape": "error",
+  "sonarjs/no-async-constructor": "error",
+  "unicorn/no-named-default": "error",
+  "unicorn/dom-node-dataset": "error",
+  "sonarjs/dompurify-unsafe-config": "error",
+  "sonarjs/super-linear-regex": "error",
+  "sonarjs/prefer-native-lodash-alternative": "error",
+  "sonarjs/no-misleading-array-reverse": "error",
+  "sonarjs/disabled-auto-escaping": "error",
+  "sonarjs/no-empty-alternatives": "error",
+  "sonarjs/no-control-regex": "error",
+  "sonarjs/no-regex-spaces": "error",
+  "sonarjs/existing-groups": "error",
+  "sonarjs/no-empty-group": "error",
+  "sonarjs/concise-regex": "error",
+  "@eslint-react/no-unused-class-component-members": "error",
+  "sonarjs/prefer-regexp-exec": "error",
+  "@stylistic/jsx-child-element-spacing": "error",
+  "unicorn/no-unnecessary-polyfills": "error",
+};
+
+// Checks applicable Playwright assertions requiring TypeScript project information.
+const testRules: Linter.RulesRecord = {
+  "sonarjs/assertions-in-tests": "error",
+  "sonarjs/no-incompatible-assertion-types": "error",
+};
+
+// Combines typed parsing, plugins, and the residual source/test rule groups.
+const eslintConfig: TSESLint.FlatConfig.Config[] = [
+  {
+    ignores: [
+      "**/*.d.ts",
+      "dist/**",
+      "playwright-report/**",
+      "test-results/**",
+      "node_modules/**",
+      "tests/**/*-snapshots/**",
+      ".quality-results/**",
+    ],
+  },
+  {
+    name: "quality/package",
+    files: ["**/*.{ts,tsx,js,jsx}"],
+    languageOptions: {
+      parser,
+      parserOptions: {
+        project: "./tsconfig.lint.json",
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    plugins: {
+      sonarjs,
+      unicorn,
+      "@eslint-react": react,
+      "@stylistic": stylistic,
+    },
+  },
+  {
+    name: "quality/source",
+    files: ["**/*.{ts,tsx,js,jsx}"],
+    ignores: ["tests/**/*.{ts,tsx,js,jsx}", "src/**/*.test.ts"],
+    rules: sourceRules,
+  },
+  {
+    name: "quality/tests",
+    files: ["tests/**/*.{ts,tsx,js,jsx}", "src/**/*.test.ts"],
+    rules: testRules,
+  },
+];
+
+export default eslintConfig;

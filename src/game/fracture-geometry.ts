@@ -1,5 +1,45 @@
 import * as THREE from "three";
 
+const VECTOR_COMPONENTS = 3;
+const UV_COMPONENTS = 2;
+const PAIR_SIZE = 2;
+const HALF_DIVISOR = 2;
+const COORDINATE = { x: 0, y: 1, z: 2 };
+const QUAD = { first: 0, second: 1, third: 2, fourth: 3 };
+const TRIANGLE_FAN = [
+  QUAD.first,
+  QUAD.second,
+  QUAD.third,
+  QUAD.first,
+  QUAD.third,
+  QUAD.fourth,
+];
+const FRACTURE = {
+  edgeEpsilon: 0.0001,
+  gapEpsilon: 0.001,
+  crossingEpsilon: 0.000001,
+  hashMultiplier: 0x45d9f3b,
+  hashShift: 16,
+  maxHash: 4294967295,
+  minSegments: 3,
+  segmentLength: 15,
+  noiseCenter: 0.5,
+  noiseAmplitude: 12,
+  textureHeaderHeight: 26,
+};
+const CHIP = {
+  vertices: 10,
+  revolution: Math.PI * PAIR_SIZE,
+  minSpread: 0.76,
+  spreadRange: 0.36,
+  baseRadiusX: 5.7,
+  radiusXSeed: 20,
+  radiusXRange: 1.3,
+  baseRadiusY: 9.8,
+  radiusYSeed: 21,
+  radiusYRange: 1.4,
+};
+
 export type Point = { x: number; y: number };
 export type Polygon = Point[];
 type Edge = { a: Point; b: Point; low: number; high: number };
@@ -12,24 +52,34 @@ const edges = (polygon: Polygon): Edge[] =>
       const b = polygon[(i + 1) % polygon.length]!;
       return { a, b, low: Math.min(a.y, b.y), high: Math.max(a.y, b.y) };
     })
-    .filter((e) => e.high - e.low > 0.0001);
+    .filter((e) => e.high - e.low > FRACTURE.edgeEpsilon);
 
 /** Stable entropy: geometry never flickers as the simulation advances. */
 export function fractureNoise(seed: number, index: number) {
-  let v = (seed ^ Math.imul(index + 1, 0x45d9f3b)) | 0;
-  v = Math.imul(v ^ (v >>> 16), 0x45d9f3b);
-  v = Math.imul(v ^ (v >>> 16), 0x45d9f3b);
-  return ((v ^ (v >>> 16)) >>> 0) / 4294967295;
+  let v = seed ^ Math.imul(index + 1, FRACTURE.hashMultiplier);
+  v = Math.imul(v ^ (v >>> FRACTURE.hashShift), FRACTURE.hashMultiplier);
+  v = Math.imul(v ^ (v >>> FRACTURE.hashShift), FRACTURE.hashMultiplier);
+  return ((v ^ (v >>> FRACTURE.hashShift)) >>> 0) / FRACTURE.maxHash;
 }
 
 export function chippedHole(x: number, y: number, seed: number): Polygon {
   const points: Polygon = [];
-  for (let i = 0; i < 10; i++) {
-    const angle = (i * Math.PI * 2) / 10,
-      spread = 0.76 + fractureNoise(seed, i) * 0.36;
+  for (let i = 0; i < CHIP.vertices; i++) {
+    const angle = (i * CHIP.revolution) / CHIP.vertices,
+      spread = CHIP.minSpread + fractureNoise(seed, i) * CHIP.spreadRange;
     points.push({
-      x: x + Math.cos(angle) * (5.7 + fractureNoise(seed, 20) * 1.3) * spread,
-      y: y + Math.sin(angle) * (9.8 + fractureNoise(seed, 21) * 1.4) * spread,
+      x:
+        x +
+        Math.cos(angle) *
+          (CHIP.baseRadiusX +
+            fractureNoise(seed, CHIP.radiusXSeed) * CHIP.radiusXRange) *
+          spread,
+      y:
+        y +
+        Math.sin(angle) *
+          (CHIP.baseRadiusY +
+            fractureNoise(seed, CHIP.radiusYSeed) * CHIP.radiusYRange) *
+          spread,
     });
   }
   return points;
@@ -47,12 +97,19 @@ export function fractureMask(
     low = vertical ? bounds.bottom : bounds.left,
     high = vertical ? bounds.top : bounds.right;
   const along: Polygon = [];
-  const count = Math.max(3, Math.ceil((high - low) / 15));
+  const count = Math.max(
+    FRACTURE.minSegments,
+    Math.ceil((high - low) / FRACTURE.segmentLength),
+  );
   for (let i = 0; i <= count; i++) {
     const t = i / count,
       parallel = low + (high - low) * t;
     const broken =
-      cut + (i === 0 || i === count ? 0 : (fractureNoise(seed, i) - 0.5) * 12);
+      cut +
+      (i === 0 || i === count
+        ? 0
+        : (fractureNoise(seed, i) - FRACTURE.noiseCenter) *
+          FRACTURE.noiseAmplitude);
     along.push(
       vertical ? { x: broken, y: parallel } : { x: parallel, y: broken },
     );
@@ -76,6 +133,9 @@ export function fractureMask(
 
 /** Sweep the union of chipped holes through intersected fracture regions. Produces actual open
  * holes, interior walls and a solid broken perimeter, with UVs anchored to the original slab. */
+// The ordered scanline sweep keeps shared boundaries identical; nested interval traversal and
+// early exits avoid allocating intermediate meshes or changing floating-point operation order.
+// oxlint-disable sonarjs/nested-control-flow, sonarjs/too-many-break-or-continue-in-loop
 export function perforatedGeometry(
   regions: Polygon[],
   holes: Polygon[],
@@ -100,8 +160,8 @@ export function perforatedGeometry(
       Math.max(...polygon.map((p) => p.y)) >= limits.bottom &&
       Math.min(...polygon.map((p) => p.y)) <= limits.top,
   );
-  const regionEdges = regions.map(edges),
-    holeEdges = holes.map(edges),
+  const regionEdges = regions.map((region) => edges(region)),
+    holeEdges = holes.map((hole) => edges(hole)),
     allEdges = [...regionEdges.flat(), ...holeEdges.flat()];
   const holeBands = holeEdges.map((polygonEdges) => ({
     edges: polygonEdges,
@@ -119,7 +179,7 @@ export function perforatedGeometry(
   for (let row = 0; row < ys.length - 1; row++) {
     const low = ys[row]!,
       high = ys[row + 1]!,
-      mid = (low + high) / 2;
+      mid = (low + high) / HALF_DIVISOR;
     while (startIndex < starts.length && starts[startIndex]!.low < mid)
       activeEdges.push(starts[startIndex++]!);
     activeEdges = activeEdges.filter((e) => e.high > mid);
@@ -130,10 +190,11 @@ export function perforatedGeometry(
       for (let j = i + 1; j < active.length; j++) {
         const a = active[i]!,
           b = active[j]!;
-        if (Math.min(b.l, b.h) > Math.max(a.l, a.h) + 0.001) break;
+        if (Math.min(b.l, b.h) > Math.max(a.l, a.h) + FRACTURE.gapEpsilon)
+          break;
         const d0 = a.l - b.l,
           d1 = a.h - b.h;
-        if (d0 * d1 < -0.000001)
+        if (d0 * d1 < -FRACTURE.crossingEpsilon)
           crossingCuts.push(low + ((high - low) * d0) / (d0 - d1));
       }
   }
@@ -148,7 +209,7 @@ export function perforatedGeometry(
       .filter((e) => y > e.low && y < e.high)
       .sort((a, b) => at(a, y) - at(b, y));
     const intervals: Interval[] = [];
-    for (let i = 0; i < crossings.length - 1; i += 2)
+    for (let i = 0; i < crossings.length - 1; i += PAIR_SIZE)
       intervals.push({ left: crossings[i]!, right: crossings[i + 1]! });
     return intervals;
   };
@@ -157,7 +218,9 @@ export function perforatedGeometry(
       b.flatMap((bb) => {
         const left = at(aa.left, y) > at(bb.left, y) ? aa.left : bb.left,
           right = at(aa.right, y) < at(bb.right, y) ? aa.right : bb.right;
-        return at(right, y) - at(left, y) > 0.001 ? [{ left, right }] : [];
+        return at(right, y) - at(left, y) > FRACTURE.gapEpsilon
+          ? [{ left, right }]
+          : [];
       }),
     );
   type Strip = Interval & { y0: number; y1: number };
@@ -166,8 +229,8 @@ export function perforatedGeometry(
   for (let row = 0; row < cuts.length - 1; row++) {
     const y0 = cuts[row]!,
       y1 = cuts[row + 1]!;
-    if (y1 - y0 < 0.0001) continue;
-    const mid = (y0 + y1) / 2;
+    if (y1 - y0 < FRACTURE.edgeEpsilon) continue;
+    const mid = (y0 + y1) / HALF_DIVISOR;
     let solids = span(regionEdges[0]!, mid);
     for (const region of regionEdges.slice(1))
       solids = intersect(solids, span(region, mid), mid);
@@ -178,7 +241,7 @@ export function perforatedGeometry(
     // Union first, then subtract with one ordered pass rather than rescanning every growing gap.
     const union: Interval[] = [];
     for (const hole of holesAt) {
-      const last = union[union.length - 1];
+      const last = union.at(-1);
       if (last && at(hole.left, mid) <= at(last.right, mid)) {
         if (at(hole.right, mid) > at(last.right, mid)) last.right = hole.right;
       } else union.push({ ...hole });
@@ -216,7 +279,7 @@ export function perforatedGeometry(
     const current = new Map<Edge, Map<Edge, Strip>>();
     for (const interval of visible) {
       const prior = previous.get(interval.left)?.get(interval.right);
-      const strip = prior && prior.y1 === y0 ? prior : { ...interval, y0, y1 };
+      const strip = prior?.y1 === y0 ? prior : { ...interval, y0, y1 };
       if (strip === prior) strip.y1 = y1;
       else strips.push(strip);
       let rightEdges = current.get(interval.left);
@@ -255,45 +318,49 @@ export function perforatedGeometry(
       ],
     );
   }
+  const vector = (point: number[]) =>
+    new THREE.Vector3(point[0]!, point[1]!, point[COORDINATE.z]!);
   const quad = (points: number[][], normal?: THREE.Vector3) => {
     const n =
       normal ??
       new THREE.Vector3()
-        .subVectors(
-          new THREE.Vector3(...(points[1] as [number, number, number])),
-          new THREE.Vector3(...(points[0] as [number, number, number])),
-        )
+        .subVectors(vector(points[1]!), vector(points[0]!))
         .cross(
           new THREE.Vector3().subVectors(
-            new THREE.Vector3(...(points[2] as [number, number, number])),
-            new THREE.Vector3(...(points[0] as [number, number, number])),
+            vector(points[QUAD.third]!),
+            vector(points[0]!),
           ),
         )
         .normalize();
-    for (const i of [0, 1, 2, 0, 2, 3]) {
+    for (const i of TRIANGLE_FAN) {
       const p = points[i]!;
-      positions.push(p[0]! - offset.x, p[1]! - offset.y, p[2]!);
+      positions.push(p[0]! - offset.x, p[1]! - offset.y, p[COORDINATE.z]!);
       normals.push(n.x, n.y, n.z);
       uvs.push(
-        (p[0]! + root.width / 2) / root.width,
-        (p[1]! + root.height / 2) / (root.height + 26),
+        (p[0]! + root.width / HALF_DIVISOR) / root.width,
+        (p[1]! + root.height / HALF_DIVISOR) /
+          (root.height + FRACTURE.textureHeaderHeight),
       );
     }
   };
-  frontTriangles.forEach((q) => quad(q, new THREE.Vector3(0, 0, 1)));
-  const frontCount = positions.length / 3;
-  frontTriangles.forEach((q) =>
+  for (const q of frontTriangles) {
+    quad(q, new THREE.Vector3(0, 0, 1));
+  }
+  const frontCount = positions.length / VECTOR_COMPONENTS;
+  for (const q of frontTriangles) {
     quad(
       [...q].reverse().map((p) => [p[0]!, p[1]!, -depth]),
       new THREE.Vector3(0, 0, -1),
-    ),
-  );
-  walls.forEach((q) => quad(q));
+    );
+  }
+  for (const q of walls) {
+    quad(q);
+  }
   // Horizontal boundaries only occur at horizontal polygon segments; break them at every
   // crossing and retain those adjacent to solid on exactly one side.
   const horizontal = [...regions, ...holes]
     .flatMap((p) => p.map((a, i) => ({ a, b: p[(i + 1) % p.length]! })))
-    .filter((e) => Math.abs(e.a.y - e.b.y) < 0.0001);
+    .filter((e) => Math.abs(e.a.y - e.b.y) < FRACTURE.edgeEpsilon);
   const inside = (p: Point, polygon: Polygon) => {
     let yes = false;
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -323,16 +390,22 @@ export function perforatedGeometry(
       ]
         .filter(
           (x) =>
-            x >= Math.min(e.a.x, e.b.x) - 0.001 &&
-            x <= Math.max(e.a.x, e.b.x) + 0.001,
+            x >= Math.min(e.a.x, e.b.x) - FRACTURE.gapEpsilon &&
+            x <= Math.max(e.a.x, e.b.x) + FRACTURE.gapEpsilon,
         )
         .sort((a, b) => a - b);
     for (let i = 0; i < xs.length - 1; i++) {
       const a = xs[i]!,
         b = xs[i + 1]!;
-      if (b - a < 0.001) continue;
-      const above = solid({ x: (a + b) / 2, y: y + 0.001 }),
-        below = solid({ x: (a + b) / 2, y: y - 0.001 });
+      if (b - a < FRACTURE.gapEpsilon) continue;
+      const above = solid({
+          x: (a + b) / HALF_DIVISOR,
+          y: y + FRACTURE.gapEpsilon,
+        }),
+        below = solid({
+          x: (a + b) / HALF_DIVISOR,
+          y: y - FRACTURE.gapEpsilon,
+        });
       if (above === below) continue;
       quad(
         above
@@ -354,12 +427,24 @@ export function perforatedGeometry(
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute(
     "position",
-    new THREE.Float32BufferAttribute(positions, 3),
+    new THREE.Float32BufferAttribute(positions, VECTOR_COMPONENTS),
   );
-  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setAttribute(
+    "normal",
+    new THREE.Float32BufferAttribute(normals, VECTOR_COMPONENTS),
+  );
+  geometry.setAttribute(
+    "uv",
+    new THREE.Float32BufferAttribute(uvs, UV_COMPONENTS),
+  );
   geometry.addGroup(0, frontCount, 0);
-  geometry.addGroup(frontCount, positions.length / 3 - frontCount, 1);
+  geometry.addGroup(
+    frontCount,
+    positions.length / VECTOR_COMPONENTS - frontCount,
+    1,
+  );
   geometry.computeBoundingSphere();
   return geometry;
 }
+
+// oxlint-enable sonarjs/nested-control-flow, sonarjs/too-many-break-or-continue-in-loop

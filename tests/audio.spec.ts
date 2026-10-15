@@ -5,9 +5,8 @@ test("title music unlocks on a gesture, transitions into the run, and returns wi
 }) => {
   await page.goto("/");
   const initial = await page.evaluate(async () => {
-    const { AudioEngine } = await new Function(
-      'return import("/src/game/audio.ts")',
-    )();
+    const audioModulePath = "/src/game/audio.ts";
+    const { AudioEngine } = await import(audioModulePath);
     const audio = new AudioEngine();
     (window as any).__menuAudioTest = audio;
     document.addEventListener("pointerdown", () => audio.enterMenu(), {
@@ -17,7 +16,16 @@ test("title music unlocks on a gesture, transitions into the run, and returns wi
   });
   expect(initial).toEqual({ started: false, context: null });
   await page.mouse.click(10, 10);
-  await page.waitForTimeout(250);
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__menuAudioTest.context.state),
+    )
+    .toBe("running");
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__menuAudioTest.music.gain.value),
+    )
+    .toBeCloseTo(0.23, 2);
   const menu = await page.evaluate(() => {
     const a = (window as any).__menuAudioTest;
     const timer = a.timer;
@@ -54,10 +62,11 @@ test("title music unlocks on a gesture, transitions into the run, and returns wi
     };
   });
   expect(run).toEqual({ scene: "game", sameTimer: true, sameTransport: true });
-  await page.waitForTimeout(700);
-  expect(
-    await page.evaluate(() => (window as any).__menuAudioTest.music.gain.value),
-  ).toBeGreaterThan(0.33);
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__menuAudioTest.music.gain.value),
+    )
+    .toBeGreaterThan(0.33);
   const returned = await page.evaluate(() => {
     const a = (window as any).__menuAudioTest;
     a.finish();
@@ -100,9 +109,8 @@ test("real audio context crossfades scores and preserves transport through pause
   await page.goto("/");
   await page.mouse.click(10, 10);
   const initial = await page.evaluate(async () => {
-    const { AudioEngine } = await new Function(
-      'return import("/src/game/audio.ts")',
-    )();
+    const audioModulePath = "/src/game/audio.ts";
+    const { AudioEngine } = await import(audioModulePath);
     const audio = new AudioEngine();
     (window as any).__audioTest = audio;
     audio.start();
@@ -118,7 +126,9 @@ test("real audio context crossfades scores and preserves transport through pause
     name: "Prism Circuit",
     timer: true,
   });
-  await page.waitForTimeout(180);
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__audioTest.sources.size))
+    .toBeGreaterThan(0);
   const transition = await page.evaluate(() => {
     const a = (window as any).__audioTest;
     a.transport = 32.1;
@@ -135,7 +145,11 @@ test("real audio context crossfades scores and preserves transport through pause
     name: "Midnight Refactor",
     retiring: true,
   });
-  await page.waitForTimeout(250);
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__audioTest.decks[1].bus.gain.value),
+    )
+    .toBeGreaterThan(0);
   const crossfade = await page.evaluate(() => {
     const a = (window as any).__audioTest;
     return a.decks.map((d: any) => d.bus.gain.value);
@@ -146,9 +160,14 @@ test("real audio context crossfades scores and preserves transport through pause
   const paused = await page.evaluate(() => {
     const a = (window as any).__audioTest;
     a.pause();
-    return a.transport;
+    return { transport: a.transport, clock: a.context.currentTime };
   });
-  await page.waitForTimeout(200);
+  // The audio clock keeps processing while the musical transport remains paused.
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__audioTest.context.currentTime),
+    )
+    .toBeGreaterThan(paused.clock + 0.1);
   expect(
     await page.evaluate(() => {
       const a = (window as any).__audioTest;
@@ -159,7 +178,7 @@ test("real audio context crossfades scores and preserves transport through pause
         gain: a.master.gain.value,
       };
     }),
-  ).toEqual({ transport: paused, timer: null, voices: 0, gain: 0 });
+  ).toEqual({ transport: paused.transport, timer: null, voices: 0, gain: 0 });
   const resumed = await page.evaluate(() => {
     const a = (window as any).__audioTest;
     a.resume();
@@ -183,15 +202,19 @@ test("real audio context crossfades scores and preserves transport through pause
   const muted = await page.evaluate(() => {
     const a = (window as any).__audioTest;
     a.setEnabled(false);
-    return a.transport;
+    return { transport: a.transport, clock: a.context.currentTime };
   });
-  await page.waitForTimeout(180);
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).__audioTest.context.currentTime),
+    )
+    .toBeGreaterThan(muted.clock + 0.1);
   expect(
     await page.evaluate(() => {
       const a = (window as any).__audioTest;
       return { transport: a.transport, timer: a.timer, voices: a.sources.size };
     }),
-  ).toEqual({ transport: muted, timer: null, voices: 0 });
+  ).toEqual({ transport: muted.transport, timer: null, voices: 0 });
   const end = await page.evaluate(() => {
     const a = (window as any).__audioTest;
     a.setEnabled(true);
@@ -216,9 +239,8 @@ test("bundled boss voice decodes, plays once with its cue and stops on pause or 
   await page.goto("/");
   await page.locator("#enter").click();
   await page.evaluate(async () => {
-    const { AudioEngine } = await new Function(
-      'return import("/src/game/audio.ts")',
-    )();
+    const audioModulePath = "/src/game/audio.ts";
+    const { AudioEngine } = await import(audioModulePath);
     const audio = new AudioEngine();
     (window as any).__bossAudio = audio;
     audio.enterGame();

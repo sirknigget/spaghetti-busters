@@ -10,9 +10,11 @@ Play as a bespectacled code quality specialist in a white suit. Blast huge, synt
 
 ## Play locally
 
-Requires Node.js 22.12+ and npm.
+Requires Node.js 22.13+ and npm. The pinned anti-slop Git dependency builds
+with pnpm, so install pnpm before installing the project dependencies.
 
 ```sh
+npm install --global pnpm@10.33.0
 npm ci
 npm run dev
 ```
@@ -60,6 +62,7 @@ A single **Click to play** prelude unlocks browser audio; the opening screen the
 
 ```sh
 npm run format:check
+npm run lint
 npm run build
 npm run preview
 npm test
@@ -69,10 +72,23 @@ npm run test:e2e
 
 Run `npm run format` to apply Prettier to the project. Formatting uses Prettier's
 standard defaults with LF line endings; generated output, the npm lockfile, and
-vendored brand artwork are excluded. GitHub CI checks formatting, unit tests,
-the production build, and browser tests on pull requests and pushes to `main`.
-Checks run as independent parallel jobs, with browser tests split across two
-runners and one browser worker per runner.
+vendored brand artwork are excluded.
+
+Run `npm run lint` to check TypeScript, JavaScript, and CSS. The individual commands
+are `npm run lint:eslint`, `npm run lint:oxlint`, and `npm run lint:css`. ESLint
+covers the supplied SonarJS, Unicorn, React, and stylistic rules; Oxlint runs the
+supplied correctness, security, TypeScript, test, and
+[anti-slop](https://github.com/sirknigget/anti-slop) rules with type information.
+Stylelint checks `src/**/*.css`. Source and colocated unit tests use separate
+rule scopes, and the lint TypeScript project also includes browser tests and
+root configuration files. Cognitive and cyclomatic complexity, file and function
+line counts, argument counts, and union-member counts are deliberately unlimited.
+The anti-slop dependency is pinned to an immutable Git commit.
+
+GitHub CI checks formatting, ESLint, Oxlint, Stylelint, unit tests, the production
+build, and browser tests on pull requests and pushes to `main`. Checks run as
+independent parallel jobs, with browser tests split across two runners and one
+browser worker per runner.
 
 `preview` serves the production build on port 3000; stop the development server first. Browser tests reuse a running development server or start one automatically. They run one browser at a time to keep software WebGL rendering responsive in CI. On headless Linux without a GPU, Mesa/EGL libraries (`libegl1`, `libegl-mesa0`, and `mesa-vulkan-drivers`) provide the real WebGL 2 context used by the tests.
 
@@ -82,11 +98,12 @@ The deterministic simulation tests cover damage, splitting, impulses and bounces
 
 - `src/game/simulation.ts`: renderer-independent gameplay and collision simulation, with small fixed substeps.
 - `src/game/scene.ts`: native pointer/keyboard input, frame loop, and simulation-to-renderer adapter.
-- `src/game/world3d.ts`, `models3d.ts`, `robot3d.ts`, `code-mesh.ts`: Three.js scene, perspective camera, solid procedural models, perforated code geometry, shadows, and GPU resource cleanup.
+- `src/game/world3d.ts`, `model-assets.ts`, `models3d.ts`, `robot3d.ts`, `code-mesh.ts`: Three.js scene, perspective camera, glTF model loading, perforated code geometry, shadows, and GPU resource cleanup.
 - `src/game/debris-physics.ts`, `fracture-geometry.ts`, `death-clipping.ts`: independent Rapier debris, pooled smoke/sparks, compact perforated surfaces, and direct triangle clipping for final disintegration.
 - `src/game/audio.ts`: original Web Audio music and effects; opening theme, seamless menu/game transitions, and four crossfading scores.
 - `src/main.ts` and `src/style.css`: responsive menus, HUD, dialogs, and accessibility.
 - `public/assets`: original cartoon SVG artwork and a locally bundled opening-screen photograph.
+- `public/assets/models/arcade-models.glb`: editable glTF 2.0 library for the specialist, robots, weapons, city, effects, armor, and debris. [Model editing and validation](docs/models/README.md).
 
 The Three.js renderer loads when the player starts. A browser supporting WebGL 2 is required. Graphics context loss pauses play and allows resuming after restoration. All game assets and fonts are bundled locally, so gameplay has no external service dependency. Development builds expose `window.__spaghetti` for deterministic browser tests; production builds do not.
 

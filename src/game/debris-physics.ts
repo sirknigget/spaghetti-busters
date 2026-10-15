@@ -1,7 +1,9 @@
 import * as THREE from "three";
+import { loadGeometry } from "./model-assets";
 import RAPIER from "@dimforge/rapier3d-compat";
 import type { Block } from "./simulation";
 import {
+  cloneOwnedMaterial,
   createCodeMesh,
   createDeathFragments,
   disposeObject,
@@ -40,6 +42,211 @@ interface Fleck {
   kind: "shard" | "spark" | "smoke";
   bounces: number;
 }
+const HALF = 0.5;
+const FULL_TURN = 2;
+const TAU = Math.PI * FULL_TURN;
+const VIEWPORT = { height: 720 };
+const FLOOR_CONTACT = {
+  halfWidth: 2200,
+  halfHeight: 10,
+  halfDepth: 500,
+  centerX: 640,
+  centerZ: -100,
+  friction: 0.82,
+  restitution: 0.22,
+};
+const SETTLED = { speed: 0.1, height: 95 };
+const ENTROPY = {
+  increment: 0x6d2b79f5,
+  firstShift: 15,
+  secondShift: 7,
+  multiplier: 61,
+  finalShift: 14,
+  normalizer: 4294967296,
+};
+const IMPACT = {
+  heightBias: 0.45,
+  maxLetters: 4,
+
+  maxFlecks: 34,
+  baseFlecks: 14,
+  radiusFlecks: 0.15,
+  sparkEnd: 14,
+  smokeEnd: 6,
+  baseSpeed: 45,
+  metalSpeed: 220,
+  codeSpeed: 150,
+  maxRadius: 17,
+  radiusScale: 0.25,
+  depth: 23,
+  depthJitter: 14,
+  inheritX: 0.12,
+  inheritY: 0.1,
+  lift: 35,
+  depthBias: 0.35,
+  depthSpeed: 100,
+  smokeSize: 14,
+  smokeSizeJitter: 12,
+  sparkSizeJitter: 1.2,
+  shardSize: 1.5,
+  shardSizeJitter: 3.2,
+  darkShardChance: 0.55,
+  smokeLife: 1.3,
+  smokeLifeJitter: 1.4,
+  sparkLife: 0.35,
+  sparkLifeJitter: 0.7,
+  shardLife: 5,
+  shardLifeJitter: 3,
+  rotationSpan: 6,
+  spinSpan: 15,
+  spinBias: 7.5,
+  thicknessBias: 0.3,
+  thicknessJitter: 0.7,
+  rigidCount: 2,
+  rigidSize: 2,
+  rigidSizeJitter: 3,
+  metalMetalness: 0.7,
+  codeMetalness: 0.1,
+  rigidPositionJitter: 12,
+  rigidDepth: 25,
+  rigidDepthJitter: 10,
+  rigidSpeedJitter: 180,
+  rigidDepthSpeed: 80,
+  rigidLife: 6,
+  rigidLifeJitter: 2,
+};
+const LETTER = {
+  depth: 33,
+  depthJitter: 5,
+  halfWidth: 4.6,
+  halfHeight: 6,
+  halfDepth: 0.9,
+  lateralSpeed: 135,
+  inheritX: 0.16,
+  lift: 30,
+  liftJitter: 110,
+  inheritY: 0.1,
+  depthSpeed: 20,
+  depthSpeedJitter: 45,
+  life: 8,
+  lifeJitter: 3,
+};
+const COLLAPSE = {
+  maxPeeledLetters: 14,
+  minimumDistance: 35,
+  lift: 45,
+  maxImpactSources: 4,
+
+  reuseThreshold: 64,
+  kick: 35,
+  kickJitter: 65,
+  inheritX: 0.45,
+  impactX: 0.055,
+  inheritY: 0.35,
+  liftJitter: 75,
+  impactY: 0.035,
+  depthBias: 0.4,
+  depthSpeed: 90,
+  life: 9,
+  lifeJitter: 3,
+  letterSurfaceOffset: 3,
+  seedOffset: 191,
+  seedStride: 31,
+};
+const HULL = {
+  directions: 12,
+  halfDirections: 6,
+};
+const ROBOT = {
+  colliderScale: 0.46,
+
+  minSize: 0.5,
+  lateralSpeed: 60,
+  lateralJitter: 120,
+  inheritVelocity: 0.25,
+  lift: 70,
+  liftJitter: 140,
+  outwardLift: 50,
+  depthBias: 0.25,
+  depthSpeed: 120,
+  life: 10,
+  lifeJitter: 3,
+  impactSeedOffset: 119,
+};
+const BODY = {
+  linearDamping: 0.12,
+  angularDamping: 0.45,
+  density: 0.1,
+
+  frontDepth: 82,
+  backDepth: -70,
+  spinXY: 9,
+  spinZ: 12,
+  friction: 0.65,
+  frictionJitter: 0.3,
+  restitution: 0.22,
+  restitutionJitter: 0.22,
+  maxSeed: 0xffffffff,
+};
+const STEP = {
+  maxDelta: 0.25,
+
+  interval: 0.008333333333333333,
+  cullHeight: -150,
+  crumbleAge: 0.12,
+  crumbleSpeed: -95,
+  crumbleDeceleration: 70,
+  fadeRate: 2,
+};
+const CRUMBLE = {
+  maxEnergy: 160,
+  energyScale: 0.28,
+  count: 12,
+  smokeCount: 3,
+  smokeSize: 9,
+  smokeSizeJitter: 11,
+  shardSizeJitter: 2.5,
+  positionJitter: 20,
+  floorOffset: 2,
+  originOffset: 8,
+  lift: 20,
+  energyLift: 0.65,
+  depthSpeed: 80,
+  rotationSpan: 6,
+  spinSpan: 8,
+  heightScale: 0.7,
+  life: 4,
+  lifeJitter: 2,
+};
+const FLECK = {
+  gravity: 640,
+  spinDamping: 0.45,
+
+  curlX: 5.3,
+  curlForceX: 22,
+  dragX: 2.2,
+  buoyancy: 75,
+  dragY: 1.4,
+  curlZ: 4,
+  curlForceZ: 15,
+  dragZ: 1.8,
+  sparkDrag: 1.5,
+  shardDrag: 0.22,
+  restitution: 0.23,
+  frictionX: 0.57,
+  settleBounces: 3,
+  settleSpeed: 10,
+  settleDamping: 0.8,
+};
+const DRAW = {
+  fadeRate: 2,
+  smokeGrowth: 1.8,
+  smokeSpin: 0.2,
+  smokeFadeIn: 0.15,
+  smokeAlpha: 0.3,
+  smokeFadeOut: 0.22,
+  sparkStretch: 2.7,
+};
 const FLOOR = 42,
   MAX_BODIES = 92,
   MAX_FLECKS = 640;
@@ -47,11 +254,11 @@ const FLOOR = 42,
 export function debrisRandom(seed: number) {
   let state = seed >>> 0;
   return () => {
-    state += 0x6d2b79f5;
+    state += ENTROPY.increment;
     let n = state;
-    n = Math.imul(n ^ (n >>> 15), n | 1);
-    n ^= n + Math.imul(n ^ (n >>> 7), n | 61);
-    return ((n ^ (n >>> 14)) >>> 0) / 4294967296;
+    n = Math.imul(n ^ (n >>> ENTROPY.firstShift), n | 1);
+    n ^= n + Math.imul(n ^ (n >>> ENTROPY.secondShift), n | ENTROPY.multiplier);
+    return ((n ^ (n >>> ENTROPY.finalShift)) >>> 0) / ENTROPY.normalizer;
   };
 }
 
@@ -80,15 +287,23 @@ export class DebrisPhysics {
   }
   private constructor(private readonly scene: THREE.Scene) {
     this.world = new RAPIER.World({ x: 0, y: -640, z: 0 });
-    this.world.timestep = 1 / 120;
+    this.world.timestep = STEP.interval;
     this.world.createCollider(
-      RAPIER.ColliderDesc.cuboid(2200, 10, 500)
-        .setTranslation(640, FLOOR - 10, -100)
-        .setFriction(0.82)
-        .setRestitution(0.22),
+      RAPIER.ColliderDesc.cuboid(
+        FLOOR_CONTACT.halfWidth,
+        FLOOR_CONTACT.halfHeight,
+        FLOOR_CONTACT.halfDepth,
+      )
+        .setTranslation(
+          FLOOR_CONTACT.centerX,
+          FLOOR - FLOOR_CONTACT.halfHeight,
+          FLOOR_CONTACT.centerZ,
+        )
+        .setFriction(FLOOR_CONTACT.friction)
+        .setRestitution(FLOOR_CONTACT.restitution),
     );
     this.shards = new THREE.InstancedMesh(
-      new THREE.TetrahedronGeometry(1),
+      loadGeometry("solid-impact-shard"),
       new THREE.MeshStandardMaterial({
         color: "#ffffff",
         roughness: 0.86,
@@ -100,7 +315,7 @@ export class DebrisPhysics {
     this.shards.castShadow = true;
     this.shards.receiveShadow = true;
     this.sparks = new THREE.InstancedMesh(
-      new THREE.SphereGeometry(1, 5, 4),
+      loadGeometry("spark-fleck"),
       new THREE.MeshBasicMaterial({
         color: "#ffffff",
         blending: THREE.AdditiveBlending,
@@ -109,7 +324,7 @@ export class DebrisPhysics {
       MAX_FLECKS,
     );
     this.sparks.name = "physics-incandescent-sparks";
-    const smokeGeometry = new THREE.PlaneGeometry(1, 1);
+    const smokeGeometry = loadGeometry("smoke-quad");
     smokeGeometry.setAttribute("instanceAlpha", this.smokeAlpha);
     const smokeMaterial = new THREE.ShaderMaterial({
       transparent: true,
@@ -139,104 +354,101 @@ export class DebrisPhysics {
     this.totalImpacts++;
     const random = debrisRandom(hit.seed),
       metal = hit.target === "robot";
-    const count = Math.min(34, 14 + Math.ceil(hit.radius * 0.15));
+    const count = Math.min(
+      IMPACT.maxFlecks,
+      IMPACT.baseFlecks + Math.ceil(hit.radius * IMPACT.radiusFlecks),
+    );
     for (let i = 0; i < count; i++) {
-      const kind = i < 6 ? "smoke" : i < 14 ? "spark" : "shard";
-      const angle = random() * Math.PI * 2,
-        speed = 45 + random() * (metal ? 220 : 150);
-      const radius = Math.sqrt(random()) * Math.min(17, hit.radius * 0.25);
+      const nonSmokeKind = i < IMPACT.sparkEnd ? "spark" : "shard";
+      const kind = i < IMPACT.smokeEnd ? "smoke" : nonSmokeKind;
+      const angle = random() * TAU,
+        speed =
+          IMPACT.baseSpeed +
+          random() * (metal ? IMPACT.metalSpeed : IMPACT.codeSpeed);
+      const radius =
+        Math.sqrt(random()) *
+        Math.min(IMPACT.maxRadius, hit.radius * IMPACT.radiusScale);
       const position = new THREE.Vector3(
         hit.x + Math.cos(angle) * radius,
-        720 - hit.y + Math.sin(angle) * radius,
-        23 + random() * 14,
+        VIEWPORT.height - hit.y + Math.sin(angle) * radius,
+        IMPACT.depth + random() * IMPACT.depthJitter,
       );
       const velocity = new THREE.Vector3(
-        Math.cos(angle) * speed + hit.vx * 0.12,
-        Math.sin(angle) * speed - hit.vy * 0.1 + 35,
-        (random() - 0.35) * 100,
+        Math.cos(angle) * speed + hit.vx * IMPACT.inheritX,
+        Math.sin(angle) * speed - hit.vy * IMPACT.inheritY + IMPACT.lift,
+        (random() - IMPACT.depthBias) * IMPACT.depthSpeed,
       );
-      const size =
-        kind === "smoke"
-          ? 14 + random() * 12
-          : kind === "spark"
-            ? 1 + random() * 1.2
-            : 1.5 + random() * 3.2;
+      let size;
+      if (kind === "smoke")
+        size = IMPACT.smokeSize + random() * IMPACT.smokeSizeJitter;
+      else if (kind === "spark") size = 1 + random() * IMPACT.sparkSizeJitter;
+      else size = IMPACT.shardSize + random() * IMPACT.shardSizeJitter;
       this.addFleck({
         position,
         velocity,
         rotation: new THREE.Quaternion().setFromEuler(
-          new THREE.Euler(random() * 6, random() * 6, random() * 6),
+          new THREE.Euler(
+            random() * IMPACT.rotationSpan,
+            random() * IMPACT.rotationSpan,
+            random() * IMPACT.rotationSpan,
+          ),
         ),
         spin: new THREE.Vector3(
-          random() * 15 - 7.5,
-          random() * 15 - 7.5,
-          random() * 15 - 7.5,
+          random() * IMPACT.spinSpan - IMPACT.spinBias,
+          random() * IMPACT.spinSpan - IMPACT.spinBias,
+          random() * IMPACT.spinSpan - IMPACT.spinBias,
         ),
         scale: new THREE.Vector3(
           size,
-          size * (0.45 + random()),
-          size * (0.3 + random() * 0.7),
+          size * (IMPACT.heightBias + random()),
+          size * (IMPACT.thicknessBias + random() * IMPACT.thicknessJitter),
         ),
-        color: new THREE.Color(
-          kind === "spark"
-            ? random() < 0.5
-              ? "#fff4b5"
-              : "#ffae41"
-            : metal
-              ? random() < 0.5
-                ? "#bdcbd0"
-                : "#dba149"
-              : random() < 0.55
-                ? "#203d49"
-                : "#83c1ad",
-        ),
+        color: new THREE.Color(impactColor(kind, metal, random)),
         age: 0,
-        life:
-          kind === "smoke"
-            ? 1.3 + random() * 1.4
-            : kind === "spark"
-              ? 0.35 + random() * 0.7
-              : 5 + random() * 3,
-        phase: random() * Math.PI * 2,
+        life: impactLife(kind, random),
+        phase: random() * TAU,
         kind,
         bounces: 0,
       });
     }
     // A few larger physical fragments collide with the floor and one another.
-    for (let i = 0; i < 2; i++) {
-      const size = 2 + random() * 3,
+    for (let i = 0; i < IMPACT.rigidCount; i++) {
+      const size = IMPACT.rigidSize + random() * IMPACT.rigidSizeJitter,
         mesh = new THREE.Group();
       const fragment = new THREE.Mesh(
-        new THREE.TetrahedronGeometry(size),
+        loadGeometry("solid-impact-shard").scale(size, size, size),
         new THREE.MeshStandardMaterial({
           color: metal ? "#9baeb5" : "#345965",
           roughness: 0.75,
-          metalness: metal ? 0.7 : 0.1,
+          metalness: metal ? IMPACT.metalMetalness : IMPACT.codeMetalness,
         }),
       );
       fragment.castShadow = true;
       mesh.add(fragment);
       mesh.position.set(
-        hit.x + (random() - 0.5) * 12,
-        720 - hit.y + (random() - 0.5) * 12,
-        25 + random() * 10,
+        hit.x + (random() - HALF) * IMPACT.rigidPositionJitter,
+        VIEWPORT.height -
+          hit.y +
+          (random() - HALF) * IMPACT.rigidPositionJitter,
+        IMPACT.rigidDepth + random() * IMPACT.rigidDepthJitter,
       );
       this.addRigid(
         mesh,
         new THREE.Vector3(size, size, size),
         new THREE.Vector3(
-          (random() - 0.5) * 180 + hit.vx * 0.12,
-          60 + random() * 180,
-          (random() - 0.5) * 80,
+          (random() - HALF) * IMPACT.rigidSpeedJitter +
+            hit.vx * IMPACT.inheritX,
+          60 + random() * IMPACT.rigidSpeedJitter,
+          (random() - HALF) * IMPACT.rigidDepthSpeed,
         ),
         random,
         "shard",
-        6 + random() * 2,
+        IMPACT.rigidLife + random() * IMPACT.rigidLifeJitter,
       );
     }
     for (const letter of (hit.removed ?? [])
       .filter((c) => c.char.trim())
-      .slice(0, 4))
+      .slice(0, IMPACT.maxLetters))
       this.addLetter(letter, hit, random);
     this.renderParticles();
   }
@@ -256,13 +468,13 @@ export class DebrisPhysics {
     c.textAlign = "center";
     c.textBaseline = "middle";
     c.fillStyle = letter.color;
-    c.fillText(letter.char, 24, 28);
+    c.fillText(letter.char, canvas.width * HALF, canvas.height * HALF);
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     const group = new THREE.Group();
     group.name = "fallen-code-letter";
     const face = new THREE.Mesh(
-      new THREE.PlaneGeometry(12, 14),
+      loadGeometry("fallen-letter"),
       new THREE.MeshStandardMaterial({
         map: texture,
         transparent: true,
@@ -275,20 +487,24 @@ export class DebrisPhysics {
     group.add(face);
     group.position.copy(
       position ??
-        new THREE.Vector3(letter.x, 720 - letter.y, 33 + random() * 5),
+        new THREE.Vector3(
+          letter.x,
+          VIEWPORT.height - letter.y,
+          LETTER.depth + random() * LETTER.depthJitter,
+        ),
     );
     if (rotation) group.quaternion.copy(rotation);
     this.addRigid(
       group,
-      new THREE.Vector3(4.6, 6, 0.9),
+      new THREE.Vector3(LETTER.halfWidth, LETTER.halfHeight, LETTER.halfDepth),
       new THREE.Vector3(
-        (random() - 0.5) * 135 + hit.vx * 0.16,
-        30 + random() * 110 - hit.vy * 0.1,
-        20 + random() * 45,
+        (random() - HALF) * LETTER.lateralSpeed + hit.vx * LETTER.inheritX,
+        LETTER.lift + random() * LETTER.liftJitter - hit.vy * LETTER.inheritY,
+        LETTER.depthSpeed + random() * LETTER.depthSpeedJitter,
       ),
       random,
       "letter",
-      8 + random() * 3,
+      LETTER.life + random() * LETTER.lifeJitter,
     );
   }
 
@@ -305,7 +521,7 @@ export class DebrisPhysics {
       live = block.cells.filter((cell) => cell.alive && cell.char.trim());
     const peeled = new Set<Block["cells"][number]>();
     // Stratified entropy scatters loose glyphs across the entire sheet, not its first row.
-    const count = Math.min(14, live.length);
+    const count = Math.min(COLLAPSE.maxPeeledLetters, live.length);
     for (let i = 0; i < count; i++)
       peeled.add(
         live[
@@ -317,7 +533,9 @@ export class DebrisPhysics {
       );
     // A heavily perforated sheet is already the exact visible surface. Reuse its triangles;
     // resweeping hundreds of old holes here would stall the final-hit frame.
-    const reuseSurface = block.cells.filter((cell) => !cell.alive).length > 64;
+    const reuseSurface =
+      block.cells.filter((cell) => !cell.alive).length >
+      COLLAPSE.reuseThreshold;
     const shell = reuseSurface
       ? mesh
       : createCodeMesh(
@@ -339,32 +557,34 @@ export class DebrisPhysics {
       origin = shell.position.clone();
     for (const piece of pieces) {
       // The fragment starts in its original assembled pose; Rapier supplies every later pose.
-      const geometry = (
-        piece.getObjectByName("perforated-extruded-code") as THREE.Mesh
-      ).geometry;
+      const solid = piece.getObjectByName("perforated-extruded-code");
+      if (!(solid instanceof THREE.Mesh)) continue;
+      const geometry = solid.geometry;
       geometry.computeBoundingBox();
       const size = geometry.boundingBox!.getSize(new THREE.Vector3());
       const hull = this.codeHull(geometry);
       piece.applyMatrix4(shell.matrixWorld);
       const outward = piece.position.clone().sub(origin);
-      const distance = Math.max(35, outward.length());
-      const kick = 35 + random() * 65;
+      const distance = Math.max(COLLAPSE.minimumDistance, outward.length());
+      const kick = COLLAPSE.kick + random() * COLLAPSE.kickJitter;
       const velocity = new THREE.Vector3(
-        block.vx * 0.45 + (outward.x / distance) * kick + hit.vx * 0.055,
-        -block.vy * 0.35 +
+        block.vx * COLLAPSE.inheritX +
+          (outward.x / distance) * kick +
+          hit.vx * COLLAPSE.impactX,
+        -block.vy * COLLAPSE.inheritY +
           (outward.y / distance) * kick +
-          45 +
-          random() * 75 -
-          hit.vy * 0.035,
-        (random() - 0.4) * 90,
+          COLLAPSE.lift +
+          random() * COLLAPSE.liftJitter -
+          hit.vy * COLLAPSE.impactY,
+        (random() - COLLAPSE.depthBias) * COLLAPSE.depthSpeed,
       );
       this.addRigid(
         piece,
-        size.multiplyScalar(0.5).max(new THREE.Vector3(1, 1, 1)),
+        size.multiplyScalar(HALF).max(new THREE.Vector3(1, 1, 1)),
         velocity,
         random,
         "code",
-        9 + random() * 3,
+        COLLAPSE.life + random() * COLLAPSE.lifeJitter,
         hull,
       );
     }
@@ -373,13 +593,14 @@ export class DebrisPhysics {
         new THREE.Vector3(
           cell.x,
           -cell.y,
-          (shell.userData.solidDepth as number) / 2 + 3,
+          Number(shell.userData.solidDepth) * HALF +
+            COLLAPSE.letterSurfaceOffset,
         ),
       );
       this.addLetter(
         {
           x: position.x,
-          y: 720 - position.y,
+          y: VIEWPORT.height - position.y,
           char: cell.char,
           color: cell.color,
         },
@@ -390,16 +611,24 @@ export class DebrisPhysics {
       );
     }
     // Separate turbulent plumes erupt around the broken sheet instead of one repeated sprite.
-    for (let i = 0; i < Math.min(4, pieces.length); i++) {
+    for (
+      let i = 0;
+      i < Math.min(COLLAPSE.maxImpactSources, pieces.length);
+      i++
+    ) {
       const p =
-        pieces[Math.floor((i * pieces.length) / Math.min(4, pieces.length))]!
-          .position;
+        pieces[
+          Math.floor(
+            (i * pieces.length) /
+              Math.min(COLLAPSE.maxImpactSources, pieces.length),
+          )
+        ]!.position;
       this.impact({
         ...hit,
         x: p.x,
-        y: 720 - p.y,
+        y: VIEWPORT.height - p.y,
         radius: 32,
-        seed: seed + 191 + i * 31,
+        seed: seed + COLLAPSE.seedOffset + i * COLLAPSE.seedStride,
         removed: [],
       });
     }
@@ -410,8 +639,8 @@ export class DebrisPhysics {
   private codeHull(geometry: THREE.BufferGeometry) {
     const positions = geometry.getAttribute("position"),
       points: number[] = [];
-    for (let direction = 0; direction < 12; direction++) {
-      const a = (direction * Math.PI) / 6,
+    for (let direction = 0; direction < HULL.directions; direction++) {
+      const a = (direction * Math.PI) / HULL.halfDirections,
         dx = Math.cos(a),
         dy = Math.sin(a);
       let best = -Infinity,
@@ -448,32 +677,20 @@ export class DebrisPhysics {
       "robot-status",
       "robot-thinking",
     ]);
-    for (const child of mesh.children) {
-      if (
-        excluded.has(child.name) ||
-        child instanceof THREE.Sprite ||
-        !child.visible
-      )
-        continue;
+    const assemblies = mesh.children.filter(
+      (child) =>
+        !excluded.has(child.name) &&
+        !(child instanceof THREE.Sprite) &&
+        child.visible,
+    );
+    for (const child of assemblies) {
       const clone = child.clone(true);
       clone.traverse((object) => {
         if (object instanceof THREE.Mesh) {
           object.geometry = object.geometry.clone();
-          const cloneMaterial = (material: THREE.Material) => {
-            const copy = material.clone();
-            for (const key of Object.keys(copy)) {
-              const value = (copy as unknown as Record<string, unknown>)[key];
-              if (value instanceof THREE.Texture) {
-                const texture = value.clone();
-                texture.needsUpdate = true;
-                (copy as unknown as Record<string, unknown>)[key] = texture;
-              }
-            }
-            return copy;
-          };
           object.material = Array.isArray(object.material)
-            ? object.material.map(cloneMaterial)
-            : cloneMaterial(object.material);
+            ? object.material.map((material) => cloneOwnedMaterial(material))
+            : cloneOwnedMaterial(object.material);
           object.castShadow = true;
           object.receiveShadow = true;
         }
@@ -490,7 +707,7 @@ export class DebrisPhysics {
       const bounds = new THREE.Box3().setFromObject(group),
         center = bounds.getCenter(new THREE.Vector3()),
         size = bounds.getSize(new THREE.Vector3());
-      if (!Number.isFinite(center.x) || size.length() < 0.5) {
+      if (!Number.isFinite(center.x) || size.length() < ROBOT.minSize) {
         this.disposeMesh(group);
         continue;
       }
@@ -499,20 +716,25 @@ export class DebrisPhysics {
       group.updateMatrixWorld(true);
       const outward = center
         .clone()
-        .sub(new THREE.Vector3(robot.x, 720 - robot.y, 0))
+        .sub(new THREE.Vector3(robot.x, VIEWPORT.height - robot.y, 0))
         .normalize();
       const velocity = new THREE.Vector3(
-        outward.x * (60 + random() * 120) + (robot.vx ?? 0) * 0.25,
-        70 + random() * 140 + outward.y * 50,
-        (random() - 0.25) * 120,
+        outward.x * (ROBOT.lateralSpeed + random() * ROBOT.lateralJitter) +
+          (robot.vx ?? 0) * ROBOT.inheritVelocity,
+        ROBOT.lift +
+          random() * ROBOT.liftJitter +
+          outward.y * ROBOT.outwardLift,
+        (random() - ROBOT.depthBias) * ROBOT.depthSpeed,
       );
       this.addRigid(
         group,
-        size.multiplyScalar(0.46).max(new THREE.Vector3(1, 1, 1)),
+        size
+          .multiplyScalar(ROBOT.colliderScale)
+          .max(new THREE.Vector3(1, 1, 1)),
         velocity,
         random,
         "robot",
-        10 + random() * 3,
+        ROBOT.life + random() * ROBOT.lifeJitter,
       );
     }
     this.impact({
@@ -521,7 +743,7 @@ export class DebrisPhysics {
       vx: robot.vx ?? 0,
       vy: robot.vy ?? 0,
       radius: 80,
-      seed: seed + 119,
+      seed: seed + ROBOT.impactSeedOffset,
       target: "robot",
     });
   }
@@ -543,17 +765,20 @@ export class DebrisPhysics {
           Math.max(FLOOR + halfSize.y + 1, mesh.position.y),
           kind === "code" || kind === "letter"
             ? mesh.position.z
-            : Math.min(82, Math.max(-70, mesh.position.z)),
+            : Math.min(
+                BODY.frontDepth,
+                Math.max(BODY.backDepth, mesh.position.z),
+              ),
         )
         .setRotation(mesh.quaternion)
         .setLinvel(velocity.x, velocity.y, velocity.z)
         .setAngvel({
-          x: (random() - 0.5) * 9,
-          y: (random() - 0.5) * 9,
-          z: (random() - 0.5) * 12,
+          x: (random() - HALF) * BODY.spinXY,
+          y: (random() - HALF) * BODY.spinXY,
+          z: (random() - HALF) * BODY.spinZ,
         })
-        .setLinearDamping(0.12)
-        .setAngularDamping(0.45)
+        .setLinearDamping(BODY.linearDamping)
+        .setAngularDamping(BODY.angularDamping)
         .setCanSleep(true)
         .setCcdEnabled(true),
     );
@@ -562,9 +787,9 @@ export class DebrisPhysics {
       RAPIER.ColliderDesc.cuboid(halfSize.x, halfSize.y, halfSize.z);
     this.world.createCollider(
       shape
-        .setDensity(0.1)
-        .setFriction(0.65 + random() * 0.3)
-        .setRestitution(0.22 + random() * 0.22),
+        .setDensity(BODY.density)
+        .setFriction(BODY.friction + random() * BODY.frictionJitter)
+        .setRestitution(BODY.restitution + random() * BODY.restitutionJitter),
       body,
     );
     this.scene.add(mesh);
@@ -576,7 +801,7 @@ export class DebrisPhysics {
       kind,
       lastVelocity: velocity.clone(),
       crumbled: false,
-      seed: Math.floor(random() * 0xffffffff),
+      seed: Math.floor(random() * BODY.maxSeed),
     });
   }
   private addFleck(fleck: Fleck) {
@@ -586,28 +811,28 @@ export class DebrisPhysics {
 
   update(dt: number) {
     if (this.disposed || dt <= 0) return;
-    this.accumulator += Math.min(dt, 0.25);
-    while (this.accumulator >= 1 / 120) {
+    this.accumulator += Math.min(dt, STEP.maxDelta);
+    while (this.accumulator >= STEP.interval) {
       this.world.step();
-      this.stepFlecks(1 / 120);
-      this.accumulator -= 1 / 120;
+      this.stepFlecks(STEP.interval);
+      this.accumulator -= STEP.interval;
     }
     for (let i = this.rigid.length - 1; i >= 0; i--) {
       const item = this.rigid[i]!;
-      item.age += Math.min(dt, 0.25);
-      if (item.age > item.life || item.body.translation().y < -150) {
+      item.age += Math.min(dt, STEP.maxDelta);
+      if (item.age > item.life || item.body.translation().y < STEP.cullHeight) {
         this.removeRigid(i);
         continue;
       }
       const p = item.body.translation(),
         q = item.body.rotation(),
         v = item.body.linvel();
+      const freshCode =
+        item.kind === "code" && !item.crumbled && item.age > STEP.crumbleAge;
       if (
-        item.kind === "code" &&
-        !item.crumbled &&
-        item.age > 0.12 &&
-        item.lastVelocity.y < -95 &&
-        v.y - item.lastVelocity.y > 70
+        freshCode &&
+        item.lastVelocity.y < STEP.crumbleSpeed &&
+        v.y - item.lastVelocity.y > STEP.crumbleDeceleration
       ) {
         item.crumbled = true;
         this.crumble(item, p);
@@ -615,7 +840,7 @@ export class DebrisPhysics {
       item.lastVelocity.set(v.x, v.y, v.z);
       item.mesh.position.set(p.x, p.y, p.z);
       item.mesh.quaternion.set(q.x, q.y, q.z, q.w);
-      const fade = Math.min(1, (item.life - item.age) * 2);
+      const fade = Math.min(1, (item.life - item.age) * STEP.fadeRate);
       item.mesh.scale.setScalar(Math.max(0, fade));
     }
     this.renderParticles();
@@ -626,30 +851,50 @@ export class DebrisPhysics {
     position: { x: number; y: number; z: number },
   ) {
     const random = debrisRandom(item.seed),
-      energy = Math.min(160, Math.abs(item.lastVelocity.y) * 0.28);
-    for (let i = 0; i < 12; i++) {
-      const kind = i < 3 ? "smoke" : "shard",
-        size = kind === "smoke" ? 9 + random() * 11 : 1 + random() * 2.5;
+      energy = Math.min(
+        CRUMBLE.maxEnergy,
+        Math.abs(item.lastVelocity.y) * CRUMBLE.energyScale,
+      );
+    for (let i = 0; i < CRUMBLE.count; i++) {
+      const kind = i < CRUMBLE.smokeCount ? "smoke" : "shard",
+        size =
+          kind === "smoke"
+            ? CRUMBLE.smokeSize + random() * CRUMBLE.smokeSizeJitter
+            : 1 + random() * CRUMBLE.shardSizeJitter;
       this.addFleck({
         position: new THREE.Vector3(
-          position.x + (random() - 0.5) * 20,
-          Math.max(FLOOR + 2, position.y - 8),
+          position.x + (random() - HALF) * CRUMBLE.positionJitter,
+          Math.max(
+            FLOOR + CRUMBLE.floorOffset,
+            position.y - CRUMBLE.originOffset,
+          ),
           position.z,
         ),
         velocity: new THREE.Vector3(
-          (random() - 0.5) * energy,
-          20 + random() * energy * 0.65,
-          (random() - 0.5) * 80,
+          (random() - HALF) * energy,
+          CRUMBLE.lift + random() * energy * CRUMBLE.energyLift,
+          (random() - HALF) * CRUMBLE.depthSpeed,
         ),
         rotation: new THREE.Quaternion().setFromEuler(
-          new THREE.Euler(random() * 6, random() * 6, random() * 6),
+          new THREE.Euler(
+            random() * CRUMBLE.rotationSpan,
+            random() * CRUMBLE.rotationSpan,
+            random() * CRUMBLE.rotationSpan,
+          ),
         ),
-        spin: new THREE.Vector3(random() * 8, random() * 8, random() * 8),
-        scale: new THREE.Vector3(size, size * 0.7, size * 0.5),
-        color: new THREE.Color(random() < 0.5 ? "#345965" : "#9bc1b4"),
+        spin: new THREE.Vector3(
+          random() * CRUMBLE.spinSpan,
+          random() * CRUMBLE.spinSpan,
+          random() * CRUMBLE.spinSpan,
+        ),
+        scale: new THREE.Vector3(size, size * CRUMBLE.heightScale, size * HALF),
+        color: new THREE.Color(random() < HALF ? "#345965" : "#9bc1b4"),
         age: 0,
-        life: kind === "smoke" ? 1 + random() : 4 + random() * 2,
-        phase: random() * 6,
+        life:
+          kind === "smoke"
+            ? 1 + random()
+            : CRUMBLE.life + random() * CRUMBLE.lifeJitter,
+        phase: random() * CRUMBLE.rotationSpan,
         kind,
         bounces: 0,
       });
@@ -667,26 +912,29 @@ export class DebrisPhysics {
       if (p.kind === "smoke") {
         // Buoyancy, drag and changing curl-like eddies, integrated from velocity.
         p.velocity.x +=
-          (Math.sin(p.age * 5.3 + p.phase) * 22 - p.velocity.x * 2.2) * dt;
-        p.velocity.y += (75 - p.velocity.y * 1.4) * dt;
+          (Math.sin(p.age * FLECK.curlX + p.phase) * FLECK.curlForceX -
+            p.velocity.x * FLECK.dragX) *
+          dt;
+        p.velocity.y += (FLECK.buoyancy - p.velocity.y * FLECK.dragY) * dt;
         p.velocity.z +=
-          (Math.cos(p.age * 4 + p.phase) * 15 - p.velocity.z * 1.8) * dt;
+          (Math.cos(p.age * FLECK.curlZ + p.phase) * FLECK.curlForceZ -
+            p.velocity.z * FLECK.dragZ) *
+          dt;
       } else {
-        p.velocity.y -= 640 * dt;
+        p.velocity.y -= FLECK.gravity * dt;
         p.velocity.multiplyScalar(
-          Math.exp(-(p.kind === "spark" ? 1.5 : 0.22) * dt),
+          Math.exp(
+            -(p.kind === "spark" ? FLECK.sparkDrag : FLECK.shardDrag) * dt,
+          ),
         );
-        if (p.position.y < FLOOR + p.scale.y * 0.5 && p.velocity.y < 0) {
-          p.position.y = FLOOR + p.scale.y * 0.5;
-          p.velocity.y *= -0.23;
-          p.velocity.x *= 0.57;
-          p.velocity.z *= 0.5;
-          p.spin.multiplyScalar(0.45);
+        if (p.position.y < FLOOR + p.scale.y * HALF && p.velocity.y < 0) {
+          p.position.y = FLOOR + p.scale.y * HALF;
+          p.velocity.y *= -FLECK.restitution;
+          p.velocity.x *= FLECK.frictionX;
+          p.velocity.z *= HALF;
+          p.spin.multiplyScalar(FLECK.spinDamping);
           p.bounces++;
-          if (p.bounces > 3 && Math.abs(p.velocity.y) < 10) {
-            p.velocity.y = 0;
-            p.velocity.x *= 0.8;
-          }
+          this.settleFleck(p);
         }
       }
       p.position.addScaledVector(p.velocity, dt);
@@ -697,33 +945,44 @@ export class DebrisPhysics {
       );
     }
   }
+  private settleFleck(p: Fleck) {
+    if (
+      p.bounces > FLECK.settleBounces &&
+      Math.abs(p.velocity.y) < FLECK.settleSpeed
+    ) {
+      p.velocity.y = 0;
+      p.velocity.x *= FLECK.settleDamping;
+    }
+  }
   private renderParticles() {
     const counts = { shard: 0, spark: 0, smoke: 0 };
     for (const p of this.flecks) {
-      const mesh =
-          p.kind === "shard"
-            ? this.shards
-            : p.kind === "spark"
-              ? this.sparks
-              : this.smoke,
+      const meshes = {
+        shard: this.shards,
+        spark: this.sparks,
+        smoke: this.smoke,
+      };
+      const mesh = meshes[p.kind],
         index = counts[p.kind]++;
       this.transform.position.copy(p.position);
       this.transform.quaternion.copy(p.rotation);
-      const fade = Math.min(1, (p.life - p.age) * 2);
+      const fade = Math.min(1, (p.life - p.age) * DRAW.fadeRate);
       this.transform.scale
         .copy(p.scale)
-        .multiplyScalar(p.kind === "smoke" ? 1 + p.age * 1.8 : fade);
+        .multiplyScalar(
+          p.kind === "smoke" ? 1 + p.age * DRAW.smokeGrowth : fade,
+        );
       if (p.kind === "smoke") {
-        this.transform.rotation.set(0, 0, p.phase + p.age * 0.2);
+        this.transform.rotation.set(0, 0, p.phase + p.age * DRAW.smokeSpin);
         this.transform.scale.z = 1;
         this.smokeAlpha.setX(
           index,
-          Math.sin((Math.min(1, p.age / 0.15) * Math.PI) / 2) *
-            Math.min(0.3, (p.life - p.age) * 0.22),
+          Math.sin(Math.min(1, p.age / DRAW.smokeFadeIn) * Math.PI * HALF) *
+            Math.min(DRAW.smokeAlpha, (p.life - p.age) * DRAW.smokeFadeOut),
         );
       }
       if (p.kind === "spark") {
-        this.transform.scale.y *= 2.7;
+        this.transform.scale.y *= DRAW.sparkStretch;
         this.transform.quaternion.setFromUnitVectors(
           new THREE.Vector3(0, 1, 0),
           p.velocity.clone().normalize(),
@@ -765,8 +1024,8 @@ export class DebrisPhysics {
       settled: this.rigid.filter(
         (item) =>
           item.body.isSleeping() ||
-          (Math.abs(item.body.linvel().y) < 0.1 &&
-            item.body.translation().y < 95),
+          (Math.abs(item.body.linvel().y) < SETTLED.speed &&
+            item.body.translation().y < SETTLED.height),
       ).length,
       letters: this.rigid.filter((item) => item.kind === "letter").length,
       robotParts: this.rigid.filter((item) => item.kind === "robot").length,
@@ -787,26 +1046,9 @@ export class DebrisPhysics {
     this.rigid.splice(index, 1);
   }
   private disposeMesh(mesh: THREE.Object3D) {
-    const geometry = new Set<THREE.BufferGeometry>(),
-      materials = new Set<THREE.Material>(),
-      textures = new Set<THREE.Texture>();
-    mesh.traverse((object) => {
-      if (object instanceof THREE.Mesh) {
-        geometry.add(object.geometry);
-        for (const material of Array.isArray(object.material)
-          ? object.material
-          : [object.material]) {
-          materials.add(material);
-          for (const value of Object.values(material))
-            if (value instanceof THREE.Texture) textures.add(value);
-        }
-      }
-    });
-    geometry.forEach((g) => g.dispose());
-    materials.forEach((m) => m.dispose());
-    textures.forEach((t) => t.dispose());
-    mesh.removeFromParent();
+    disposeObject(mesh);
   }
+
   reset() {
     while (this.rigid.length) this.removeRigid(this.rigid.length - 1);
     this.flecks.length = 0;
@@ -822,4 +1064,21 @@ export class DebrisPhysics {
       this.disposeMesh(mesh);
     this.world.free();
   }
+}
+
+function impactColor(
+  kind: Fleck["kind"],
+  metal: boolean,
+  random: () => number,
+) {
+  if (kind === "spark") return random() < HALF ? "#fff4b5" : "#ffae41";
+  if (metal) return random() < HALF ? "#bdcbd0" : "#dba149";
+  return random() < IMPACT.darkShardChance ? "#203d49" : "#83c1ad";
+}
+function impactLife(kind: Fleck["kind"], random: () => number) {
+  if (kind === "smoke")
+    return IMPACT.smokeLife + random() * IMPACT.smokeLifeJitter;
+  if (kind === "spark")
+    return IMPACT.sparkLife + random() * IMPACT.sparkLifeJitter;
+  return IMPACT.shardLife + random() * IMPACT.shardLifeJitter;
 }
