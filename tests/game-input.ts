@@ -1,14 +1,10 @@
 import { expect, type Page } from "@playwright/test";
+import { enterGame } from "./browser-fixtures";
 
 export async function start(page: Page) {
-  await page.goto("/");
-  await page
-    .getByRole("button", { name: "Click to play", exact: true })
-    .click();
-  await page.locator("#start").click();
+  await enterGame(page);
   await expect(page.locator("#game-screen")).toBeVisible();
   await expect(page.locator("canvas")).toBeVisible();
-  await page.waitForFunction(() => !!(window as any).__spaghetti);
 }
 
 export async function point(page: Page, x: number, y: number) {

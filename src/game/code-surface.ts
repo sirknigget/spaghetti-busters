@@ -140,44 +140,36 @@ function drawCodeCells(context: CanvasRenderingContext2D, block: Block) {
   }
 }
 
+interface SurfacePalette {
+  body: string;
+  header: string;
+  side: string;
+  edge?: string;
+  emissive?: string;
+}
+
 export function codePalette(block: Block) {
+  const palette = surfacePalette(block);
+
+  return {
+    body: palette.body,
+    header: palette.header,
+    edge: palette.edge ?? PALETTE.code.edge,
+    side: palette.side,
+    emissive: palette.emissive ?? PALETTE.common.black,
+  };
+}
+
+function surfacePalette(block: Block): SurfacePalette {
   if (block.boss) {
-    return {
-      body: PALETTE.boss.body,
-      header: PALETTE.boss.header,
-      edge: PALETTE.boss.edge,
-      side: PALETTE.boss.side,
-      emissive: PALETTE.boss.emissive,
-    };
+    return PALETTE.boss;
   }
 
   if (block.angry) {
-    return {
-      body: PALETTE.angry.body,
-      header: PALETTE.angry.header,
-      edge: PALETTE.angry.edge,
-      side: PALETTE.angry.side,
-      emissive: PALETTE.angry.emissive,
-    };
+    return PALETTE.angry;
   }
 
-  if (block.exception) {
-    return {
-      body: PALETTE.exception.body,
-      header: PALETTE.exception.header,
-      edge: PALETTE.code.edge,
-      side: PALETTE.exception.side,
-      emissive: PALETTE.common.black,
-    };
-  }
-
-  return {
-    body: PALETTE.code.body,
-    header: PALETTE.code.header,
-    edge: PALETTE.code.edge,
-    side: PALETTE.code.side,
-    emissive: PALETTE.common.black,
-  };
+  return block.exception ? PALETTE.exception : PALETTE.code;
 }
 
 // Canvas crack strokes are authored texture artwork in pixel coordinates.

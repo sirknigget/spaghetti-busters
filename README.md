@@ -74,11 +74,12 @@ Run `npm run format` to apply Prettier to the project. Formatting uses Prettier'
 standard defaults with LF line endings; generated output, the npm lockfile, and
 vendored brand artwork are excluded.
 
-Run `npm run lint` to check TypeScript, JavaScript, and CSS. The individual commands
-are `npm run lint:eslint`, `npm run lint:oxlint`, and `npm run lint:css`. ESLint
+Run `npm run lint` to check TypeScript, JavaScript, CSS, and duplicate code. The individual commands
+are `npm run lint:eslint`, `npm run lint:oxlint`, `npm run lint:css`, and `npm run lint:duplicates`. ESLint
 covers the supplied SonarJS, Unicorn, React, and stylistic rules; Oxlint runs the
 supplied correctness, security, TypeScript, test, and
 [anti-slop](https://github.com/sirknigget/anti-slop) rules with type information.
+Duplicate detection uses jscpd; see [settings and manual calibration](docs/duplicate-detection.md).
 Stylelint checks `src/**/*.css`. Source and colocated unit tests use separate
 rule scopes, and the lint TypeScript project also includes browser tests and
 root configuration files and lint policy modules. All JavaScript and TypeScript,

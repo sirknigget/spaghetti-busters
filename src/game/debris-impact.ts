@@ -1,3 +1,5 @@
+import { randomDebrisSpin } from "./debris-spin";
+import { createGlyphTexture } from "./glyph-texture";
 import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { loadGeometry } from "./model-assets";
@@ -65,7 +67,11 @@ export function addLetter(
 }
 
 function createLetter(letter: RemovedLetter) {
-  const texture = letterTexture(letter);
+  const texture = createGlyphTexture(letter, {
+    width: LETTER_TEXTURE_WIDTH,
+    height: LETTER_TEXTURE_HEIGHT,
+    font: "bold 42px monospace",
+  });
   const group = new THREE.Group();
 
   group.name = "fallen-code-letter";
@@ -85,27 +91,6 @@ function createLetter(letter: RemovedLetter) {
   group.add(face);
 
   return group;
-}
-
-function letterTexture(letter: RemovedLetter) {
-  const canvas = document.createElement("canvas");
-
-  canvas.width = LETTER_TEXTURE_WIDTH;
-  canvas.height = LETTER_TEXTURE_HEIGHT;
-
-  const c = canvas.getContext("2d")!;
-
-  c.font = "bold 42px monospace";
-  c.textAlign = "center";
-  c.textBaseline = "middle";
-  c.fillStyle = letter.color;
-  c.fillText(letter.char, canvas.width * HALF, canvas.height * HALF);
-
-  const texture = new THREE.CanvasTexture(canvas);
-
-  texture.colorSpace = THREE.SRGBColorSpace;
-
-  return texture;
 }
 
 interface ImpactAppearance {
@@ -168,7 +153,7 @@ function impactFleck(hit: DebrisImpact, appearance: ImpactAppearance): Fleck {
   return {
     position,
     velocity,
-    ...impactSpin(random),
+    ...randomDebrisSpin(random, IMPACT),
     scale: new THREE.Vector3(
       size,
       size * (IMPACT.heightBias + random()),
@@ -207,23 +192,6 @@ function impactTrajectory(
   );
 
   return { position, velocity };
-}
-
-function impactSpin(random: () => number) {
-  return {
-    rotation: new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(
-        random() * IMPACT.rotationSpan,
-        random() * IMPACT.rotationSpan,
-        random() * IMPACT.rotationSpan,
-      ),
-    ),
-    spin: new THREE.Vector3(
-      random() * IMPACT.spinSpan - IMPACT.spinBias,
-      random() * IMPACT.spinSpan - IMPACT.spinBias,
-      random() * IMPACT.spinSpan - IMPACT.spinBias,
-    ),
-  };
 }
 
 function addImpactRigid(context: DebrisEmitter, source: ImpactShard) {

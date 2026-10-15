@@ -1,3 +1,4 @@
+import { verifyFrozenGameplay } from "./browser-fixtures";
 import { expect, test, type Page } from "@playwright/test";
 import { collectReleasedTripleShot } from "./game-bonus-checks";
 import { point, start, verifyResumedKeyboardControls } from "./game-input";
@@ -54,23 +55,8 @@ test("pause freezes the simulation, resume and keyboard controls work", async ({
   await page.keyboard.press("KeyP");
   await expect(page.locator("#game-overlay")).toBeVisible();
 
-  const time = await page.evaluate(
-    () => (window as any).__spaghetti.simulation.progress.elapsed,
-  );
-  const pausedFrame = await page.evaluate(
-    () => (window as any).__spaghetti.scene.lastFrame,
-  );
+  const time = await verifyFrozenGameplay(page);
 
-  await expect
-    .poll(() =>
-      page.evaluate(() => (window as any).__spaghetti.scene.lastFrame),
-    )
-    .toBeGreaterThan(pausedFrame);
-  expect(
-    await page.evaluate(
-      () => (window as any).__spaghetti.simulation.progress.elapsed,
-    ),
-  ).toBe(time);
   await verifyResumedKeyboardControls(page, time);
 });
 

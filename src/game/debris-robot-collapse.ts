@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { cloneOwnedMaterial, disposeObject } from "./graphics-resources";
+import { cloneMeshResources, disposeObject } from "./graphics-resources";
 import { debrisRandom } from "./debris-random";
 import { ROBOT } from "./debris-impact-settings";
 import { VIEWPORT } from "./debris-settings";
@@ -89,7 +89,7 @@ function robotAssemblies(mesh: THREE.Group) {
 function cloneAssembly(child: THREE.Object3D) {
   const clone = child.clone(true);
 
-  cloneRobotResources(clone);
+  cloneMeshResources(clone, true);
   child.matrixWorld.decompose(clone.position, clone.quaternion, clone.scale);
 
   const group = new THREE.Group();
@@ -117,19 +117,6 @@ function centerAssembly(group: THREE.Group, clone: THREE.Object3D) {
   group.updateMatrixWorld(true);
 
   return { group, center, size };
-}
-
-function cloneRobotResources(clone: THREE.Object3D) {
-  clone.traverse((object) => {
-    if (object instanceof THREE.Mesh) {
-      object.geometry = object.geometry.clone();
-      object.material = Array.isArray(object.material)
-        ? object.material.map((material) => cloneOwnedMaterial(material))
-        : cloneOwnedMaterial(object.material);
-      object.castShadow = true;
-      object.receiveShadow = true;
-    }
-  });
 }
 
 function robotVelocity(center: THREE.Vector3, motion: RobotKinetics) {

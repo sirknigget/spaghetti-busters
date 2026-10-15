@@ -1,23 +1,9 @@
 import settings from "./robot-config.json";
 
-export type Brand =
-  | "openai"
-  | "anthropic"
-  | "google"
-  | "x"
-  | "moonshot"
-  | "zai"
-  | "deepseek"
-  | "meta";
-export interface RobotPose {
-  brand: Brand;
-  state: "running" | "thinking" | "leaving";
-  age: number;
-  stateTime: number;
-  hitFlash: number;
-  health: number;
-  maxHealth: number;
-}
+import type { RobotBrand } from "./robot-types";
+
+export type Brand = RobotBrand;
+export type { RobotPose } from "./robot-types";
 export const ROBOT_MOTION = settings.ROBOT_MOTION;
 export const LABEL_LAYOUT = settings.LABEL_LAYOUT;
 export const names: Record<Brand, string> = {

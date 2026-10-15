@@ -79,3 +79,34 @@ function materialTextures(material: THREE.Material): THREE.Texture[] {
     (value): value is THREE.Texture => value instanceof THREE.Texture,
   );
 }
+
+export function cloneMeshResources(object: THREE.Object3D, shadows = false) {
+  object.traverse((child) => {
+    if (!(child instanceof THREE.Mesh)) {
+      return;
+    }
+
+    if (child.geometry) {
+      child.geometry = child.geometry.clone();
+    }
+
+    if (child.material) {
+      child.material = Array.isArray(child.material)
+        ? child.material.map(cloneOwnedMaterial)
+        : cloneOwnedMaterial(child.material);
+    }
+
+    if (shadows) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+}
+
+export function disposeObjectMap<K>(objects: Map<K, THREE.Object3D>) {
+  for (const object of objects.values()) {
+    disposeObject(object);
+  }
+
+  objects.clear();
+}

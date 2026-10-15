@@ -1,4 +1,7 @@
+import type { RobotPose } from "./robot-types";
 import simulationData from "./simulation-values.json";
+
+export type { RobotBrand } from "./robot-types";
 
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
@@ -144,26 +147,10 @@ export interface SpecialProjectile {
   fuse?: number;
   targetId?: number;
 }
-export type RobotBrand =
-  | "openai"
-  | "anthropic"
-  | "google"
-  | "x"
-  | "moonshot"
-  | "zai"
-  | "deepseek"
-  | "meta";
-export interface Robot {
+export interface Robot extends RobotPose {
   id: number;
   x: number;
   y: number;
-  brand: RobotBrand;
-  state: "running" | "thinking" | "leaving";
-  age: number;
-  stateTime: number;
-  hitFlash: number;
-  health: number;
-  maxHealth: number;
 }
 
 export type VisualEvent =
