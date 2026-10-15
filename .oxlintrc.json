@@ -75,7 +75,17 @@
         "maxSubfolders": 10
       }
     ],
-    "project/root-imports": "error"
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "regex": "^\\.",
+            "message": "Use a #root/... project-root import instead of a relative import."
+          }
+        ]
+      }
+    ]
   },
   "overrides": [
     {

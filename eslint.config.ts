@@ -2,6 +2,7 @@
  * Applies typed SonarJS and remaining ESLint-only checks in source and test scopes.
  * Uses a dedicated TypeScript project covering source, tests, and tools.
  */
+import { importSyntax } from "#root/lint/import-policy.ts";
 import { numericRules } from "#root/lint/numeric-policy.ts";
 import { limitRules, restrictedSyntax } from "#root/lint/limits.ts";
 import { spacingRules } from "#root/lint/spacing.ts";
@@ -14,6 +15,7 @@ import type { TSESLint } from "@typescript-eslint/utils";
 import type { Linter } from "eslint";
 
 const MAX_REGEX_COMPLEXITY = 20;
+const syntaxRestrictions = [...restrictedSyntax, ...importSyntax];
 const colorPatterns = [
   /#[0-9a-f]{3,8}\b/i,
   /\b(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch|color|color-mix|device-cmyk|light-dark|contrast-color)\s*\(/i,
@@ -124,6 +126,7 @@ const eslintConfig: TSESLint.FlatConfig.Config[] = [
     rules: {
       ...spacingRules,
       ...limitRules,
+      "no-restricted-syntax": ["error", ...syntaxRestrictions],
     },
   },
   {
@@ -133,7 +136,7 @@ const eslintConfig: TSESLint.FlatConfig.Config[] = [
     rules: {
       "no-restricted-syntax": [
         "error",
-        ...restrictedSyntax,
+        ...syntaxRestrictions,
         ...[
           ["Literal:not([regex])", "value"],
           ["TemplateElement", "value.raw"],

@@ -100,14 +100,16 @@ The rule scans the complete trees once per lint invocation, including folders
 without JavaScript or TypeScript. Symlinks count as files and are not traversed.
 Diagnostics name the offending folder and appear on the first linted file.
 
-The custom Oxlint `project/root-imports` rule applies to all linted JavaScript and
-TypeScript, including configuration and lint modules. Local imports use
+Oxlint’s built-in `no-restricted-imports` rule applies to all linted JavaScript
+and TypeScript, including configuration and lint modules. Local imports use
 `#root/...` with explicit extensions, resolved from the project root by the
 `package.json` imports map. Package and Node built-in imports remain unchanged;
 browser-evaluated test imports use `/src/...` or `/tests/...` URLs. Relative
 imports and re-exports are errors, including dynamic imports, `require`, and
-TypeScript import forms. Computed specifiers are rejected so paths can be checked
-statically. Both custom rules run in the existing parallel Oxlint CI job.
+TypeScript import forms. ESLint’s built-in `no-restricted-syntax` covers
+`require`, import-type expressions, and computed paths that Oxlint does not
+inspect. Computed specifiers are rejected so paths can be checked statically.
+Both linters run in their existing parallel CI jobs.
 
 Readability rules require braces for control flow, one statement per line,
 separate variable declarations, and blank lines after blocks, before returns,
