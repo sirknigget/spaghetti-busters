@@ -118,26 +118,26 @@ model, music file, image, or WASM resource is unused. No assets were deleted
 based on these scans. These tools also do not validate the semantics of
 browser-evaluated callbacks or invent architectural boundaries.
 
-## Advisory, irrelevant, and deferred policies
+## Disabled, irrelevant, and deferred policies
 
-| Analysis                                     | Current observation                                                     | Treatment / required wiring                                                                                               |
-| -------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Module `moreUnstable`                        | 14 warnings in the cleaned eager-runtime graph                          | Advisory JSON artifact; useful for inspection, unsuitable as an automatic refactoring mandate.                            |
-| Folder `moreUnstable`                        | 27 warnings, including dependencies on aggregate parent folders         | Advisory; folder aggregation makes the metric especially sensitive to organization.                                       |
-| `no-duplicate-dep-types`                     | No warnings                                                             | Preset warning; a declaration in multiple dependency sections can be intentional.                                         |
-| `no-deprecated-core`, `not-to-deprecated`    | No warnings                                                             | Migration signals; warnings, not an automatic mandate to replace dependencies. Not a vulnerability audit.                 |
-| dependency-cruiser `no-orphans`              | Narrower than Knip reachability                                         | Disabled to avoid duplicate/noisy unused-module enforcement.                                                              |
-| `optional-deps-used`, `peer-deps-used`       | This application declares neither section                               | Not enabled; imported optional/peer dependencies can be intentional.                                                      |
-| Dependent-count conditions                   | No agreed size or fan-in budget                                         | Not enabled; thresholds need evidence and a module-specific responsibility policy.                                        |
-| `ancestor`                                   | Legitimate imports of shared parent-level values                        | Not enabled; directory position does not establish a forbidden dependency. Root-based imports remain enforced separately. |
-| Import module-system/dynamic classifications | Native ESM, lazy scene loading, and browser-test imports are legitimate | Used to classify cycles, not to prohibit lazy loading or namespace imports globally.                                      |
-| `license` / `licenseNot`                     | No supplied licensing policy                                            | Not enabled; needs explicit allowed/disallowed license patterns and review of metadata quality.                           |
-| `reachable`, `required`                      | No specified transitive boundary or mandatory dependency                | Deferred; need concrete roots/targets. Knip already owns unused-module detection.                                         |
-| Path capture groups / layer / feature rules  | Shared helpers and orchestration have real cross-folder consumers       | No invented layer matrix. Requires a stated architectural contract before restriction.                                    |
-| Knip catalog checks                          | No workspace catalogs                                                   | Default checks have no current effect; relevant only if catalogs are adopted.                                             |
-| Knip `--strict`                              | Single package; no workspace isolation problem                          | Not enabled. Production mode already runs; stricter peer/type-dependency policies need a packaging requirement.           |
-| Knip `cycles` / `cycles.dynamicImports`      | dependency-cruiser owns eager runtime cycles                            | Not enabled; duplicate cycle gates add little, and lazy edges need different interpretation.                              |
-| Knip `ignoreExportsUsedInFile`               | Locally used helpers do not need to be exported                         | Not enabled; it would hide unnecessary exported APIs.                                                                     |
+| Analysis                                     | Current observation                                                     | Treatment / required wiring                                                                                                      |
+| -------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Module `moreUnstable`                        | Initial trial produced 14 findings                                      | Disabled; the warning-only configuration, command, and CI artifact were removed.                                                 |
+| Folder `moreUnstable`                        | Initial trial produced 27 findings, including aggregate parent folders  | Disabled; folder aggregation makes the metric especially sensitive to organization.                                              |
+| `no-duplicate-dep-types`                     | No warnings                                                             | Disabled; a declaration in multiple dependency sections can be intentional.                                                      |
+| `no-deprecated-core`, `not-to-deprecated`    | No warnings                                                             | Disabled with the other advisory-only checks; these migration signals are not a vulnerability audit.                             |
+| dependency-cruiser `no-orphans`              | Narrower than Knip reachability                                         | Disabled to avoid duplicate/noisy unused-module enforcement.                                                                     |
+| `optional-deps-used`, `peer-deps-used`       | This application declares neither section                               | Not enabled; imported optional/peer dependencies can be intentional.                                                             |
+| Dependent-count conditions                   | No agreed size or fan-in budget                                         | Not enabled; thresholds need evidence and a module-specific responsibility policy.                                               |
+| `ancestor`                                   | Legitimate imports of shared parent-level values                        | Not enabled; directory position does not establish a forbidden dependency. Root-based imports remain enforced separately.        |
+| Import module-system/dynamic classifications | Native ESM, lazy scene loading, and browser-test imports are legitimate | Used to classify cycles, not to prohibit lazy loading or namespace imports globally.                                             |
+| `license` / `licenseNot`                     | No supplied licensing policy                                            | Not enabled; needs explicit allowed/disallowed license patterns and review of metadata quality.                                  |
+| `reachable`, `required`                      | No specified transitive boundary or mandatory dependency                | Can protect specific transitive boundaries below; no mandatory-dependency requirement exists. Knip owns unused-module detection. |
+| Path capture groups / layer / feature rules  | Shared helpers and orchestration have real cross-folder consumers       | Useful for the focused boundaries below; a global layer matrix is unnecessary.                                                   |
+| Knip catalog checks                          | No workspace catalogs                                                   | Default checks have no current effect; relevant only if catalogs are adopted.                                                    |
+| Knip `--strict`                              | Single package; no workspace isolation problem                          | Not enabled. Production mode already runs; stricter peer/type-dependency policies need a packaging requirement.                  |
+| Knip `cycles` / `cycles.dynamicImports`      | dependency-cruiser owns eager runtime cycles                            | Not enabled; duplicate cycle gates add little, and lazy edges need different interpretation.                                     |
+| Knip `ignoreExportsUsedInFile`               | Locally used helpers do not need to be exported                         | Not enabled; it would hide unnecessary exported APIs.                                                                            |
 
 Instability is a graph ratio, not measured volatility or defect risk. For
 example, the audio facade depends on its effect dispatcher (instability about
@@ -145,8 +145,9 @@ example, the audio facade depends on its effect dispatcher (instability about
 builders (about 0.429 versus 0.750–0.800). These are ordinary composition
 relationships. Making every warning fatal would pressure developers to inline
 helpers, add artificial abstractions, or merge distinct modules solely to alter
-fan-in/fan-out. That would be counterproductive here. The report preserves
-these findings for review without requiring those changes.
+fan-in/fan-out. That would be counterproductive here. The initial counts are retained here
+as assessment evidence. These checks no longer run locally or in CI; there
+is no advisory report command or artifact.
 
 Other potentially destructive interpretations are deleting assets/tests from
 an unconfigured unused-file report, treating every test/type/lazy cycle as an
@@ -156,6 +157,43 @@ those policies is enabled. Runtime folder-cycle enforcement became useful
 because it exposed misplaced shared code; it was not used to force unrelated
 subsystems into one folder.
 
+## Useful project-specific boundaries to consider next
+
+Cycle freedom alone does not enforce dependency direction: a new renderer import
+in simulation can break isolation without introducing a cycle. The reorganized
+folders now make several focused policies practical. A dry run of built-in
+path and dependency-type conditions against the current source graph found:
+
+| Proposed boundary                                                                                       | Current findings | Benefit / prerequisite                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Simulation cannot import presentation or visual-physics implementations, Three.js, or Rapier at runtime | 0                | Preserve renderer-independent simulation and headless tests. Include audio, scene, code rendering, graphics, debris, and browser UI entry modules among forbidden targets; preserve legitimate shared data/type imports.                                |
+| `geometry`, `graphics`, and `content` cannot import higher-level gameplay or presentation modules       | 0                | Keep reusable primitives from acquiring simulation, world-renderer, code-surface, debris, scene, audio, or UI responsibilities. Three.js remains valid in geometry/graphics; content can stay dependency-free.                                          |
+| `rendering`, `code`, and `debris` cannot import simulation implementations at runtime                   | 1                | Keep visual code from loading gameplay systems. `rendering/display/world-timeout.ts` imports `TIMEOUT_METRICS` through `simulation/simulation.ts`; it could import directly from `simulation-types.ts`. Permit shared data/constants and type imports.  |
+| Simulation contracts cannot be owned by the renderer                                                    | 1                | `simulation/simulation-types.ts` imports/re-exports `RobotPose`/`RobotBrand` from `rendering/robots/robot-types.ts`. Move those data-only contracts into simulation or a shared contracts module, then forbid the dependency including type-only edges. |
+| Audio cannot import gameplay, rendering, scene, or UI modules                                           | 0                | Preserve the existing event-driven audio boundary. The application coordinates sound and gameplay; the sound engine does not need access to game state.                                                                                                 |
+
+The first two are the strongest regression guards; the next two expose small,
+concrete ownership/import cleanups. Audio isolation is useful but lower priority
+because the subsystem already has no imports outside its own folder.
+These are recommendations, not newly enabled rules in the warning-removal change.
+No game sources were modified for these candidate policies.
+
+All can use dependency-cruiser's supplied path/dependency-type conditions.
+For stronger indirect restrictions, `reachable` can also reject forbidden
+subsystems reached through intermediate helpers. Runtime reachability needs
+an erased-type graph that still includes dynamic imports: lazy loading does not
+make a forbidden architectural dependency valid. The existing folder-cycle
+pass deliberately excludes dynamic edges, so it cannot be reused unchanged
+for that stronger policy. Colocated tests need separate scope, as in the
+existing production checks.
+
+An import restriction does not prove deterministic behavior or prevent a
+renderer from mutating a simulation object passed to it. Those guarantees
+would require seeded-random/global-API lint policies or readonly render-state
+contracts, respectively. Mandatory barrels, arbitrary fan-in budgets, or moving
+code purely to improve instability ratios would add constraints without the
+same architectural justification.
+
 ## Running and enforcing the checks
 
 - `npm run lint:unused`: normal Knip gate, including namespace-export analysis.
@@ -163,16 +201,13 @@ subsystems into one folder.
 - `npm run lint:dependencies`: full import-integrity/module-cycle check followed
   by the eager-runtime folder-cycle check. The default `err` reporter returns
   nonzero on errors, so violations actually fail local lint and CI.
-- `npm run report:dependencies`: write structural metrics and advisory findings
-  to `.quality-results/dependencies.json` for inspection.
 
 The three blocking commands are also part of `npm run lint`. GitHub Actions
-runs them in independent parallel jobs alongside the existing checks. The
-Dependency graph job generates and uploads the `dependency-metrics` artifact,
-even after a failed graph gate. Its JSON report is deliberately not the gate:
-dependency-cruiser's JSON reporter returns zero even when it contains errors.
+runs them in independent parallel jobs alongside the existing checks.
+Only blocking dependency policies run; the warning-only configuration and
+`dependency-metrics` artifact have been removed. The inherited deprecation and
+duplicate-dependency-section warnings are explicitly disabled as well.
 
 All enabled blocking analyses must pass with zero errors. There are no issue
-allowances or baselines. The advisory instability warnings do not fail CI.
-The original report's external documentation links remain the references for
-the supplied rule conditions and Knip modes.
+allowances or baselines. The original report's external documentation links
+remain the references for the supplied rule conditions and Knip modes.

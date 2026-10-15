@@ -63,7 +63,6 @@ A single **Click to play** prelude unlocks browser audio; the opening screen the
 ```sh
 npm run format:check
 npm run lint
-npm run report:dependencies
 npm run build
 npm run preview
 npm test
@@ -85,8 +84,8 @@ Knip enforces unused code, exports, types, and packages in normal and production
 runs. dependency-cruiser enforces import integrity, eager runtime cycles,
 production dependency boundaries, and source folder cycles. See the
 [rule assessment and measured effects](docs/dependency-enforcement.md), including
-advisory metrics, discovery wiring, and policies deliberately left disabled.
-Run `npm run report:dependencies` to write the advisory graph report.
+discovery wiring, proposed architectural boundaries, and policies deliberately
+left disabled.
 Stylelint checks `src/**/*.css`. Source and colocated unit tests use separate
 rule scopes, and the lint TypeScript project also includes browser tests and
 root configuration files and lint policy modules. All JavaScript and TypeScript,

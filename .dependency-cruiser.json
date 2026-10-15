@@ -7,6 +7,18 @@
       "comment": "Knip owns entry-point reachability, including HTML and tool configuration."
     },
     {
+      "name": "no-deprecated-core",
+      "severity": "ignore"
+    },
+    {
+      "name": "no-duplicate-dep-types",
+      "severity": "ignore"
+    },
+    {
+      "name": "not-to-deprecated",
+      "severity": "ignore"
+    },
+    {
       "name": "no-circular",
       "severity": "error",
       "to": {
@@ -19,10 +31,6 @@
           ]
         }
       }
-    },
-    {
-      "name": "no-deprecated-core",
-      "severity": "warn"
     },
     {
       "name": "not-to-dev-dep",

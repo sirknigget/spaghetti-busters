@@ -62,16 +62,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - run: npm run report:dependencies
-        if: ${{ always() && matrix.name == 'Dependency graph' }}
-      - uses: actions/upload-artifact@v4
-        if: ${{ always() && matrix.name == 'Dependency graph' }}
-        with:
-          name: dependency-metrics
-          path: .quality-results/dependencies.json
-          if-no-files-found: error
-          retention-days: 7
-
   browser-tests:
     name: Browser tests (${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
