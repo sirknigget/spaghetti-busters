@@ -4,7 +4,7 @@ import { loadGeometry } from "#root/src/game/graphics/model-assets.ts";
 import {
   TIMEOUT_METRICS,
   type TimeoutHazard,
-} from "#root/src/game/simulation/simulation.ts";
+} from "#root/src/game/simulation/simulation-types.ts";
 import { HALF, HAZARD } from "#root/src/game/rendering/world-settings.ts";
 
 const CANVAS_SCALE = 3;

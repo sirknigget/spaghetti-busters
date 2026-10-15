@@ -54,6 +54,46 @@
       "to": {
         "path": "(^|/)(tests|lint)/|\\.(test|spec)\\.[cm]?[jt]sx?$"
       }
+    },
+    {
+      "name": "simulation-no-presentation",
+      "severity": "error",
+      "comment": "Simulation owns its contracts and cannot reach presentation code, including through type-only or lazy imports.",
+      "from": {
+        "path": "^src/game/simulation/",
+        "pathNot": "\\.(test|spec)\\.[cm]?[jt]sx?$"
+      },
+      "to": {
+        "path": "^src/game/(rendering|code|debris|graphics|scene|audio)/|^src/(main\\.|ui[-/]|menu[-/]|[^/]+\\.css$)",
+        "reachable": true
+      }
+    },
+    {
+      "name": "foundations-no-gameplay",
+      "severity": "error",
+      "comment": "Shared geometry, graphics, and content must not acquire higher-level application dependencies, including type dependencies.",
+      "from": {
+        "path": "^src/game/(geometry|graphics|content)/",
+        "pathNot": "\\.(test|spec)\\.[cm]?[jt]sx?$"
+      },
+      "to": {
+        "path": "^src/game/(simulation|rendering|code|debris|scene|audio)/|^src/(main\\.|ui[-/]|menu[-/]|[^/]+\\.css$)",
+        "reachable": true
+      }
+    },
+    {
+      "name": "audio-independent",
+      "severity": "error",
+      "comment": "The application coordinates sound; audio modules must remain independent of the rest of the application.",
+      "from": {
+        "path": "^src/game/audio/",
+        "pathNot": "\\.(test|spec)\\.[cm]?[jt]sx?$"
+      },
+      "to": {
+        "path": "^src/",
+        "pathNot": "^src/game/audio/",
+        "reachable": true
+      }
     }
   ],
   "options": {

@@ -1,7 +1,7 @@
-import type { RobotPose } from "#root/src/game/rendering/robots/robot-types.ts";
+import type { RobotPose } from "#root/src/game/simulation/enemies/simulation-robot-types.ts";
 import simulationData from "#root/src/game/simulation/simulation-values.json";
 
-export type { RobotBrand } from "#root/src/game/rendering/robots/robot-types.ts";
+export type { RobotBrand } from "#root/src/game/simulation/enemies/simulation-robot-types.ts";
 
 export const GAME_WIDTH = 1280;
 

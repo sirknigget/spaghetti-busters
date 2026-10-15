@@ -82,9 +82,10 @@ supplied correctness, security, TypeScript, test, and
 Duplicate detection uses jscpd; see [settings and manual calibration](docs/duplicate-detection.md).
 Knip enforces unused code, exports, types, and packages in normal and production
 runs. dependency-cruiser enforces import integrity, eager runtime cycles,
-production dependency boundaries, and source folder cycles. See the
+production dependency boundaries, source folder cycles, and architectural
+boundaries between simulation, presentation, shared primitives, and audio. See the
 [rule assessment and measured effects](docs/dependency-enforcement.md), including
-discovery wiring, proposed architectural boundaries, and policies deliberately
+discovery wiring, enforced architectural boundaries, and policies deliberately
 left disabled.
 Stylelint checks `src/**/*.css`. Source and colocated unit tests use separate
 rule scopes, and the lint TypeScript project also includes browser tests and

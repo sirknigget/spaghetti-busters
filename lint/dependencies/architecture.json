@@ -1,0 +1,36 @@
+{
+  "extends": "../../.dependency-cruiser.json",
+  "forbidden": [
+    {
+      "name": "simulation-no-visual-runtime",
+      "severity": "error",
+      "comment": "Simulation must not reach Three.js or visual Rapier physics, even through intermediate helpers.",
+      "from": {
+        "path": "^src/game/simulation/"
+      },
+      "to": {
+        "path": "(^|/)node_modules/(three|@dimforge/rapier3d-compat)/",
+        "reachable": true
+      }
+    },
+    {
+      "name": "presentation-no-simulation-runtime",
+      "severity": "error",
+      "comment": "Presentation may read domain data and import types, but cannot load gameplay implementations.",
+      "from": {
+        "path": "^src/game/(rendering|code|debris)/"
+      },
+      "to": {
+        "path": "^src/game/simulation/",
+        "pathNot": "^src/game/simulation/(simulation-types\\.ts|simulation-values\\.json)$",
+        "reachable": true
+      }
+    }
+  ],
+  "options": {
+    "tsPreCompilationDeps": false,
+    "exclude": {
+      "path": "^(dist|coverage|playwright-report|test-results|\\.quality-results)/|\\.(test|spec)\\.[cm]?[jt]sx?$|^(tests|lint)/"
+    }
+  }
+}

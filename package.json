@@ -23,7 +23,7 @@
     "lint:duplicates:semantic": "jscpd --config .jscpd.json --kind semantic --semantic --semantic-download CodeRankEmbed --semantic-model CodeRankEmbed --semantic-scope all --semantic-same-threshold 0.84 --semantic-threshold 0.84 --min-tokens 36 --min-lines 1 --report-name semantic",
     "lint:unused": "knip",
     "lint:unused:production": "knip --production",
-    "lint:dependencies": "depcruise --config .dependency-cruiser.json src tests lint *.config.ts && depcruise --config lint/dependencies/runtime.json src"
+    "lint:dependencies": "depcruise --config .dependency-cruiser.json src tests lint *.config.ts && depcruise --config lint/dependencies/runtime.json src && depcruise --config lint/dependencies/architecture.json src"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",
