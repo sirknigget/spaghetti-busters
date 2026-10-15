@@ -32,6 +32,7 @@ export class AudioGraph {
 
   private connectLimiter() {
     const limiter = this.context.createDynamicsCompressor();
+
     limiter.threshold.value = LIMITER.threshold;
     limiter.knee.value = LIMITER.knee;
     limiter.ratio.value = LIMITER.ratio;
@@ -48,10 +49,15 @@ export class AudioGraph {
       [MIX.echoRightDelay, MIX.echoPan],
     ]) {
       const delay = this.context.createDelay(1);
+
       delay.delayTime.value = delayTime!;
+
       const echo = this.context.createGain();
+
       echo.gain.value = MIX.echoVolume;
+
       const panner = this.context.createStereoPanner();
+
       panner.pan.value = pan!;
       this.music.connect(delay);
       delay.connect(echo);
@@ -68,6 +74,7 @@ export class AudioGraph {
       context.sampleRate,
     );
     const data = buffer.getChannelData(0);
+
     for (let i = 0; i < data.length; i++) {
       data[i] = Math.random() * MIX.bipolarRange - 1;
     }
@@ -79,6 +86,7 @@ export class AudioGraph {
     // Decode once; playback remains gated by the engine's mute/pause state.
     try {
       const response = await fetch("/assets/audio/boss-fight.wav");
+
       if (response.ok) {
         this.bossVoice = await this.context.decodeAudioData(
           await response.arrayBuffer(),
@@ -97,7 +105,9 @@ export function openAudioGraph(enabled: boolean): AudioGraph | null {
     if (!Context) {
       return null;
     }
+
     const graph = new AudioGraph(new Context(), enabled);
+
     void graph.loadVoice();
 
     return graph;

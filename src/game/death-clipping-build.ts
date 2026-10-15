@@ -11,10 +11,13 @@ export function buildClippedGeometry(output: ClipOutput, context: ClipContext) {
   if (context.frontCount === context.positions.count) {
     output.frontCount = output.p.length / VECTOR_COMPONENTS;
   }
+
   for (const wall of output.walls) {
     append(output, wall);
   }
+
   const result = new THREE.BufferGeometry();
+
   result.setAttribute(
     "position",
     new THREE.Float32BufferAttribute(output.p, VECTOR_COMPONENTS),

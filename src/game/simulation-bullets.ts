@@ -15,16 +15,20 @@ const HAZARD_DESTRUCTION_REWARD = 60;
 
 export function updateBullet(sim: Simulation, bullet: Bullet, dt: number) {
   bullet.life -= dt;
+
   const oldX = bullet.x;
   const oldY = bullet.y;
+
   bullet.x += bullet.vx * dt;
   bullet.y += bullet.vy * dt;
+
   const travel = { ax: oldX, ay: oldY, bx: bullet.x, by: bullet.y };
   const hit =
     bulletHitsRobot(sim, bullet, travel) ||
     bulletHitsHazard(sim, travel) ||
     bulletHitsPickup(sim, travel) ||
     bulletHitsBlock(sim, bullet, travel);
+
   if (hit) {
     bullet.life = 0;
   }
@@ -55,6 +59,7 @@ function outsideBlock(block: Block, travel: Segment) {
 
 function hitCell(block: Block, travel: Segment) {
   const local = blockSegment(block, travel);
+
   if (outsideBlock(block, local)) {
     return undefined;
   }
@@ -77,8 +82,10 @@ export function bulletHitsBlock(
 ) {
   // Ascending distance ensures the frontmost block absorbs each projectile.
   const candidates = [...sim.world.blocks].sort((a, b) => a.x - b.x);
+
   for (const block of candidates) {
     const cell = hitCell(block, travel);
+
     if (cell) {
       damage(sim, { block, x: cell.x, y: cell.y, bullet });
 
@@ -95,10 +102,13 @@ export function bulletHitsRobot(
   travel: Segment,
 ) {
   const robot = interceptRobot(sim, travel);
+
   if (!robot) {
     return false;
   }
+
   const contact = robotContact({ robot, ...travel });
+
   damageRobot(sim, {
     robot,
     power: 1,
@@ -116,9 +126,11 @@ export function bulletHitsHazard(sim: Simulation, travel: Segment) {
     (candidate) =>
       candidate.life > 0 && hitsHazard({ ...travel, hazard: candidate }),
   );
+
   if (!hazard) {
     return false;
   }
+
   hazard.life = 0;
   sim.progress.score += HAZARD_DESTRUCTION_REWARD;
   burst(sim, {
@@ -140,9 +152,11 @@ export function bulletHitsPickup(sim: Simulation, travel: Segment) {
       segmentDistance({ ...travel, px: candidate.x, py: candidate.y }) <
         TUNING.bonus.hitRadius,
   );
+
   if (!pickup) {
     return false;
   }
+
   collectPickup(sim, pickup);
 
   return true;

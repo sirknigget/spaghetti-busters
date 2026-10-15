@@ -9,6 +9,7 @@ async function start(page: Page) {
 
 function renderingErrors(page: Page) {
   const errors: string[] = [];
+
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
     if (message.type() === "error") {
@@ -23,23 +24,28 @@ test("destroyed code collapses as its original perforated surface and physically
   page,
 }, testInfo) => {
   const errors = renderingErrors(page);
+
   await start(page);
+
   const death = await page.evaluate(async () => {
     const modulePath = "/tests/code-death-browser.ts";
     const { inspectCodeDisintegration } = await import(modulePath);
 
     return inspectCodeDisintegration();
   });
+
   verifyDisintegrationSurface(death);
   await page.screenshot({
     path: testInfo.outputPath("code-disintegration-mid-fall.png"),
   });
+
   const settled = await page.evaluate(async () => {
     const modulePath = "/tests/code-death-browser.ts";
     const { inspectSettled } = await import(modulePath);
 
     return inspectSettled();
   });
+
   verifySettledDisintegration(settled);
   await page.screenshot({
     path: testInfo.outputPath("code-disintegration-on-floor.png"),
@@ -56,13 +62,16 @@ test("explosions, lint clearing and uncached boss deaths retain a surface even w
   page,
 }) => {
   const errors = renderingErrors(page);
+
   await start(page);
+
   const results = await page.evaluate(async () => {
     const modulePath = "/tests/code-death-browser.ts";
     const { inspectSpecialCodeDeaths } = await import(modulePath);
 
     return inspectSpecialCodeDeaths();
   });
+
   for (const result of results) {
     expect(result.wasCached).toBe(result.mode !== "uncached-boss");
     expect(result).toMatchObject({
@@ -76,6 +85,7 @@ test("explosions, lint clearing and uncached boss deaths retain a surface even w
     expect(result.effects.codeParts).toBeGreaterThan(1);
     expect(result.effects.letters).toBeGreaterThan(0);
   }
+
   expect(errors).toEqual([]);
 });
 
@@ -116,6 +126,7 @@ function verifySettledDisintegration(settled: any) {
 async function verifyDisintegrationReset(page: Page) {
   const reset = await page.evaluate(() => {
     const { scene: r, world: w } = (window as any).__spaghetti;
+
     r.reset();
 
     return {
@@ -125,6 +136,7 @@ async function verifyDisintegrationReset(page: Page) {
       ).length,
     };
   });
+
   expect(reset.effects.rigidBodies).toBe(0);
   expect(reset.effects.particles).toBe(0);
   expect(reset.effects.codeDeaths).toBe(0);

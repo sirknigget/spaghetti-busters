@@ -6,6 +6,7 @@ import { chippedHole, perforatedGeometry } from "./fracture-geometry";
 const volume = (geometry: THREE.BufferGeometry) => {
   const p = geometry.getAttribute("position");
   let sum = 0;
+
   for (let i = 0; i < p.count; i += 3) {
     const ax = p.getX(i);
     const ay = p.getY(i);
@@ -16,6 +17,7 @@ const volume = (geometry: THREE.BufferGeometry) => {
     const cx = p.getX(i + 2);
     const cy = p.getY(i + 2);
     const cz = p.getZ(i + 2);
+
     sum +=
       ax * (by * cz - bz * cy) +
       ay * (bz * cx - bx * cz) +
@@ -36,11 +38,13 @@ it.each(["x", "y"] as const)(
       parallelLow: axis === "x" ? -51 : -101,
       parallelHigh: axis === "x" ? 77 : 101,
     });
+
     expect(volume(halves[0]) + volume(halves[1])).toBeCloseTo(volume(solid), 0);
     for (const half of halves) {
       expectClosedSeam(half, axis);
       half.dispose();
     }
+
     solid.dispose();
   },
 );
@@ -49,6 +53,7 @@ function expectClosedSeam(half: THREE.BufferGeometry, axis: "x" | "y") {
   const p = half.getAttribute("position");
   const n = half.getAttribute("normal");
   let seamWalls = 0;
+
   for (let i = half.groups[0]!.count; i < p.count; i++) {
     if (
       Math.abs(n.getZ(i)) < 0.01 &&
@@ -57,6 +62,7 @@ function expectClosedSeam(half: THREE.BufferGeometry, axis: "x" | "y") {
       seamWalls++;
     }
   }
+
   expect(seamWalls).toBeGreaterThan(12);
   for (let i = 0; i < p.count; i++) {
     expect(Number.isFinite(p.getX(i) + p.getY(i) + p.getZ(i))).toBe(true);

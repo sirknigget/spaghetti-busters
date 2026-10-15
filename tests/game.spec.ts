@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { collectReleasedTripleShot } from "./game-bonus-checks";
 import { point, start, verifyResumedKeyboardControls } from "./game-input";
 
@@ -6,6 +6,7 @@ test("pointer fire chips code, scores points and renders without errors", async 
   page,
 }) => {
   const errors: string[] = [];
+
   page.on("pageerror", (e) => errors.push(e.message));
   await start(page);
   await point(page, 1000, 330);
@@ -25,6 +26,12 @@ test("pointer fire chips code, scores points and renders without errors", async 
     )
     .toBeGreaterThan(3);
   await page.mouse.up();
+  await verifyShotDamage(page);
+  await expect(page.locator("#score")).not.toHaveText("000000");
+  expect(errors).toEqual([]);
+});
+
+async function verifyShotDamage(page: Page) {
   const state = await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
 
@@ -34,12 +41,11 @@ test("pointer fire chips code, scores points and renders without errors", async 
       score: s.progress.score,
     };
   });
+
   expect(state.shots).toBeGreaterThan(3);
   expect(state.chipped).toBe(true);
   expect(state.score).toBeGreaterThan(0);
-  await expect(page.locator("#score")).not.toHaveText("000000");
-  expect(errors).toEqual([]);
-});
+}
 
 test("pause freezes the simulation, resume and keyboard controls work", async ({
   page,
@@ -47,12 +53,14 @@ test("pause freezes the simulation, resume and keyboard controls work", async ({
   await start(page);
   await page.keyboard.press("KeyP");
   await expect(page.locator("#game-overlay")).toBeVisible();
+
   const time = await page.evaluate(
     () => (window as any).__spaghetti.simulation.progress.elapsed,
   );
   const pausedFrame = await page.evaluate(
     () => (window as any).__spaghetti.scene.lastFrame,
   );
+
   await expect
     .poll(() =>
       page.evaluate(() => (window as any).__spaghetti.scene.lastFrame),
@@ -72,6 +80,7 @@ test("magic variable releases a weapon and another hit equips it", async ({
   await start(page);
   await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
+
     s.world.blocks = [];
     s.spawnBlock({
       x: 650,

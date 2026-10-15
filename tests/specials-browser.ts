@@ -1,9 +1,12 @@
 export function inspectHomingPriority() {
   const { simulation: s, scene: r } = (window as any).__spaghetti;
+
   r.setPaused(true);
   s.world.blocks = [];
   s.runtime.pendingBlocks = 0;
+
   const { urgent, near, large } = placeHomingPriorityTargets(s);
+
   s.world.specials.push({
     id: 9901,
     type: "homing",
@@ -57,6 +60,7 @@ function placeHomingPriorityTargets(s: any) {
 
 export function inspectGrenadeBlast() {
   const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
+
   s.world.blocks = [];
   s.world.particles = [];
   s.progress.wave = 7;
@@ -97,6 +101,7 @@ function placeBlastRadiusTargets(s: any) {
       code: ['const armored = eval("oops");'],
     });
   }
+
   s.spawnBlock({
     x: 1250,
     y: 560,

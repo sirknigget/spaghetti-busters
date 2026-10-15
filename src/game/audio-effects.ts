@@ -22,6 +22,7 @@ import { review, lint, hazard, stun, recover } from "./audio-effects-status";
 import { bonus, pickup, ammo, wave, gameover } from "./audio-effects-bonuses";
 
 type Effect = (synth: Synth, graph: AudioGraph, time: number) => void;
+
 const effects = new Map<string, Effect>(
   Object.entries({
     "menu-open": menuOpen,

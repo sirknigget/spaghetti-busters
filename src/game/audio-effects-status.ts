@@ -4,6 +4,7 @@ import { Synth, frequency } from "./audio-synth";
 
 export function review(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [i, note] of SCORE.review.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
@@ -26,6 +27,7 @@ export function review(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function lint(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.noise({
     time: time,
     duration: SCORE.lint.noise.duration,
@@ -48,6 +50,7 @@ export function lint(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function hazard(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [i, note] of SCORE.hazard.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
@@ -62,6 +65,7 @@ export function hazard(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function stun(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [i, note] of SCORE.stun.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
@@ -72,6 +76,7 @@ export function stun(synth: Synth, graph: AudioGraph, time: number): void {
       destination: bus,
     });
   }
+
   synth.noise({
     time: time,
     duration: SCORE.stun.noise.duration,
@@ -84,6 +89,7 @@ export function stun(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function recover(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [i, note] of SCORE.recover.notes.entries()) {
     synth.tone({
       frequency: frequency(note),

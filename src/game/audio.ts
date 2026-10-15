@@ -23,6 +23,7 @@ export class AudioEngine {
 
   enterMenu(): void {
     const opening = !this.started;
+
     this.scene = "menu";
     this.start();
     this.fadeMusic();
@@ -39,10 +40,13 @@ export class AudioEngine {
 
   setWave(wave: number): void {
     const next = Math.max(1, Math.floor(wave));
+
     if (next === this.wave) {
       return;
     }
+
     const newRun = next === 1 && this.wave > 1;
+
     this.wave = next;
     if (newRun) {
       this.stopSounds();
@@ -61,9 +65,11 @@ export class AudioEngine {
 
       return;
     }
+
     if (!this.initialize()) {
       return;
     }
+
     this.started = true;
     this.paused = false;
     this.unlock();
@@ -102,6 +108,7 @@ export class AudioEngine {
 
       return;
     }
+
     if (this.paused) {
       this.paused = false;
       this.unlock();
@@ -113,11 +120,14 @@ export class AudioEngine {
     if (!this.synth || !this.active) {
       return;
     }
+
     const time = this.synth.graph.context.currentTime;
     const previous = this.lastEffects.get(event) ?? -Infinity;
+
     if (time - previous < (EFFECT_INTERVALS.get(event) ?? MIX.effectInterval)) {
       return;
     }
+
     this.lastEffects.set(event, time);
     playEffect(event, this.synth);
   }
@@ -130,7 +140,9 @@ export class AudioEngine {
     if (!this.graph) {
       return;
     }
+
     const { context, master } = this.graph;
+
     master.gain.cancelScheduledValues(context.currentTime);
     master.gain.setTargetAtTime(
       this.enabled && !this.paused ? MIX.masterVolume : 0,
@@ -143,10 +155,12 @@ export class AudioEngine {
     if (this.graph) {
       return true;
     }
+
     this.graph = openAudioGraph(this.enabled);
     if (!this.graph) {
       return false;
     }
+
     this.synth = new Synth(this.graph);
     this.score = new MusicTransport(this.graph, this.synth);
     this.score.scene = this.scene;

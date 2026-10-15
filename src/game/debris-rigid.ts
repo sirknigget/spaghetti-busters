@@ -20,6 +20,7 @@ const GRAVITY_Y = -640;
 
 export function createDebrisWorld() {
   const world = new RAPIER.World({ x: 0, y: GRAVITY_Y, z: 0 });
+
   world.timestep = STEP.interval;
   world.createCollider(
     RAPIER.ColliderDesc.cuboid(
@@ -74,13 +75,16 @@ export class RigidBodies {
 
   add(spawn: RigidSpawn) {
     const { mesh, halfSize, velocity, random, kind, life, hull } = spawn;
+
     while (this.rigid.length >= MAX_BODIES) {
       this.removeRigid(0);
     }
+
     const body = this.world.createRigidBody(rigidBodyDescriptor(spawn));
     const shape =
       (hull && RAPIER.ColliderDesc.convexHull(hull)) ||
       RAPIER.ColliderDesc.cuboid(halfSize.x, halfSize.y, halfSize.z);
+
     this.world.createCollider(
       shape
         .setDensity(BODY.density)
@@ -105,23 +109,27 @@ export class RigidBodies {
     if (dt <= 0) {
       return;
     }
+
     this.accumulator += Math.min(dt, STEP.maxDelta);
     while (this.accumulator >= STEP.interval) {
       this.world.step();
 
       this.accumulator -= STEP.interval;
     }
+
     this.updateBodies(dt, onCrumble);
   }
 
   private updateBodies(dt: number, onCrumble: CrumbleHandler) {
     for (let i = this.rigid.length - 1; i >= 0; i--) {
       const item = this.rigid[i]!;
+
       item.age += Math.min(dt, STEP.maxDelta);
       if (item.age > item.life || item.body.translation().y < STEP.cullHeight) {
         this.removeRigid(i);
         continue;
       }
+
       poseRigidBody(item, onCrumble);
     }
   }
@@ -165,6 +173,7 @@ export class RigidBodies {
 
   private removeRigid(index: number) {
     const item = this.rigid[index]!;
+
     this.world.removeRigidBody(item.body);
     disposeObject(item.mesh);
     this.rigid.splice(index, 1);
@@ -174,6 +183,7 @@ export class RigidBodies {
     while (this.rigid.length) {
       this.removeRigid(this.rigid.length - 1);
     }
+
     this.accumulator = 0;
   }
 
@@ -189,6 +199,7 @@ function poseRigidBody(item: RigidDebris, onCrumble: CrumbleHandler) {
   const v = item.body.linvel();
   const freshCode =
     item.kind === "code" && !item.crumbled && item.age > STEP.crumbleAge;
+
   if (
     freshCode &&
     item.lastVelocity.y < STEP.crumbleSpeed &&
@@ -197,9 +208,12 @@ function poseRigidBody(item: RigidDebris, onCrumble: CrumbleHandler) {
     item.crumbled = true;
     onCrumble(item, p);
   }
+
   item.lastVelocity.set(v.x, v.y, v.z);
   item.mesh.position.set(p.x, p.y, p.z);
   item.mesh.quaternion.set(q.x, q.y, q.z, q.w);
+
   const fade = Math.min(1, (item.life - item.age) * STEP.fadeRate);
+
   item.mesh.scale.setScalar(Math.max(0, fade));
 }

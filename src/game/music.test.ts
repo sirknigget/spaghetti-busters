@@ -18,6 +18,7 @@ it("has four distinct compositions with timed transitions and composed breathing
       // Midrange harmony instead of a repetitive, low bass pulse.
       expect(Math.min(...chord)).toBeGreaterThanOrEqual(53);
     }
+
     for (const phrase of track.phrases) {
       expect(phrase).toHaveLength(16);
       expect(
@@ -27,6 +28,7 @@ it("has four distinct compositions with timed transitions and composed breathing
         new Set(phrase.filter((note) => note > 0)).size,
       ).toBeGreaterThanOrEqual(3);
     }
+
     expect(track.arpeggio).toHaveLength(16);
     expect(track.arpeggio.every((n) => n === -1 || (n >= 0 && n < 4))).toBe(
       true,

@@ -23,16 +23,19 @@ function splitBand(context: ClipContext, band: ClipBand) {
   const ds = band.polygon.map((vertex) => distance(vertex));
   const min = Math.min(...ds);
   const max = Math.max(...ds);
+
   if (max <= SEAM.epsilon) {
     append(context.outputs[0], band.polygon);
 
     return;
   }
+
   if (min >= -SEAM.epsilon) {
     append(context.outputs[1], band.polygon);
 
     return;
   }
+
   append(
     context.outputs[0],
     clip(band.polygon, (v) => -distance(v)),
@@ -47,17 +50,22 @@ function processBand(context: ClipContext, range: BandRange, band: number) {
   const low = context.options.parallelLow + band * context.step;
   const high = low + context.step;
   let polygon = range.vertices;
+
   if (range.lo < low - SEAM.epsilon) {
     polygon = clip(polygon, (v) => v[context.parallel]! - low);
   }
+
   if (range.hi > high + SEAM.epsilon) {
     polygon = clip(polygon, (v) => high - v[context.parallel]!);
   }
+
   if (polygon.length < TRIANGLE_VERTICES) {
     return;
   }
+
   const slope = (context.seam[band + 1]! - context.seam[band]!) / context.step;
   const intercept = context.seam[band]! - slope * low;
+
   splitBand(context, { polygon, slope, intercept, isFront: range.isFront });
 }
 
@@ -77,6 +85,7 @@ export function sweepTriangleBands(
     start,
     Math.min(count - 1, Math.floor((hi - options.parallelLow) / step)),
   );
+
   for (let band = start; band <= end; band++) {
     processBand(context, { vertices, lo, hi, isFront }, band);
   }

@@ -24,6 +24,7 @@ export async function verifyReviewFreeze(page: Page) {
       freezeRemaining: s.player.freezeRemaining,
     };
   });
+
   await expect
     .poll(() =>
       page.evaluate(
@@ -54,6 +55,7 @@ export async function verifyLintControls(page: Page) {
   await page.mouse.down({ button: "right" });
   await page.mouse.up({ button: "right" });
   await expect(page.locator("#lint-ammo")).toHaveText("0");
+
   const result = await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
 
@@ -65,6 +67,7 @@ export async function verifyLintControls(page: Page) {
       shots: s.progress.shotsFired,
     };
   });
+
   expect(result.count).toBe(4);
   expect(result.smallSurvives).toBe(false);
   expect(result.shots).toBe(0);
@@ -86,6 +89,7 @@ export async function verifyNumpadSelection(page: Page) {
 export async function collectReleasedTripleShot(page: Page) {
   await page.evaluate(() => {
     const p = (window as any).__spaghetti.simulation.world.pickups[0];
+
     p.x = 600;
     p.y = 350;
     p.vx = 0;

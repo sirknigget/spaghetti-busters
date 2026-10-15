@@ -41,6 +41,7 @@ export class WorldPlayer {
       sim.player.aimY - sim.player.playerY,
       Math.max(PLAYER.minimumAimDistance, sim.player.aimX - PLAYER.aimOrigin),
     );
+
     this.specialist.position.set(PLAYER.x, HEIGHT - sim.player.playerY, 0);
     this.specialist.rotation.y =
       Math.sin(t * PLAYER.swayFrequency) * PLAYER.swayAmplitude;
@@ -61,7 +62,9 @@ export class WorldPlayer {
       PLAYER.muzzleZ,
     );
     this.muzzleLight.intensity = muzzle > 0 ? PLAYER.muzzleLight : 0;
+
     const flash = this.cannon.getObjectByName("muzzle-flash");
+
     if (flash) {
       flash.visible = muzzle > 0;
     }
@@ -69,6 +72,7 @@ export class WorldPlayer {
 
   private updateStun(sim: Simulation) {
     const t = sim.progress.elapsed;
+
     this.reticle.position.set(sim.player.aimX, HEIGHT - sim.player.aimY, 0);
     this.stun.visible = sim.isStunned;
     this.stun.position.set(
@@ -81,6 +85,7 @@ export class WorldPlayer {
         this.stun.children[i]!.rotation.z =
           t * (i % VIEW.diameter ? -PLAYER.stunSpeed : PLAYER.stunSpeed);
       }
+
       this.drawStunLabel(sim);
     }
   }
@@ -89,6 +94,7 @@ export class WorldPlayer {
     // SAFETY: the constructor creates this sprite texture from a label canvas.
     const canvas = this.stunLabel.material.map!.image as HTMLCanvasElement;
     const c = canvas.getContext("2d")!;
+
     c.clearRect(0, 0, LABEL.width, LABEL.height);
     c.fillStyle = PALETTE.stun.background;
     c.fillRect(0, 0, LABEL.width, LABEL.height);
@@ -111,13 +117,18 @@ export class WorldPlayer {
 
 function createStunLabel() {
   const labelCanvas = document.createElement("canvas");
+
   labelCanvas.width = LABEL.width;
   labelCanvas.height = LABEL.height;
+
   const labelTexture = new THREE.CanvasTexture(labelCanvas);
+
   labelTexture.colorSpace = THREE.SRGBColorSpace;
+
   const label = new THREE.Sprite(
     new THREE.SpriteMaterial({ map: labelTexture, depthTest: false }),
   );
+
   label.scale.set(LABEL.worldWidth, LABEL.worldHeight, 1);
   label.position.set(0, LABEL.y, 0);
 

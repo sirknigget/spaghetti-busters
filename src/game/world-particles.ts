@@ -18,19 +18,23 @@ export class WorldParticles {
       .filter((p) => !p.char)
       .slice(-PARTICLE.maximum);
     const livingParticles = new Set(particles);
+
     for (const [particle, mesh] of this.particleMeshes) {
       if (!livingParticles.has(particle)) {
         disposeParticle(mesh);
         this.particleMeshes.delete(particle);
       }
     }
+
     for (const particle of particles) {
       let mesh = this.particleMeshes.get(particle);
+
       if (!mesh) {
         mesh = this.createParticle(particle);
         this.particleMeshes.set(particle, mesh);
         this.scene.add(mesh);
       }
+
       animateParticle(mesh, particle);
     }
   }
@@ -39,6 +43,7 @@ export class WorldParticles {
     if (particle.char) {
       const key = `${particle.char}:${particle.color}`;
       let texture = this.letterTextures.get(key);
+
       if (!texture) {
         texture = letterTexture(particle);
         this.letterTextures.set(key, texture);
@@ -54,10 +59,12 @@ export class WorldParticles {
         }),
       );
     }
+
     const mesh = new THREE.Mesh(
       loadGeometry("particle-chip"),
       new THREE.MeshToonMaterial({ color: particle.color, transparent: true }),
     );
+
     mesh.castShadow = true;
 
     return mesh;
@@ -67,6 +74,7 @@ export class WorldParticles {
     for (const mesh of this.particleMeshes.values()) {
       disposeParticle(mesh);
     }
+
     this.particleMeshes.clear();
   }
 
@@ -75,6 +83,7 @@ export class WorldParticles {
     for (const texture of this.letterTextures.values()) {
       texture.dispose();
     }
+
     this.letterTextures.clear();
   }
 }
@@ -84,20 +93,26 @@ function disposeParticle(mesh: THREE.Mesh) {
   if (!Array.isArray(mesh.material)) {
     mesh.material.dispose();
   }
+
   mesh.removeFromParent();
 }
 
 function letterTexture(particle: Particle) {
   const canvas = document.createElement("canvas");
+
   canvas.width = LETTER_TEXTURE_WIDTH;
   canvas.height = LETTER_TEXTURE_HEIGHT;
+
   const c = canvas.getContext("2d")!;
+
   c.font = "bold 27px monospace";
   c.fillStyle = particle.color;
   c.textAlign = "center";
   c.textBaseline = "middle";
   c.fillText(particle.char!, canvas.width * HALF, canvas.height * HALF);
+
   const texture = new THREE.CanvasTexture(canvas);
+
   texture.colorSpace = THREE.SRGBColorSpace;
 
   return texture;
@@ -105,6 +120,7 @@ function letterTexture(particle: Particle) {
 
 function animateParticle(mesh: THREE.Mesh, particle: Particle) {
   const age = particle.maxLife - particle.life;
+
   mesh.position.set(
     particle.x,
     HEIGHT - particle.y,

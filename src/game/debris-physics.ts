@@ -37,6 +37,7 @@ export class DebrisPhysics {
     if (this.disposed) {
       return;
     }
+
     this.totalImpacts++;
     emitImpact(this.context, hit);
   }
@@ -45,6 +46,7 @@ export class DebrisPhysics {
     if (this.disposed) {
       return;
     }
+
     this.totalCodeDeaths++;
     collapseCode(this.context, mesh, death);
   }
@@ -53,6 +55,7 @@ export class DebrisPhysics {
     if (this.disposed) {
       return;
     }
+
     this.totalRobotDeaths++;
     collapseRobot(this.context, mesh, { robot, seed });
   }
@@ -61,6 +64,7 @@ export class DebrisPhysics {
     if (this.disposed || dt <= 0) {
       return;
     }
+
     this.context.particles.update(dt);
     this.context.rigid.update(dt, (item, position) =>
       crumbleCode(this.context.particles, item, position),
@@ -92,6 +96,7 @@ export class DebrisPhysics {
     if (this.disposed) {
       return;
     }
+
     this.reset();
     this.disposed = true;
     this.context.particles.dispose();

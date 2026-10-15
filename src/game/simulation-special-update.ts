@@ -20,11 +20,14 @@ function specialHitsRobot(
   travel: Segment,
 ) {
   const robot = interceptRobot(sim, travel);
+
   if (!robot) {
     return false;
   }
+
   const contact = robotContact({ robot, ...travel });
   const blast = SPECIAL_BLASTS[special.type];
+
   explode(sim, { x: contact.x, y: contact.y, ...blast });
   special.life = 0;
 
@@ -44,16 +47,22 @@ export function updateSpecial(
   if (special.life <= 0) {
     return;
   }
+
   const oldX = special.x;
   const oldY = special.y;
+
   moveSpecial(sim, special, dt);
+
   const travel = { ax: oldX, ay: oldY, bx: special.x, by: special.y };
+
   if (specialHitsRobot(sim, special, travel)) {
     return;
   }
+
   const collision = sim.world.blocks.some((block) =>
     specialHitsBlock({ block, special, oldX, oldY }),
   );
+
   if (collision || grenadeFuseExpired(special)) {
     explode(sim, {
       x: special.x,
@@ -68,12 +77,14 @@ export function updateSpecials(sim: Simulation, dt: number) {
   for (const explosion of sim.world.explosions) {
     explosion.life -= dt;
   }
+
   sim.world.explosions = sim.world.explosions.filter(
     (explosion) => explosion.life > 0,
   );
   for (const special of sim.world.specials) {
     updateSpecial(sim, special, dt);
   }
+
   sim.world.specials = sim.world.specials.filter(
     (special) => special.life > 0 && withinProjectileBounds(special),
   );
@@ -91,6 +102,7 @@ export function moveSpecial(
     special.angle += dt * TUNING.weapon.grenadeSpinSpeed;
     special.fuse = (special.fuse ?? 0) - dt;
   }
+
   special.x += special.vx * dt;
   special.y += special.vy * dt;
   if (
@@ -127,28 +139,24 @@ export function specialHitsBlock({
   ) {
     return false;
   }
+
   const cos = Math.cos(block.angle);
   const sin = Math.sin(block.angle);
   const ax = (oldX - block.x) * cos + (oldY - block.y) * sin;
   const ay = -(oldX - block.x) * sin + (oldY - block.y) * cos;
   const bx = (special.x - block.x) * cos + (special.y - block.y) * sin;
   const by = -(special.x - block.x) * sin + (special.y - block.y) * cos;
-  if (
-    block.cells.some(
-      (cell) =>
-        cell.alive &&
-        segmentDistance({
-          ax: ax,
-          ay: ay,
-          bx: bx,
-          by: by,
-          px: cell.x,
-          py: cell.y,
-        }) < TUNING.weapon.specialHitRadius,
-    )
-  ) {
-    return true;
-  }
 
-  return false;
+  return block.cells.some(
+    (cell) =>
+      cell.alive &&
+      segmentDistance({
+        ax,
+        ay,
+        bx,
+        by,
+        px: cell.x,
+        py: cell.y,
+      }) < TUNING.weapon.specialHitRadius,
+  );
 }

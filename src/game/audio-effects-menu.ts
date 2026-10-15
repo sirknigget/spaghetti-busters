@@ -4,6 +4,7 @@ import { Synth, frequency } from "./audio-synth";
 
 export function menuOpen(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [i, note] of SCORE.menuOpen.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
@@ -18,6 +19,7 @@ export function menuOpen(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function menuHover(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.tone({
     frequency: frequency(SCORE.menuHover.tone.note),
     time: time,
@@ -30,6 +32,7 @@ export function menuHover(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function menuClick(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.tone({
     frequency: frequency(SCORE.menuClick.tone.note),
     time: time,

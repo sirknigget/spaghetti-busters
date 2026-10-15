@@ -96,11 +96,14 @@ export function quotedTokenEnd(line: string, start: number): number {
 
 function highlightWord(line: string, start: number) {
   let end = start + 1;
+
   while (end < line.length && /\w/.test(line[end]!)) {
     end++;
   }
+
   const token = line.slice(start, end);
   let color: string = COLORS.text;
+
   if (CODE_KEYWORDS.has(token)) {
     color = COLORS.keyword;
   } else if (/^\d+$/.test(token)) {
@@ -120,12 +123,15 @@ function highlightToken(line: string, start: number) {
   if (line.startsWith("//", start)) {
     return { end: line.length, color: COLORS.comment };
   }
+
   if (line[start] === '"' || line[start] === "'") {
     return highlightQuote(line, start);
   }
+
   if (/\w/.test(line[start]!)) {
     return highlightWord(line, start);
   }
+
   if (/[{}()[\];.,?:=+!<>|]/.test(line[start]!)) {
     return { end: start + 1, color: COLORS.punctuation };
   }
@@ -140,8 +146,10 @@ export function highlightLine(line: string): string[] {
     () => COLORS.text,
   );
   let start = 0;
+
   while (start < line.length) {
     const { end, color } = highlightToken(line, start);
+
     colors.fill(color, start, end);
     start = end;
   }

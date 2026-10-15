@@ -15,7 +15,9 @@ function updateSoundButton(button: Element, enabled: boolean) {
     enabled ? "Turn sound off" : "Turn sound on",
   );
   button.classList.toggle("muted", !enabled);
+
   const label = button.querySelector("span");
+
   if (label) {
     label.textContent = enabled ? "SOUND ON" : "SOUND OFF";
   }

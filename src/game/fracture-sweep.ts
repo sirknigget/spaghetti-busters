@@ -2,8 +2,8 @@ import { FRACTURE, HALF_DIVISOR } from "./fracture-config";
 import type { Polygon, Edge, Sweep } from "./fracture-types";
 import { edges, at } from "./fracture-intervals";
 
-export function createSweep(regions: Polygon[], holes: Polygon[]): Sweep {
-  const limits = regions.reduce(
+function regionIntersectionBounds(regions: Polygon[]) {
+  return regions.reduce(
     (box, polygon) => ({
       left: Math.max(box.left, Math.min(...polygon.map((p) => p.x))),
       right: Math.min(box.right, Math.max(...polygon.map((p) => p.x))),
@@ -12,6 +12,11 @@ export function createSweep(regions: Polygon[], holes: Polygon[]): Sweep {
     }),
     { left: -Infinity, right: Infinity, bottom: -Infinity, top: Infinity },
   );
+}
+
+export function createSweep(regions: Polygon[], holes: Polygon[]): Sweep {
+  const limits = regionIntersectionBounds(regions);
+
   // Descendants ignore inherited holes outside their remaining slab.
   holes = holes.filter(
     (polygon) =>
@@ -20,6 +25,7 @@ export function createSweep(regions: Polygon[], holes: Polygon[]): Sweep {
       Math.max(...polygon.map((p) => p.y)) >= limits.bottom &&
       Math.min(...polygon.map((p) => p.y)) <= limits.top,
   );
+
   const regionEdges = regions.map((region) => edges(region));
   const holeEdges = holes.map((hole) => edges(hole));
   const allEdges = [...regionEdges.flat(), ...holeEdges.flat()];
@@ -47,18 +53,23 @@ function findCuts(allEdges: Edge[], ys: number[]): number[] {
   const starts = [...allEdges].sort((a, b) => a.low - b.low);
   let startIndex = 0;
   let activeEdges: Edge[] = [];
+
   // Split at intersections so overlapping chips form watertight unions.
   for (let row = 0; row < ys.length - 1; row++) {
     const low = ys[row]!;
     const high = ys[row + 1]!;
     const mid = (low + high) / HALF_DIVISOR;
+
     while (startIndex < starts.length && starts[startIndex]!.low < mid) {
       activeEdges.push(starts[startIndex++]!);
     }
+
     activeEdges = activeEdges.filter((e) => e.high > mid);
+
     const active = activeEdges
       .map((e) => ({ e, l: at(e, low), h: at(e, high) }))
       .sort((a, b) => Math.min(a.l, a.h) - Math.min(b.l, b.h));
+
     appendCrossings(active, { low, high }, crossingCuts);
   }
 
@@ -84,6 +95,7 @@ function appendCrossings(
   crossingCuts: number[],
 ) {
   const crossingBand = { ...band, crossingCuts };
+
   for (let i = 0; i < active.length; i++) {
     appendEdgeCrossings(active, i, crossingBand);
   }
@@ -96,13 +108,17 @@ function appendEdgeCrossings(
 ) {
   const { low, high, crossingCuts } = band;
   const a = active[index]!;
+
   for (let j = index + 1; j < active.length; j++) {
     const b = active[j]!;
+
     if (Math.min(b.l, b.h) > Math.max(a.l, a.h) + FRACTURE.gapEpsilon) {
       break;
     }
+
     const d0 = a.l - b.l;
     const d1 = a.h - b.h;
+
     if (d0 * d1 < -FRACTURE.crossingEpsilon) {
       crossingCuts.push(low + ((high - low) * d0) / (d0 - d1));
     }

@@ -24,14 +24,18 @@ test.each([
   ],
 ])("rejects condensed source: %s", (source, rule) => {
   const messages = linter.verify(source, config);
+
   expect(messages.map((message) => message.ruleId)).toContain(rule);
 });
 
 test("spacing fixes remain stable after Prettier formatting", async () => {
   const source = "function f() { work(); return 1; }";
   const result = linter.verifyAndFix(source, config);
+
   expect(result.fixed).toBe(true);
   expect(result.messages).toEqual([]);
+
   const formatted = await format(result.output, { parser: "babel" });
+
   expect(linter.verify(formatted, config)).toEqual([]);
 });

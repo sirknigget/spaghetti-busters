@@ -14,6 +14,7 @@ export function createDeathFragments(
   // SAFETY: createCodeMesh owns this private surface record.
   const visual = source.userData.fractureVisual as FractureVisual | undefined;
   const solid = source.getObjectByName("perforated-extruded-code");
+
   if (
     !visual ||
     !(solid instanceof THREE.Mesh) ||
@@ -21,6 +22,7 @@ export function createDeathFragments(
   ) {
     return [];
   }
+
   const leaves = fractureLeaves(solid.geometry, visual, seed);
 
   return leaves.map((leaf, index) =>
@@ -39,11 +41,14 @@ function deathBounds(visual: FractureVisual) {
 
 function cutLargestLeaf(leaves: DeathLeaf[], context: DeathContext) {
   const selected = selectLargestLeaf(leaves);
+
   if (selected < 0) {
     return false;
   }
+
   const leaf = leaves[selected]!;
   const halves = splitDeathLeaf(leaf, context);
+
   if (
     halves.some((half) => half.geometry.getAttribute("position").count === 0)
   ) {
@@ -53,6 +58,7 @@ function cutLargestLeaf(leaves: DeathLeaf[], context: DeathContext) {
 
     return false;
   }
+
   leaf.geometry.dispose();
   leaves.splice(selected, 1, ...halves);
 
@@ -72,6 +78,7 @@ function fractureLeaves(
     seed,
     cutIndex: 0,
   };
+
   while (
     leaves.length < desired &&
     context.cutIndex < DEATH_FRACTURE.maximumCuts
@@ -79,6 +86,7 @@ function fractureLeaves(
     if (!cutLargestLeaf(leaves, context)) {
       break;
     }
+
     context.cutIndex++;
   }
 

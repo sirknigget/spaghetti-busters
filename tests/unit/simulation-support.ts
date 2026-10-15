@@ -9,6 +9,7 @@ export function hitCell(sim: Simulation, block: Block, cell: Cell) {
   const sin = Math.sin(block.angle);
   const x = block.x + cell.x * cos - cell.y * sin;
   const y = block.y + cell.x * sin + cell.y * cos;
+
   sim.world.bullets.push({
     id: 10000,
     x: x - 4,

@@ -19,6 +19,7 @@ export function burst(sim: Simulation, { x, y, color, count }: BurstOptions) {
     const life =
       TUNING.particles.burstBaseLife +
       sim.random() * TUNING.particles.burstLifeRange;
+
     sim.world.particles.push({
       x,
       y,

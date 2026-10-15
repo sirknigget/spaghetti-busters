@@ -92,8 +92,11 @@ cognitive complexity of **8** and cyclomatic complexity of **6** using anti-slop
 Union-alternative counts remain unlimited.
 
 Readability rules require braces for control flow, one statement per line,
-separate variable declarations, and blank lines before returns and between
-methods. Prettier retains its 80-column layout. Run ESLint with `--fix` followed
+separate variable declarations, and blank lines after blocks, before returns,
+and between methods. Declaration groups (`const`, `let`, and `var`) must be
+separated from other statements by a blank line. Consecutive declarations may
+stay together unless a declaration ends in a block. Prettier retains its
+80-column layout. Run ESLint with `--fix` followed
 by `npm run format` to apply spacing fixes. These rules discourage compressing
 statements to evade the size limits.
 

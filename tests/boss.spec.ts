@@ -5,13 +5,11 @@ test("fifth wave announces a solid factory boss, tracks damage and produces code
   page,
 }, testInfo) => {
   const errors: string[] = collectBossErrors(page);
-  await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
-  await page.goto("/");
-  await page.locator("#enter").click();
-  await page.locator("#start").click();
-  await page.waitForFunction(() => !!(window as any).__spaghetti);
-  await page.clock.pauseAt(new Date("2026-01-01T00:01:00Z"));
+
+  await startBossBattle(page);
+
   const entry = await inspectBossEntry(page);
+
   expect(entry).toMatchObject({
     wave: 5,
     total: 1,
@@ -23,7 +21,9 @@ test("fifth wave announces a solid factory boss, tracks damage and produces code
   expect(entry.depth).toBeGreaterThan(50);
   expect(entry.health.current).toBe(entry.health.max);
   await verifyBossAnnouncement(page, testInfo);
+
   const battle = await inspectBossBattle(page);
+
   expect(battle.health.current).toBeLessThan(entry.health.current);
   expect(battle.generated).toBe(true);
   expect(battle.generatedSolid).toBeGreaterThan(20);
@@ -40,8 +40,18 @@ test("fifth wave announces a solid factory boss, tracks damage and produces code
   expect(errors).toEqual([]);
 });
 
+async function startBossBattle(page: Page) {
+  await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
+  await page.goto("/");
+  await page.locator("#enter").click();
+  await page.locator("#start").click();
+  await page.waitForFunction(() => !!(window as any).__spaghetti);
+  await page.clock.pauseAt(new Date("2026-01-01T00:01:00Z"));
+}
+
 function collectBossErrors(page: Page) {
   const errors: string[] = [];
+
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("response", (r) => {
     if (r.status() >= 400) {
@@ -76,9 +86,11 @@ async function verifyBossAnnouncement(page: Page, testInfo: TestInfo) {
   await expect(page.locator("#boss-announcement")).toBeVisible();
   await page.clock.fastForward(1);
   await expect(page.locator("#boss-announcement")).toBeHidden();
+
   const timing = await page.evaluate(() => (window as any).__bossTiming);
   const shown = timing.find((x: any) => !x.hidden);
   const hidden = timing.find((x: any) => x.hidden);
+
   expect(hidden.time - shown.time).toBeGreaterThan(900);
   expect(hidden.time - shown.time).toBeLessThan(1400);
 }
@@ -95,7 +107,9 @@ async function inspectBossBattle(page: Page) {
 async function verifyMobileBossLayout(page: Page, testInfo: TestInfo) {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.screenshot({ path: testInfo.outputPath("boss-mobile.png") });
+
   const layout = await page.locator("#boss-health").boundingBox();
+
   expect(layout!.x).toBeGreaterThanOrEqual(0);
   expect(layout!.x + layout!.width).toBeLessThanOrEqual(844);
 }
@@ -103,6 +117,7 @@ async function verifyMobileBossLayout(page: Page, testInfo: TestInfo) {
 async function verifyNextMobileBoss(page: Page, testInfo: TestInfo) {
   await page.evaluate(() => {
     const { simulation: s, scene: r } = (window as any).__spaghetti;
+
     s.world.blocks = [];
     s.runtime.pendingBlocks = 0;
     s.runtime.waveTimer = 0.99;

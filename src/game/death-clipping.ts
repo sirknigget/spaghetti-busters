@@ -15,6 +15,7 @@ import {
 function triangleVertices(context: ClipContext, triangle: number): Vertex[] {
   const { positions, normals, uv } = context;
   const vertices: Vertex[] = [];
+
   for (let i = triangle; i < triangle + TRIANGLE_VERTICES; i++) {
     vertices.push([
       positions.getX(i),
@@ -34,11 +35,13 @@ function triangleVertices(context: ClipContext, triangle: number): Vertex[] {
 function preserveDistantTriangle(context: ClipContext, vertices: Vertex[]) {
   const crossLow = Math.min(...vertices.map((v) => v[context.perpendicular]!));
   const crossHigh = Math.max(...vertices.map((v) => v[context.perpendicular]!));
+
   if (crossHigh < context.options.cut - SEAM.maxDisplacement) {
     append(context.outputs[0], vertices);
 
     return true;
   }
+
   if (crossLow > context.options.cut + SEAM.maxDisplacement) {
     append(context.outputs[1], vertices);
 
@@ -59,7 +62,9 @@ function sweepTriangles(context: ClipContext) {
         out.frontCount = out.p.length / VECTOR_COMPONENTS;
       }
     }
+
     const vertices = triangleVertices(context, triangle);
+
     // Preserve distant triangles verbatim, including historical hole walls.
     if (!preserveDistantTriangle(context, vertices)) {
       sweepTriangleBands(context, vertices, triangle < context.frontCount);
@@ -73,6 +78,7 @@ export function clipDeathSolid(
   options: DeathClipOptions,
 ): [THREE.BufferGeometry, THREE.BufferGeometry] {
   const context = clippingContext(geometry, options);
+
   sweepTriangles(context);
 
   return [

@@ -14,16 +14,20 @@ export function createFragmentMesh(
   // SAFETY: createCodeMesh stores only FractureVisual values under this private key.
   const inherited = parent.userData.fractureVisual as
     FractureVisual | undefined;
+
   if (!inherited || !block.fracture) {
     return createCodeMesh(block);
   }
+
   const f = block.fracture;
   const region = childRegion(inherited, f);
   const parentVisual: FractureVisual = {
     ...inherited,
     holes: new Map(inherited.holes),
   };
+
   addRemovedCells(parentVisual, parentBlock);
+
   const visual: FractureVisual = {
     ...parentVisual,
     offset: {

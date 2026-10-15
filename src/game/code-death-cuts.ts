@@ -24,11 +24,15 @@ export interface DeathContext {
 export function selectLargestLeaf(leaves: DeathLeaf[]) {
   let selected = -1;
   let largest = 0;
+
   for (let i = 0; i < leaves.length; i++) {
     const leaf = leaves[i]!;
+
     leaf.geometry.computeBoundingBox();
+
     const size = leaf.geometry.boundingBox!.getSize(new THREE.Vector3());
     const area = size.x * size.y;
+
     if (
       area > largest &&
       Math.max(size.x, size.y) > DEATH_FRACTURE.minimumSpan

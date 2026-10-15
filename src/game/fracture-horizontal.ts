@@ -18,6 +18,7 @@ function addSegment(writer: GeometryWriter, segment: WallSegment) {
   if (b - a < FRACTURE.gapEpsilon) {
     return;
   }
+
   const above = solid({
     x: (a + b) / HALF_DIVISOR,
     y: y + FRACTURE.gapEpsilon,
@@ -26,9 +27,11 @@ function addSegment(writer: GeometryWriter, segment: WallSegment) {
     x: (a + b) / HALF_DIVISOR,
     y: y - FRACTURE.gapEpsilon,
   });
+
   if (above === below) {
     return;
   }
+
   writer.quad(
     above
       ? [
@@ -76,6 +79,7 @@ export function horizontalWalls(writer: GeometryWriter, sweep: Sweep) {
 
   for (const e of horizontal) {
     const xs = segmentCuts(e, allEdges);
+
     for (let i = 0; i < xs.length - 1; i++) {
       addSegment(writer, { a: xs[i]!, b: xs[i + 1]!, y: e.a.y, solid });
     }

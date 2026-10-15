@@ -18,6 +18,7 @@ export function createShards() {
     }),
     MAX_FLECKS,
   );
+
   mesh.name = "physics-chipped-code-shards";
   mesh.castShadow = true;
   mesh.receiveShadow = true;
@@ -35,6 +36,7 @@ export function createSparks() {
     }),
     MAX_FLECKS,
   );
+
   mesh.name = "physics-incandescent-sparks";
 
   return mesh;
@@ -42,7 +44,9 @@ export function createSparks() {
 
 export function createSmoke(smokeAlpha: THREE.InstancedBufferAttribute) {
   const smokeGeometry = loadGeometry("smoke-quad");
+
   smokeGeometry.setAttribute("instanceAlpha", smokeAlpha);
+
   const smokeMaterial = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
@@ -67,6 +71,7 @@ export function createSmoke(smokeAlpha: THREE.InstancedBufferAttribute) {
     smokeMaterial,
     MAX_FLECKS,
   );
+
   mesh.name = "physics-buoyant-turbulent-smoke";
 
   return mesh;
@@ -93,6 +98,7 @@ export class FleckRenderer {
 
   render(flecks: Fleck[]) {
     const counts = { shard: 0, spark: 0, smoke: 0 };
+
     for (const p of flecks) {
       const meshes = {
         shard: this.shards,
@@ -101,6 +107,7 @@ export class FleckRenderer {
       };
       const mesh = meshes[p.kind];
       const index = counts[p.kind]++;
+
       this.pose(p, index);
       this.transform.updateMatrix();
       mesh.setMatrixAt(index, this.transform.matrix);
@@ -108,6 +115,7 @@ export class FleckRenderer {
         mesh.setColorAt(index, p.color);
       }
     }
+
     this.shards.count = counts.shard;
     this.sparks.count = counts.spark;
     this.smoke.count = counts.smoke;
@@ -117,19 +125,23 @@ export class FleckRenderer {
         mesh.instanceColor.needsUpdate = true;
       }
     }
+
     this.smokeAlpha.needsUpdate = true;
   }
 
   private pose(p: Fleck, index: number) {
     this.transform.position.copy(p.position);
     this.transform.quaternion.copy(p.rotation);
+
     const fade = Math.min(1, (p.life - p.age) * DRAW.fadeRate);
+
     this.transform.scale
       .copy(p.scale)
       .multiplyScalar(p.kind === "smoke" ? 1 + p.age * DRAW.smokeGrowth : fade);
     if (p.kind === "smoke") {
       this.poseSmoke(p, index);
     }
+
     if (p.kind === "spark") {
       this.transform.scale.y *= DRAW.sparkStretch;
       this.transform.quaternion.setFromUnitVectors(

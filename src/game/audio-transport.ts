@@ -21,6 +21,7 @@ export class MusicTransport {
     if (!this.graph.context || this.timer !== null) {
       return;
     }
+
     this.anchor = this.graph.context.currentTime;
     this.graph.master.gain.setTargetAtTime(
       MIX.masterVolume,
@@ -34,6 +35,7 @@ export class MusicTransport {
     if (this.decks.length === 0) {
       this.addDeck(this.trackIndex, this.transport);
     }
+
     this.schedule();
     this.timer = setInterval(() => this.schedule(), MIX.schedulerMs);
   }
@@ -42,7 +44,9 @@ export class MusicTransport {
     if (!this.graph.context || !this.graph.music) {
       return;
     }
+
     const now = this.graph.context.currentTime;
+
     this.graph.music.gain.cancelScheduledValues(now);
     this.graph.music.gain.setTargetAtTime(
       this.scene === "menu" ? MIX.menuVolume : MIX.gameVolume,
@@ -55,7 +59,9 @@ export class MusicTransport {
     if (this.timer === null || !this.graph.context) {
       return;
     }
+
     const now = this.graph.context.currentTime;
+
     this.transport += Math.max(0, now - this.anchor);
     this.anchor = now;
   }
@@ -64,11 +70,13 @@ export class MusicTransport {
     for (const deck of this.decks) {
       deck.bus.disconnect();
     }
+
     this.decks = [];
   }
 
   private addDeck(track: number, start: number): void {
     const bus = this.graph.context!.createGain();
+
     bus.gain.value = this.decks.length ? 0 : 1;
     bus.connect(this.graph.music);
     this.decks.push({ track, start, nextStep: 0, bus });
@@ -79,9 +87,12 @@ export class MusicTransport {
     if (!this.graph.context || !this.graph.music) {
       return;
     }
+
     this.advanceTransport();
+
     const now = this.graph.context.currentTime;
     const current = this.decks.at(-1);
+
     if (
       current &&
       this.transport >=
@@ -91,6 +102,7 @@ export class MusicTransport {
       current.retireAt = this.transport + MUSIC_CROSSFADE_SECONDS;
       this.addDeck((current.track + 1) % MUSIC_TRACKS.length, this.transport);
     }
+
     this.decks = this.decks.filter((deck) => this.scheduleDeck(deck, now));
   }
 
@@ -100,9 +112,11 @@ export class MusicTransport {
 
       return false;
     }
+
     const track = MUSIC_TRACKS[deck.track]!;
     const sixteenth = MIX.secondsPerMinute / track.bpm / MIX.sixteenthsPerBeat;
     const age = this.transport - deck.start;
+
     deck.bus.gain.setTargetAtTime(
       this.deckFade(deck, age),
       now,
@@ -112,6 +126,7 @@ export class MusicTransport {
     if (deck.nextStep * sixteenth < age - MIX.staleNoteSeconds) {
       deck.nextStep = Math.ceil(age / sixteenth);
     }
+
     while (deck.nextStep * sixteenth < age + MIX.lookaheadSeconds) {
       musicStep(this.synth, {
         deck,
@@ -142,6 +157,7 @@ export class MusicTransport {
     if (this.timer !== null) {
       clearInterval(this.timer);
     }
+
     this.timer = null;
     this.graph.music.gain.setValueAtTime(0, this.graph.context.currentTime);
   }

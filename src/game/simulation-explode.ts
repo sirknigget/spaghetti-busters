@@ -37,6 +37,7 @@ export function explode(
       hazard.life = 0;
     }
   }
+
   blastRobots(sim, { x, y, radius, power });
   blastBlocks(sim, { x, y, radius, power });
 }
@@ -53,6 +54,7 @@ function blastRobots(sim: Simulation, { x, y, radius, power }: ExplodeOptions) {
       robot.y - TUNING.robot.halfHeight,
       robot.y + TUNING.robot.halfHeight,
     );
+
     if (Math.hypot(nearX - x, nearY - y) <= radius) {
       damageRobot(sim, {
         robot: robot,
@@ -72,6 +74,7 @@ function blastBlocks(sim: Simulation, { x, y, radius, power }: ExplodeOptions) {
     const sin = Math.sin(block.angle);
     const localX = (x - block.x) * cos + (y - block.y) * sin;
     const localY = -(x - block.x) * sin + (y - block.y) * cos;
+
     if (
       block.cells.some(
         (cell) =>

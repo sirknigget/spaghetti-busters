@@ -4,6 +4,7 @@ import { Synth, frequency } from "./audio-synth";
 
 export function robot(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [i, note] of SCORE.robot.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
@@ -18,6 +19,7 @@ export function robot(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function generate(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   for (const [i, note] of SCORE.generate.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
@@ -28,6 +30,7 @@ export function generate(synth: Synth, graph: AudioGraph, time: number): void {
       destination: bus,
     });
   }
+
   synth.noise({
     time: time + SCORE.generate.noise.delay,
     duration: SCORE.generate.noise.duration,
@@ -40,6 +43,7 @@ export function generate(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function exception(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.tone({
     frequency:
       SCORE.exception.tone.baseFrequency +
@@ -64,6 +68,7 @@ export function exception(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function absorb(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.tone({
     frequency:
       SCORE.absorb.tone.baseFrequency +
@@ -91,6 +96,7 @@ export function robotDestroy(
   time: number,
 ): void {
   const bus = graph.effects;
+
   synth.noise({
     time: time,
     duration: SCORE.robotDestroy.noise.duration,

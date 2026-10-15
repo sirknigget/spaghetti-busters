@@ -4,15 +4,10 @@ import { explode } from "../src/game/simulation-explode";
 export function inspectCodeDisintegration() {
   const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
   const { block, original, canvas, oldHoleKeys } = prepareWornSurface(r, s, w);
-  damage(s, {
-    block: block,
-    x: 0,
-    y: 0,
-    bullet: { vx: 1080, vy: 0 },
-    blastRadius: 1000,
-    power: 100,
-  });
+
+  destroyWornBlock(s, block);
   r.draw();
+
   const fragments = w.scene.children.filter((mesh: any) =>
     mesh.name.startsWith("code-death-fragment-"),
   );
@@ -33,12 +28,25 @@ export function inspectCodeDisintegration() {
     sparks: w.scene.getObjectByName("physics-incandescent-sparks").count,
     cleared: !s.world.blocks.some((b: any) => b.id === block.id),
   };
+
   for (let i = 0; i < 30; i++) {
     w.debris.update(1 / 120);
   }
+
   r.draw();
 
   return result;
+}
+
+function destroyWornBlock(s: any, block: any) {
+  damage(s, {
+    block: block,
+    x: 0,
+    y: 0,
+    bullet: { vx: 1080, vy: 0 },
+    blastRadius: 1000,
+    power: 100,
+  });
 }
 
 function prepareWornSurface(r: any, s: any, w: any) {
@@ -46,6 +54,7 @@ function prepareWornSurface(r: any, s: any, w: any) {
   s.world.blocks = [];
   s.runtime.pendingBlocks = 0;
   s.world.robots = [];
+
   const block = s.spawnBlock({
     x: 790,
     y: 285,
@@ -59,9 +68,11 @@ function prepareWornSurface(r: any, s: any, w: any) {
   const oldHole = block.cells.find(
     (c: any) => Math.abs(c.x) < 20 && Math.abs(c.y) < 30,
   );
+
   oldHole.alive = false;
   block.hits++;
   r.draw();
+
   const original = w.blocks.get(block.id);
   const canvas = original.userData.fractureVisual.canvas;
   const oldHoleKeys = [...original.userData.fractureVisual.holes.keys()];
@@ -75,13 +86,16 @@ export function inspectSpecialCodeDeaths() {
   return ["explosion", "lint", "uncached-boss"].map((mode) => {
     const block = prepareSpecialDeathBlock(r, s, mode);
     const wasCached = w.blocks.has(block.id);
+
     if (mode === "lint") {
       s.selectSpecial("lint");
       s.fireSpecial();
     } else {
       explode(s, { x: block.x, y: block.y, radius: 300, power: 5 });
     }
+
     r.draw();
+
     const parts = w.scene.children.filter((mesh: any) =>
       mesh.name.startsWith("code-death-fragment-"),
     );
@@ -109,6 +123,7 @@ function prepareSpecialDeathBlock(r: any, s: any, mode: string) {
   r.setPaused(true);
   s.world.blocks = [];
   s.runtime.pendingBlocks = 0;
+
   const block = s.spawnBlock({
     boss: mode === "uncached-boss",
     x: 800,
@@ -121,6 +136,7 @@ function prepareSpecialDeathBlock(r: any, s: any, mode: string) {
       "return JSON.parse(JSON.stringify(input));",
     ],
   });
+
   block.cells.forEach((cell: any) => (cell.health = 1));
   block.cells[0].alive = false;
   if (mode !== "uncached-boss") {
@@ -142,14 +158,18 @@ export function inspectSettled() {
     });
   const before = gameplay();
   const bodies = w.debris.bodySnapshots;
+
   r.draw();
   r.draw();
+
   const pauseSafe =
     JSON.stringify(bodies) === JSON.stringify(w.debris.bodySnapshots);
   const start = bodies.filter((body: any) => body.kind === "code");
+
   for (let i = 0; i < 600; i++) {
     w.debris.update(1 / 120);
   }
+
   r.draw();
 
   return {

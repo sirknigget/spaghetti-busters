@@ -33,6 +33,7 @@ export function addLetter(
 ) {
   const { hit, random, position, rotation } = motion;
   const group = createLetter(letter);
+
   group.position.copy(
     position ??
       new THREE.Vector3(
@@ -44,6 +45,7 @@ export function addLetter(
   if (rotation) {
     group.quaternion.copy(rotation);
   }
+
   context.rigid.add({
     mesh: group,
     halfSize: new THREE.Vector3(
@@ -65,7 +67,9 @@ export function addLetter(
 function createLetter(letter: RemovedLetter) {
   const texture = letterTexture(letter);
   const group = new THREE.Group();
+
   group.name = "fallen-code-letter";
+
   const face = new THREE.Mesh(
     loadGeometry("fallen-letter"),
     new THREE.MeshStandardMaterial({
@@ -76,6 +80,7 @@ function createLetter(letter: RemovedLetter) {
       alphaTest: LETTER_ALPHA_TEST,
     }),
   );
+
   face.castShadow = true;
   group.add(face);
 
@@ -84,15 +89,20 @@ function createLetter(letter: RemovedLetter) {
 
 function letterTexture(letter: RemovedLetter) {
   const canvas = document.createElement("canvas");
+
   canvas.width = LETTER_TEXTURE_WIDTH;
   canvas.height = LETTER_TEXTURE_HEIGHT;
+
   const c = canvas.getContext("2d")!;
+
   c.font = "bold 42px monospace";
   c.textAlign = "center";
   c.textBaseline = "middle";
   c.fillStyle = letter.color;
   c.fillText(letter.char, canvas.width * HALF, canvas.height * HALF);
+
   const texture = new THREE.CanvasTexture(canvas);
+
   texture.colorSpace = THREE.SRGBColorSpace;
 
   return texture;
@@ -122,18 +132,23 @@ export function emitImpact(context: DebrisEmitter, hit: DebrisImpact) {
     IMPACT.maxFlecks,
     IMPACT.baseFlecks + Math.ceil(hit.radius * IMPACT.radiusFlecks),
   );
+
   for (let i = 0; i < count; i++) {
     const kind = impactKind(i);
+
     context.particles.add(impactFleck(hit, { random, metal, kind }));
   }
+
   for (let i = 0; i < IMPACT.rigidCount; i++) {
     addImpactRigid(context, { hit, random, metal });
   }
+
   for (const letter of (hit.removed ?? [])
     .filter((c) => c.char.trim())
     .slice(0, IMPACT.maxLetters)) {
     addLetter(context, letter, { hit, random });
   }
+
   context.particles.render();
 }
 
@@ -141,6 +156,7 @@ function impactFleck(hit: DebrisImpact, appearance: ImpactAppearance): Fleck {
   const { random, metal, kind } = appearance;
   const { position, velocity } = impactTrajectory(hit, random, metal);
   let size;
+
   if (kind === "smoke") {
     size = IMPACT.smokeSize + random() * IMPACT.smokeSizeJitter;
   } else if (kind === "spark") {
@@ -214,6 +230,7 @@ function addImpactRigid(context: DebrisEmitter, source: ImpactShard) {
   const { hit, random, metal } = source;
   const size = IMPACT.rigidSize + random() * IMPACT.rigidSizeJitter;
   const mesh = new THREE.Group();
+
   addImpactShard(mesh, size, metal);
   mesh.position.set(
     hit.x + (random() - HALF) * IMPACT.rigidPositionJitter,
@@ -243,6 +260,7 @@ function addImpactShard(mesh: THREE.Group, size: number, metal: boolean) {
       metalness: metal ? IMPACT.metalMetalness : IMPACT.codeMetalness,
     }),
   );
+
   fragment.castShadow = true;
   mesh.add(fragment);
 }
@@ -255,6 +273,7 @@ function impactColor(
   if (kind === "spark") {
     return random() < HALF ? PALETTE.debris.spark : PALETTE.debris.sparkOrange;
   }
+
   if (metal) {
     return random() < HALF
       ? PALETTE.debris.metalLight
@@ -270,6 +289,7 @@ function impactLife(kind: Fleck["kind"], random: () => number) {
   if (kind === "smoke") {
     return IMPACT.smokeLife + random() * IMPACT.smokeLifeJitter;
   }
+
   if (kind === "spark") {
     return IMPACT.sparkLife + random() * IMPACT.sparkLifeJitter;
   }

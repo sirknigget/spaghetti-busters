@@ -12,15 +12,7 @@ function prepareWeapon(sim: Simulation) {
   }
 }
 
-export function fire(sim: Simulation): boolean {
-  if (
-    sim.progress.status !== "playing" ||
-    sim.isStunned ||
-    sim.runtime.cooldown > 0
-  ) {
-    return false;
-  }
-  prepareWeapon(sim);
+function fireSpread(sim: Simulation) {
   const angle = Math.atan2(
     sim.player.aimY - sim.player.playerY,
     Math.max(
@@ -29,8 +21,10 @@ export function fire(sim: Simulation): boolean {
     ),
   );
   const spreads = WEAPON_SPREADS[sim.player.weapon];
+
   for (const spread of spreads) {
     const direction = angle + spread;
+
     sim.world.bullets.push({
       id: sim.runtime.nextId++,
       x: TUNING.weapon.muzzleX,
@@ -41,9 +35,24 @@ export function fire(sim: Simulation): boolean {
       weapon: sim.player.weapon,
     });
   }
+}
+
+export function fire(sim: Simulation): boolean {
+  if (
+    sim.progress.status !== "playing" ||
+    sim.isStunned ||
+    sim.runtime.cooldown > 0
+  ) {
+    return false;
+  }
+
+  prepareWeapon(sim);
+  fireSpread(sim);
+
   if (sim.player.weapon !== "single") {
     sim.player.ammo--;
   }
+
   sim.runtime.cooldown = SHOT_COOLDOWN_SECONDS;
   sim.progress.shotsFired++;
   sim.world.events.push("shot");
@@ -85,8 +94,10 @@ export function advancePlayer(sim: Simulation, dt: number) {
       (1 - Math.exp(-dt * TUNING.timing.playerAimResponse));
   }
 }
+
 export function advanceFreeze(sim: Simulation, dt: number) {
   const enemyDt = Math.min(dt, Math.max(0, dt - sim.player.freezeRemaining));
+
   sim.player.freezeRemaining = Math.max(0, sim.player.freezeRemaining - dt);
   sim.player.reviewPulse = Math.max(0, sim.player.reviewPulse - dt);
   sim.player.lintPulse = Math.max(0, sim.player.lintPulse - dt);

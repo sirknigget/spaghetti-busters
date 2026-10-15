@@ -15,9 +15,11 @@ export function spawnBoss(sim: Simulation): Block {
   const existing = sim.world.blocks.find(
     (block) => block.boss && block.bossRoot === sim.runtime.activeBossRoot,
   );
+
   if (existing) {
     return existing;
   }
+
   const boss = sim.spawnBlock({
     boss: true,
     x: BOSS_START_X,
@@ -27,6 +29,7 @@ export function spawnBoss(sim: Simulation): Block {
     angle: BOSS_INITIAL_ANGLE,
     code: [...BOSS_CODE],
   });
+
   boss.title = "FactoryFactoryFactory";
   boss.angularVelocity = BOSS_INITIAL_SPIN;
   sim.runtime.pendingBlocks = 0;
@@ -54,27 +57,33 @@ export function updateBoss(sim: Simulation, dt: number) {
   if (sim.runtime.activeBossRoot === undefined || sim.runtime.bossRewarded) {
     return;
   }
+
   const fragments = sim.world.blocks.filter(
     (block) => block.boss && block.bossRoot === sim.runtime.activeBossRoot,
   );
+
   if (fragments.length === 0) {
     rewardBoss(sim);
 
     return;
   }
+
   if (bossProductionBlocked(sim, dt)) {
     return;
   }
+
   const minions = sim.world.blocks.filter(
     (block) =>
       block.bossMinion && block.bossRoot === sim.runtime.activeBossRoot,
   );
+
   // One timer for the original factory: fragmentation cannot multiply production.
   if (minions.length >= TUNING.boss.minionCap) {
     sim.runtime.bossSpawnTimer = 1;
 
     return;
   }
+
   spawnBossMinion(sim, fragments);
   sim.runtime.bossSpawnTimer = Math.max(
     TUNING.boss.minSpawnDelay,
@@ -129,6 +138,7 @@ export function spawnBossMinion(sim: Simulation, fragments: Block[]) {
     angry: false,
     code,
   });
+
   minion.title = "factory-generated.ts";
   minion.bossMinion = true;
   minion.bossRoot = sim.runtime.activeBossRoot;

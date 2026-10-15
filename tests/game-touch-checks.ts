@@ -18,6 +18,7 @@ export async function verifyTouchReviewAndPause(page: Page) {
 
 export async function verifyTouchFireAndGrenades(page: Page) {
   const box = await page.locator("canvas").boundingBox();
+
   await page.touchscreen.tap(
     box!.x + box!.width * 0.7,
     box!.y + box!.height * 0.45,

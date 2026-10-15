@@ -20,6 +20,7 @@ export class FleckParticles {
     if (this.flecks.length >= MAX_FLECKS) {
       this.flecks.shift();
     }
+
     this.flecks.push(fleck);
   }
 
@@ -34,11 +35,13 @@ export class FleckParticles {
   private step(dt: number) {
     for (let i = this.flecks.length - 1; i >= 0; i--) {
       const p = this.flecks[i]!;
+
       p.age += dt;
       if (p.age >= p.life) {
         this.flecks.splice(i, 1);
         continue;
       }
+
       stepFleck(p, dt);
       p.position.addScaledVector(p.velocity, dt);
       p.rotation.multiply(

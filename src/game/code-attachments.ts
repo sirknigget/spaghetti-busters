@@ -15,8 +15,10 @@ export function addAngryFace(
   visual: FractureVisual,
 ) {
   const { width: w, height: h, depth: z } = visual;
+
   if (block.angry && !visual.fractured) {
     const face = new THREE.Group();
+
     face.name = "angry-code-face";
     face.position.set(
       w * HALF - ATTACHMENT.faceInset,
@@ -24,18 +26,23 @@ export function addAngryFace(
       z + ATTACHMENT.faceDepth,
     );
     group.add(face);
+
     const eyeMaterial = new THREE.MeshBasicMaterial({
       color: PALETTE.angry.eye,
     });
     const browMaterial = new THREE.MeshToonMaterial({
       color: PALETTE.angry.brow,
     });
+
     for (const side of [-1, 1]) {
       const eye = new THREE.Mesh(loadGeometry("angry-eye"), eyeMaterial);
+
       eye.scale.set(1, ATTACHMENT.eyeSquash, HALF);
       eye.position.set(side * ATTACHMENT.eyeSpacing, -1, 0);
       face.add(eye);
+
       const brow = new THREE.Mesh(loadGeometry("angry-brow"), browMaterial);
+
       brow.position.set(side * ATTACHMENT.eyeSpacing, ATTACHMENT.browHeight, 1);
       brow.rotation.z = side * ATTACHMENT.browTilt;
       face.add(brow);
@@ -46,8 +53,10 @@ export function addAngryFace(
 export function addIceOutline(group: THREE.Group, visual: FractureVisual) {
   const { width: w, height: h, depth: z } = visual;
   const ice = new THREE.Group();
+
   ice.name = "frozen-code-outline";
   ice.visible = false;
+
   const outlineGeometry = loadGeometry("armor-box").scale(
     w + ATTACHMENT.outlineMargin,
     h + HEADER_HEIGHT + ATTACHMENT.outlineMargin,
@@ -61,6 +70,7 @@ export function addIceOutline(group: THREE.Group, visual: FractureVisual) {
       opacity: FACE_OUTLINE_OPACITY,
     }),
   );
+
   outlineGeometry.dispose();
   outline.position.y = ATTACHMENT.headerCenter;
   ice.add(outline);
@@ -77,12 +87,14 @@ function addIceCrystals(ice: THREE.Group, visual: FractureVisual) {
     transparent: true,
     opacity: CRYSTAL_OPACITY,
   });
+
   for (const x of [-w * HALF, w * HALF]) {
     for (const y of [-h * HALF, h * HALF + HEADER_HEIGHT]) {
       const crystal = new THREE.Mesh(
         loadGeometry("ice-crystal"),
         crystalMaterial,
       );
+
       crystal.position.set(x, y, z + ATTACHMENT.crystalDepth);
       crystal.scale.set(
         ATTACHMENT.crystalX,

@@ -27,13 +27,17 @@ export class WorldExplosions {
           depthWrite: false,
         }),
       );
+
       this.explosionMeshes.push(mesh);
       this.scene.add(mesh);
     }
+
     this.animate(sim);
+
     const blast = sim.world.explosions[0];
     const impactIntensity =
       impact > EXPLOSION.impactThreshold ? EXPLOSION.impactLight : 0;
+
     this.explosionLight.intensity = blast
       ? (EXPLOSION.light * blast.life) / blast.maxLife
       : impactIntensity;
@@ -49,14 +53,17 @@ export class WorldExplosions {
   private animate(sim: Simulation) {
     for (const [i, mesh] of this.explosionMeshes.entries()) {
       const explosion = sim.world.explosions[i];
+
       mesh.visible = !!explosion;
       if (!explosion) {
         continue;
       }
+
       const progress = 1 - explosion.life / explosion.maxLife;
       const radius =
         explosion.radius *
         (EXPLOSION.radiusBase + progress * EXPLOSION.radiusGrowth);
+
       mesh.position.set(explosion.x, HEIGHT - explosion.y, EXPLOSION.z);
       mesh.rotation.set(
         progress * EXPLOSION.rotationX,
@@ -74,6 +81,7 @@ export class WorldExplosions {
     for (const mesh of this.explosionMeshes) {
       mesh.visible = false;
     }
+
     this.explosionLight.intensity = 0;
   }
 }

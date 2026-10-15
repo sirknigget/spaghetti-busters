@@ -23,12 +23,15 @@ export function bossHealth(
   if (sim.runtime.activeBossRoot === undefined || sim.runtime.bossRewarded) {
     return undefined;
   }
+
   const fragments = sim.world.blocks.filter(
     (block) => block.boss && block.bossRoot === sim.runtime.activeBossRoot,
   );
+
   if (fragments.length === 0) {
     return undefined;
   }
+
   const current = fragments.reduce(
     (health, block) =>
       health +
@@ -74,6 +77,7 @@ export function advanceCombo(sim: Simulation, dt: number) {
     sim.progress.combo = 0;
   }
 }
+
 export function spawnPendingBlocks(sim: Simulation, enemyDt: number) {
   sim.runtime.spawnTimer -= enemyDt;
   if (
@@ -88,6 +92,7 @@ export function spawnPendingBlocks(sim: Simulation, enemyDt: number) {
       sim.spawnBlock();
       sim.runtime.pendingBlocks--;
     }
+
     sim.runtime.spawnTimer = Math.max(
       TUNING.timing.minBlockDelay,
       TUNING.timing.baseBlockDelay -
@@ -95,6 +100,7 @@ export function spawnPendingBlocks(sim: Simulation, enemyDt: number) {
     );
   }
 }
+
 export function advanceWave(sim: Simulation, dt: number) {
   if (sim.world.blocks.length === 0 && sim.runtime.pendingBlocks === 0) {
     sim.runtime.waveTimer += dt;
@@ -108,6 +114,7 @@ export function advanceWave(sim: Simulation, dt: number) {
         sim.world.robots = [];
         sim.world.hazards = [];
       }
+
       sim.progress.score += TUNING.timing.waveReward * (sim.progress.wave - 1);
       sim.runtime.pendingBlocks = sim.waveTotal;
       sim.runtime.spawnTimer = 0;

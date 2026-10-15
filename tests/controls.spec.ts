@@ -17,6 +17,7 @@ test("right click launches selected special and never fires the primary cannon",
   page,
 }) => {
   const errors: string[] = [];
+
   page.on("pageerror", (e) => errors.push(e.message));
   await start(page);
   await point(page, 900, 350);
@@ -56,6 +57,7 @@ test("timeout collision paralyzes movement and all weapons, then recovers", asyn
   await start(page);
   await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
+
     s.spawnHazard({
       x: 100,
       y: s.player.playerY,
@@ -66,7 +68,9 @@ test("timeout collision paralyzes movement and all weapons, then recovers", asyn
   });
   await expect(page.locator("#game-screen")).toHaveClass(/stunned/);
   await expect(page.locator("#combo")).toContainText("EVENT LOOP BLOCKED");
+
   const before = await holdPlayerStun(page);
+
   await verifyBlockedControls(page, before);
   await page.evaluate(() => {
     (window as any).__spaghetti.simulation.player.stunRemaining = 0.05;
@@ -86,6 +90,7 @@ test("review and lint use keys 3 and 4, freeze enemies, then split large code an
   page,
 }) => {
   const errors: string[] = [];
+
   page.on("pageerror", (e) => errors.push(e.message));
   await start(page);
   await placeLargeLintTargets(page);

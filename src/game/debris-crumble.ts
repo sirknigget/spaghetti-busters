@@ -22,6 +22,7 @@ export function crumbleCode(
     CRUMBLE.maxEnergy,
     Math.abs(item.lastVelocity.y) * CRUMBLE.energyScale,
   );
+
   for (let i = 0; i < CRUMBLE.count; i++) {
     particles.add(crumbleFleck(i, { position, random, energy }));
   }

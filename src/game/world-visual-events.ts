@@ -36,6 +36,7 @@ export class WorldVisualEvents {
         .filter((event) => event.type === "code-death")
         .map((event) => event.block.id),
     );
+
     for (const event of events) {
       this.processEvent(event, dying);
     }
@@ -64,9 +65,11 @@ export class WorldVisualEvents {
   private codeDeath(event: CodeDeath) {
     const cached = this.code.blocks.get(event.block.id);
     const mesh = cached ?? createCodeMesh(event.block);
+
     if (!cached) {
       placeCode(mesh, event.block);
     }
+
     this.debris.dismantleCode(mesh, {
       block: event.block,
       seed: event.seed,
@@ -79,11 +82,13 @@ export class WorldVisualEvents {
 
   private robotDeath(event: RobotDeath) {
     let robot = this.robotMeshes.get(event.robot.id);
+
     if (!robot) {
       robot = createRobot(event.robot.brand);
       robot.position.set(event.robot.x, HEIGHT - event.robot.y, 0);
       animateRobot(robot, event.robot, false);
     }
+
     this.debris.dismantleRobot(robot, event.robot, event.seed);
     if (!this.robotMeshes.has(event.robot.id)) {
       disposeObject(robot);
@@ -94,17 +99,21 @@ export class WorldVisualEvents {
     const old = this.code.blocks.get(event.parent.id);
     // Rebuild the damaged parent first so fractures retain its new holes and surface.
     const parent = createCodeMesh(event.parent, old);
+
     if (old) {
       parent.position.copy(old.position);
       parent.quaternion.copy(old.quaternion);
     } else {
       placeCode(parent, event.parent);
     }
+
     parent.updateMatrixWorld(true);
     for (const child of event.children) {
       const fragment = splitChild(child, parent, event.parent);
+
       this.code.install(child.id, fragment);
     }
+
     disposeObject(parent);
   }
 }
@@ -115,6 +124,7 @@ function splitChild(child: Block, parent: THREE.Group, parentBlock: Block) {
   const origin = new THREE.Vector3(offset.offsetX, -offset.offsetY, 0)
     .applyQuaternion(parent.quaternion)
     .add(parent.position);
+
   fragment.position.copy(origin);
   fragment.quaternion.copy(parent.quaternion);
   fragment.userData.splitPose = {

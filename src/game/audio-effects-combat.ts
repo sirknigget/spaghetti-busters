@@ -4,6 +4,7 @@ import { Synth, frequency } from "./audio-synth";
 
 export function missile(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.noise({
     time: time,
     duration: SCORE.missile.noise.duration,
@@ -25,6 +26,7 @@ export function missile(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function grenade(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.tone({
     frequency: SCORE.grenade.tone.frequency,
     time: time,
@@ -45,6 +47,7 @@ export function grenade(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function shot(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.tone({
     frequency: SCORE.shot.tone.frequency,
     time: time,
@@ -65,6 +68,7 @@ export function shot(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function hit(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.tone({
     frequency:
       SCORE.hit.tone.baseFrequency +
@@ -87,6 +91,7 @@ export function hit(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function split(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.noise({
     time: time,
     duration: SCORE.split.noise.duration,
@@ -116,6 +121,7 @@ export function split(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function destroy(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.noise({
     time: time,
     duration: SCORE.destroy.noise.duration,
@@ -146,6 +152,7 @@ export function destroy(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function explosion(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
+
   synth.noise({
     time: time,
     duration: SCORE.explosion.noise.duration,

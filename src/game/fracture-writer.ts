@@ -33,8 +33,10 @@ export class GeometryWriter {
           ),
         )
         .normalize();
+
     for (const i of TRIANGLE_FAN) {
       const p = points[i]!;
+
       this.positions.push(p[0]! - offset.x, p[1]! - offset.y, p[COORDINATE.z]!);
       this.normals.push(n.x, n.y, n.z);
       this.uvs.push(
@@ -47,6 +49,7 @@ export class GeometryWriter {
 
   build(frontCount: number): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
+
     geometry.setAttribute(
       "position",
       new THREE.Float32BufferAttribute(this.positions, VECTOR_COMPONENTS),

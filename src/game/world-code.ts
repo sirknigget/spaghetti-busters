@@ -20,14 +20,17 @@ export class WorldCode {
 
   update(sim: Simulation, effectsDt: number) {
     const alive = new Set(sim.world.blocks.map((b) => b.id));
+
     for (const [id, mesh] of this.blocks) {
       if (!alive.has(id)) {
         disposeObject(mesh);
         this.blocks.delete(id);
       }
     }
+
     for (const block of sim.world.blocks) {
       const mesh = this.refresh(block);
+
       animateCode(mesh, block, {
         frozen: sim.player.freezeRemaining > 0,
         reducedMotion: this.reducedMotion,
@@ -43,14 +46,17 @@ export class WorldCode {
 
   private refresh(block: Block) {
     let mesh = this.blocks.get(block.id);
+
     if (mesh && needsCodeRefresh(mesh, block)) {
       const replacement = createCodeMesh(block, mesh);
+
       replacement.userData.splitPose = mesh.userData.splitPose;
       disposeObject(mesh);
       mesh = replacement;
       this.blocks.set(block.id, mesh);
       this.scene.add(mesh);
     }
+
     if (!mesh) {
       mesh = createCodeMesh(block);
       this.blocks.set(block.id, mesh);
@@ -62,9 +68,11 @@ export class WorldCode {
 
   install(id: number, fragment: THREE.Group) {
     const stale = this.blocks.get(id);
+
     if (stale) {
       disposeObject(stale);
     }
+
     this.blocks.set(id, fragment);
     this.scene.add(fragment);
   }
@@ -73,6 +81,7 @@ export class WorldCode {
     for (const mesh of this.blocks.values()) {
       disposeObject(mesh);
     }
+
     this.blocks.clear();
   }
 }
@@ -88,6 +97,7 @@ function animateCode(mesh: THREE.Group, block: Block, motion: CodeMotion) {
     block.angry && !frozen && !reducedMotion
       ? Math.sin(block.age * TUMBLE.rattleFrequency) * TUMBLE.rattleAmplitude
       : 0;
+
   mesh.position.set(
     block.x + rattle,
     HEIGHT -
@@ -108,9 +118,12 @@ function animateCode(mesh: THREE.Group, block: Block, motion: CodeMotion) {
 
 function blendSplitPose(mesh: THREE.Group, effectsDt: number) {
   const splitPose = mesh.userData.splitPose;
+
   if (splitPose) {
     splitPose.age += effectsDt;
+
     const blend = Math.exp(-splitPose.age * TUMBLE.blendRate);
+
     mesh.position.addScaledVector(splitPose.offset, blend);
     mesh.quaternion.slerp(splitPose.quaternion, blend);
     if (blend < TUMBLE.blendCutoff) {
@@ -121,10 +134,13 @@ function blendSplitPose(mesh: THREE.Group, effectsDt: number) {
 
 function animateReactor(mesh: THREE.Group, block: Block) {
   const reactor = mesh.getObjectByName("factory-boss-reactor");
+
   if (reactor) {
     reactor.rotation.z = block.age * TUMBLE.reactorSpeed;
   }
+
   const core = mesh.getObjectByName("factory-boss-core");
+
   if (
     core instanceof THREE.Mesh &&
     core.material instanceof THREE.MeshStandardMaterial

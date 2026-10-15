@@ -55,6 +55,7 @@ export class Synth {
     const context = this.graph.context;
     const oscillator = context.createOscillator();
     const envelope = context.createGain();
+
     oscillator.type = "sine";
     oscillator.frequency.value = frequency(note);
     oscillator.detune.value =
@@ -80,6 +81,7 @@ export class Synth {
     const { note, time, duration, type, volume, bus, pan } = options;
 
     const panner = this.graph.context.createStereoPanner();
+
     panner.pan.value = pan;
     panner.connect(bus);
     this.tone({
@@ -107,6 +109,7 @@ export class Synth {
     const context = this.graph.context;
     const oscillator = context.createOscillator();
     const envelope = context.createGain();
+
     oscillator.type = type;
     oscillator.frequency.setValueAtTime(frequency, time);
     if (endFrequency) {
@@ -115,6 +118,7 @@ export class Synth {
         time + duration,
       );
     }
+
     this.shapeTone(envelope, options);
     oscillator.connect(envelope);
     envelope.connect(destination);
@@ -127,30 +131,25 @@ export class Synth {
   }
 
   noise(options: NoiseOptions): void {
-    const {
-      time,
-      duration,
-      volume,
-      cutoff,
-      destination,
-      highpass = false,
-    } = options;
+    const { time, duration, cutoff, destination, highpass = false } = options;
 
     if (!this.graph.noiseBuffer) {
       return;
     }
+
     const context = this.graph.context;
     const source = context.createBufferSource();
+
     source.buffer = this.graph.noiseBuffer;
+
     const filter = context.createBiquadFilter();
+
     filter.type = highpass ? "highpass" : "lowpass";
     filter.frequency.value = cutoff;
+
     const envelope = context.createGain();
-    envelope.gain.setValueAtTime(volume, time);
-    envelope.gain.exponentialRampToValueAtTime(
-      SYNTH.attackFloor,
-      time + duration,
-    );
+
+    this.shapeNoise(envelope, options);
     source.connect(filter);
     filter.connect(envelope);
     envelope.connect(destination);
@@ -162,8 +161,19 @@ export class Synth {
     source.stop(time + duration + SYNTH.sourceRelease);
   }
 
+  private shapeNoise(envelope: GainNode, options: NoiseOptions): void {
+    const { time, duration, volume } = options;
+
+    envelope.gain.setValueAtTime(volume, time);
+    envelope.gain.exponentialRampToValueAtTime(
+      SYNTH.attackFloor,
+      time + duration,
+    );
+  }
+
   private shapeTone(envelope: GainNode, options: ToneOptions): void {
     const { time, duration, volume } = options;
+
     envelope.gain.setValueAtTime(SYNTH.attackFloor, time);
     envelope.gain.exponentialRampToValueAtTime(
       volume,
@@ -196,6 +206,7 @@ export class Synth {
         /* A source may end between frames. */
       }
     }
+
     this.sources.clear();
   }
 }

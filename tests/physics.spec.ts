@@ -12,14 +12,17 @@ test("hits create entropy-driven debris, falling letters, smoke and sparks witho
   page,
 }, testInfo) => {
   const errors: string[] = [];
+
   page.on("pageerror", (e) => errors.push(e.message));
   await start(page);
+
   const hit = await page.evaluate(async () => {
     const modulePath = "/tests/physics-browser.ts";
     const { inspectHit } = await import(modulePath);
 
     return inspectHit();
   });
+
   expect(hit.effects.letters).toBeGreaterThan(0);
   expect(hit.effects.rigidBodies).toBeGreaterThan(0);
   expect(hit.holes).toBeGreaterThan(0);
@@ -36,12 +39,14 @@ test("fractures preserve the same surface and holes through repeated splits and 
   page,
 }, testInfo) => {
   await start(page);
+
   const fracture = await page.evaluate(async () => {
     const modulePath = "/tests/physics-browser.ts";
     const { inspectInitialFracture } = await import(modulePath);
 
     return inspectInitialFracture();
   });
+
   expect(fracture).toMatchObject({
     count: 2,
     inherited: true,
@@ -50,10 +55,15 @@ test("fractures preserve the same surface and holes through repeated splits and 
   });
   expect(fracture.offsets[0]).not.toEqual(fracture.offsets[1]);
   await page.screenshot({ path: testInfo.outputPath("torn-surface.png") });
+  await verifyRepeatedFracture(page, testInfo);
+});
+
+async function verifyRepeatedFracture(page: Page, testInfo: TestInfo) {
   const repeated = await page.evaluate(() => {
     const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
     const original = w.blocks.get(s.world.blocks[0].id).userData.fractureVisual
       .canvas;
+
     s.runtime.specialCooldown = 0;
     s.player.specialAmmo.lint = 1;
     s.selectSpecial("lint");
@@ -69,22 +79,26 @@ test("fractures preserve the same surface and holes through repeated splits and 
       }),
     };
   });
+
   expect(repeated).toEqual({ count: 4, inherited: true });
   await page.screenshot({ path: testInfo.outputPath("repeated-fracture.png") });
-});
+}
 
 test("fifteenth hit dismantles the actual robot into physical assemblies that settle on the pavement", async ({
   page,
 }, testInfo) => {
   const errors: string[] = [];
+
   page.on("pageerror", (e) => errors.push(e.message));
   await start(page);
+
   const outcome = await page.evaluate(async () => {
     const modulePath = "/tests/physics-browser.ts";
     const { inspectRobotDismantling } = await import(modulePath);
 
     return inspectRobotDismantling();
   });
+
   expect(outcome.before).toEqual({ health: 1, alive: 1 });
   expect(outcome.alive).toBe(0);
   expect(outcome.effects.robotParts).toBeGreaterThan(6);
@@ -98,13 +112,16 @@ test("fifteenth hit dismantles the actual robot into physical assemblies that se
 async function verifyRobotWreckage(page: Page, testInfo: TestInfo) {
   const settled = await page.evaluate(() => {
     const { scene: r, world: w } = (window as any).__spaghetti;
+
     for (let i = 0; i < 600; i++) {
       w.debris.update(1 / 120);
     }
+
     r.draw();
 
     return { effects: w.debris.diagnostics, bodies: w.debris.bodySnapshots };
   });
+
   expect(settled.effects.settled).toBeGreaterThan(5);
   expect(
     settled.bodies
@@ -114,12 +131,15 @@ async function verifyRobotWreckage(page: Page, testInfo: TestInfo) {
   await page.screenshot({ path: testInfo.outputPath("robot-wreckage.png") });
   await page.setViewportSize({ width: 844, height: 390 });
   await page.screenshot({ path: testInfo.outputPath("wreckage-mobile.png") });
+
   const reset = await page.evaluate(() => {
     const { scene: r, world: w } = (window as any).__spaghetti;
+
     r.reset();
 
     return w.debris.diagnostics;
   });
+
   expect(reset.rigidBodies).toBe(0);
   expect(reset.particles).toBe(0);
 }
@@ -137,10 +157,13 @@ async function verifyFallingDebris(page: Page, testInfo: TestInfo) {
       });
     const before = gameplay();
     const start = w.debris.bodySnapshots;
+
     for (let i = 0; i < 240; i++) {
       w.debris.update(1 / 120);
     }
+
     const end = w.debris.bodySnapshots;
+
     r.draw();
 
     return {
@@ -150,6 +173,7 @@ async function verifyFallingDebris(page: Page, testInfo: TestInfo) {
       effects: w.debris.diagnostics,
     };
   });
+
   expect(fall.unchanged).toBe(true);
   expect(
     fall.end.some((p: any, i: number) => p.y < fall.start[i].y - 100),
@@ -162,10 +186,12 @@ async function verifyPausedDebris(page: Page) {
   const paused = await page.evaluate(() => {
     const { scene: r, world: w } = (window as any).__spaghetti;
     const before = w.debris.bodySnapshots;
+
     r.draw();
     r.draw();
 
     return JSON.stringify(before) === JSON.stringify(w.debris.bodySnapshots);
   });
+
   expect(paused).toBe(true);
 }

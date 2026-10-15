@@ -24,6 +24,7 @@ export class WorldPulses {
       effect.visible = false;
       scene.add(effect);
     }
+
     this.reviewEffect.name = "code-review-freeze-wave";
     this.lintEffect.name = "lint-bomb-screen-wave";
     this.reviewBeam.name = "code-review-freeze-beam";
@@ -40,8 +41,10 @@ export class WorldPulses {
       if (remaining <= 0) {
         continue;
       }
+
       animatePulse(effect, 1 - remaining / duration);
     }
+
     this.updateBeam(sim);
   }
 
@@ -59,6 +62,7 @@ export class WorldPulses {
         PULSE.beamTargetZ,
       );
       const direction = b.clone().sub(a);
+
       this.reviewBeam.position.copy(a.add(b).multiplyScalar(HALF));
       this.reviewBeam.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 1, 0),
@@ -87,7 +91,9 @@ function animatePulse(effect: THREE.Group, progress: number) {
     ) {
       continue;
     }
+
     const ring = child;
+
     ring.scale.setScalar(
       PULSE.minimumRadius +
         progress * PULSE.radiusGrowth -

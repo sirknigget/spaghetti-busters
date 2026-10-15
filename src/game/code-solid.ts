@@ -20,7 +20,9 @@ export function createCodeMesh(
   inherited?: FractureVisual,
 ): THREE.Group {
   const group = new THREE.Group();
+
   group.name = `code-solid-${block.id}`;
+
   // SAFETY: previous is produced by this factory, which owns the private visual key.
   const prior =
     inherited ??
@@ -28,9 +30,12 @@ export function createCodeMesh(
   const visual = prior
     ? { ...prior, holes: new Map(prior.holes) }
     : createVisual(block);
+
   addRemovedCells(visual, block);
   addDamageScars(visual, block);
+
   const z = visual.depth;
+
   group.add(createSolid(block, visual));
   if (block.boss) {
     createBossArmor(group, visual);
@@ -38,6 +43,7 @@ export function createCodeMesh(
       clipBossArmor(group, visual, z);
     }
   }
+
   addAngryFace(group, block, visual);
   addIceOutline(group, visual);
   assignMetadata(group, block, visual);
@@ -47,8 +53,10 @@ export function createCodeMesh(
 
 function createCodeMaterials(block: Block, canvas: HTMLCanvasElement) {
   const texture = new THREE.CanvasTexture(canvas);
+
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = TEXTURE_ANISOTROPY;
+
   const front = new THREE.MeshToonMaterial({
     map: texture,
     color: PALETTE.common.white,
@@ -94,6 +102,7 @@ function createSolid(block: Block, visual: FractureVisual) {
     },
   );
   const mesh = new THREE.Mesh(geometry, [front, side]);
+
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.name = "perforated-extruded-code";

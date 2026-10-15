@@ -108,10 +108,12 @@ export class PlayScene implements GameController {
       Math.max(0, (now - this.lastFrame) / INPUT.millisecondsPerSecond),
       INPUT.maxFrameSeconds,
     );
+
     this.lastFrame = now;
     if (!this.paused) {
       this.update(dt);
     }
+
     requestAnimationFrame(this.frame);
   };
 
@@ -126,6 +128,7 @@ export class PlayScene implements GameController {
       this.callbacks.onState(this.sim);
       this.lastHud = 0;
     }
+
     if (this.sim.progress.status === "gameover") {
       this.callbacks.onState(this.sim);
       this.callbacks.onGameOver(
@@ -133,6 +136,7 @@ export class PlayScene implements GameController {
         this.sim.progress.wave,
       );
     }
+
     this.draw();
   }
 
@@ -141,6 +145,7 @@ export class PlayScene implements GameController {
     if (this.holding || this.keys.has("Space")) {
       this.sim.fire();
     }
+
     if (this.holdingSpecial) {
       this.sim.fireSpecial();
     }
@@ -153,6 +158,7 @@ export class PlayScene implements GameController {
         this.sim.player.aimY - dt * INPUT.keyboardSpeed,
       );
     }
+
     if (this.keys.has("ArrowDown") || this.keys.has("KeyS")) {
       this.sim.player.aimY = Math.min(
         INPUT.keyboardMaxY,
@@ -166,6 +172,7 @@ export class PlayScene implements GameController {
       if (MUZZLE_EVENTS.has(event)) {
         this.muzzle = MUZZLE_FLASH_SECONDS;
       }
+
       this.impact = eventImpact(event, this.impact);
       this.callbacks.onEvent(event);
     }

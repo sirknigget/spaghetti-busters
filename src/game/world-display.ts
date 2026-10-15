@@ -48,6 +48,7 @@ export class WorldDisplay {
         ((available.height || HEIGHT) * VIEW.aspectWidth) / VIEW.aspectHeight,
       ),
     );
+
     this.renderer.setSize(
       width,
       (width * VIEW.aspectHeight) / VIEW.aspectWidth,
@@ -61,9 +62,11 @@ export class WorldDisplay {
         ? PALETTE.environment.danger
         : PALETTE.environment.safe,
     );
+
     const shake = this.reducedMotion
       ? 0
       : Math.min(impact, CAMERA_SHAKE.maximum) * CAMERA_SHAKE.amplitude;
+
     this.camera.position.set(
       VIEW.halfWidth +
         Math.sin(sim.progress.elapsed * CAMERA_SHAKE.frequencyX) * shake,

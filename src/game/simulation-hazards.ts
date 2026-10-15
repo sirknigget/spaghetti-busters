@@ -63,10 +63,26 @@ export function spawnHazard(
     health: 1,
     age: 0,
   };
+
   sim.world.hazards.push(hazard);
   sim.world.events.push("hazard");
 
   return hazard;
+}
+
+function stunPlayer(sim: Simulation, hazard: TimeoutHazard) {
+  sim.player.stunRemaining = Math.max(
+    sim.player.stunRemaining,
+    hazard.durationMs / TUNING.hazard.millisecondsPerSecond,
+  );
+  hazard.life = 0;
+  burst(sim, {
+    x: TUNING.hazard.playerX,
+    y: sim.player.playerY,
+    color: PALETTE.particles.hazard,
+    count: TUNING.particles.stunBurstCount,
+  });
+  sim.world.events.push("stun");
 }
 
 export function updateHazards(sim: Simulation, dt: number) {
@@ -74,8 +90,10 @@ export function updateHazards(sim: Simulation, dt: number) {
     if (hazard.life <= 0) {
       continue;
     }
+
     const oldX = hazard.x;
     const oldY = hazard.y;
+
     hazard.age += dt;
     hazard.life -= dt;
     hazard.x += hazard.vx * dt;
@@ -90,23 +108,14 @@ export function updateHazards(sim: Simulation, dt: number) {
         halfHeight: TUNING.hazard.playerHalfHeight,
       })
     ) {
-      sim.player.stunRemaining = Math.max(
-        sim.player.stunRemaining,
-        hazard.durationMs / TUNING.hazard.millisecondsPerSecond,
-      );
-      hazard.life = 0;
-      burst(sim, {
-        x: TUNING.hazard.playerX,
-        y: sim.player.playerY,
-        color: PALETTE.particles.hazard,
-        count: TUNING.particles.stunBurstCount,
-      });
-      sim.world.events.push("stun");
+      stunPlayer(sim, hazard);
     }
+
     if (hazard.x < TUNING.hazard.exitX) {
       hazard.life = 0;
     }
   }
+
   sim.world.hazards = sim.world.hazards.filter((hazard) => hazard.life > 0);
 }
 

@@ -5,17 +5,20 @@ test("specials clear clutter, target the leftmost threat and render a wide blast
   page,
 }, testInfo) => {
   const errors: string[] = [];
+
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await page.locator("#enter").click();
   await page.locator("#start").click();
   await page.waitForFunction(() => !!(window as any).__spaghetti);
+
   const homing = await page.evaluate(async () => {
     const modulePath = "/tests/specials-browser.ts";
     const { inspectHomingPriority } = await import(modulePath);
 
     return inspectHomingPriority();
   });
+
   expect(homing.target).toBe(homing.urgent);
   expect(homing.target).not.toBe(homing.near);
   await verifyLintCleanup(page, testInfo);
@@ -27,8 +30,10 @@ test("specials clear clutter, target the leftmost threat and render a wide blast
 
 async function verifyLintCleanup(page: Page, testInfo: TestInfo) {
   await page.screenshot({ path: testInfo.outputPath("lint-before.png") });
+
   const cleanup = await page.evaluate(() => {
     const { simulation: s, scene: r, world: w } = (window as any).__spaghetti;
+
     s.world.specials = [];
     s.selectSpecial("lint");
     s.fireSpecial();
@@ -42,6 +47,7 @@ async function verifyLintCleanup(page: Page, testInfo: TestInfo) {
       pulse: w.scene.getObjectByName("lint-bomb-screen-wave").visible,
     };
   });
+
   expect(cleanup).toEqual({
     count: 2,
     destroyed: 2,
@@ -50,11 +56,13 @@ async function verifyLintCleanup(page: Page, testInfo: TestInfo) {
     pulse: true,
   });
   await page.screenshot({ path: testInfo.outputPath("lint-after.png") });
+
   const blast = await page.evaluate(async () => {
     const modulePath = "/tests/specials-browser.ts";
     const { inspectGrenadeBlast } = await import(modulePath);
 
     return inspectGrenadeBlast();
   });
+
   expect(blast).toEqual({ radius: 300, alive: 1, visibleBlast: true });
 }
