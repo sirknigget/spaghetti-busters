@@ -1,258 +1,757 @@
-import * as THREE from 'three';
-import { Simulation, TIMEOUT_METRICS, type Block, type Particle, type TimeoutHazard } from './simulation';
-import { createCodeMesh, createFragmentMesh, disposeObject } from './code-mesh';
-import { DebrisPhysics } from './debris-physics';
-import { createEnvironment, createSpecialist, createCannon, createBullet, createSpecial, createPickup } from './models3d';
-import { createRobot, animateRobot } from './robot3d';
+import * as THREE from "three";
+import {
+  Simulation,
+  TIMEOUT_METRICS,
+  type Block,
+  type Particle,
+  type TimeoutHazard,
+} from "./simulation";
+import { createCodeMesh, createFragmentMesh, disposeObject } from "./code-mesh";
+import { DebrisPhysics } from "./debris-physics";
+import {
+  createEnvironment,
+  createSpecialist,
+  createCannon,
+  createBullet,
+  createSpecial,
+  createPickup,
+} from "./models3d";
+import { createRobot, animateRobot } from "./robot3d";
 
-const WIDTH=1280, HEIGHT=720;
-type Entity={id:number;x:number;y:number};
+const WIDTH = 1280,
+  HEIGHT = 720;
+type Entity = { id: number; x: number; y: number };
 export class WorldRenderer {
-  readonly renderer:THREE.WebGLRenderer;
-  readonly scene=new THREE.Scene();
-  readonly camera=new THREE.PerspectiveCamera(2*Math.atan(360/1400)*180/Math.PI,16/9,1,4000);
-  readonly blocks=new Map<number,THREE.Group>();
-  readonly robotMeshes=new Map<number,THREE.Group>();
-  debris!:DebrisPhysics;
-  private lastEffectsTime=0;
-  private readonly specialist=createSpecialist();
-  private readonly cannon=createCannon();
-  private readonly bulletMeshes=new Map<number,THREE.Group>();
-  private readonly pickupMeshes=new Map<number,THREE.Group>();
-  private readonly specialMeshes=new Map<number,THREE.Group>();
-  private readonly hazardMeshes=new Map<number,THREE.Group>();
-  private readonly particleMeshes=new Map<Particle,THREE.Mesh>();
-  private readonly letterTextures=new Map<string,THREE.CanvasTexture>();
-  private readonly explosionMeshes:THREE.Mesh[]=[];
-  private readonly muzzleLight=new THREE.PointLight('#ffdc85',0,450,2);
-  private readonly explosionLight=new THREE.PointLight('#ffc777',0,700,2);
-  private readonly reticle=new THREE.Group();
-  private readonly stun=new THREE.Group();
-  private readonly reviewEffect=new THREE.Group();
-  private readonly lintEffect=new THREE.Group();
-  private readonly reviewBeam=new THREE.Mesh(new THREE.CylinderGeometry(5,11,1,12),new THREE.MeshBasicMaterial({color:'#c0f3ff',transparent:true,opacity:.6,depthWrite:false}));
-  private readonly stunLabel:THREE.Sprite;
-  private readonly dangerMaterial=new THREE.MeshBasicMaterial({color:'#8faf76'});
-  private readonly reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  private readonly resizeObserver:ResizeObserver;
+  readonly renderer: THREE.WebGLRenderer;
+  readonly scene = new THREE.Scene();
+  readonly camera = new THREE.PerspectiveCamera(
+    (2 * Math.atan(360 / 1400) * 180) / Math.PI,
+    16 / 9,
+    1,
+    4000,
+  );
+  readonly blocks = new Map<number, THREE.Group>();
+  readonly robotMeshes = new Map<number, THREE.Group>();
+  debris!: DebrisPhysics;
+  private lastEffectsTime = 0;
+  private readonly specialist = createSpecialist();
+  private readonly cannon = createCannon();
+  private readonly bulletMeshes = new Map<number, THREE.Group>();
+  private readonly pickupMeshes = new Map<number, THREE.Group>();
+  private readonly specialMeshes = new Map<number, THREE.Group>();
+  private readonly hazardMeshes = new Map<number, THREE.Group>();
+  private readonly particleMeshes = new Map<Particle, THREE.Mesh>();
+  private readonly letterTextures = new Map<string, THREE.CanvasTexture>();
+  private readonly explosionMeshes: THREE.Mesh[] = [];
+  private readonly muzzleLight = new THREE.PointLight("#ffdc85", 0, 450, 2);
+  private readonly explosionLight = new THREE.PointLight("#ffc777", 0, 700, 2);
+  private readonly reticle = new THREE.Group();
+  private readonly stun = new THREE.Group();
+  private readonly reviewEffect = new THREE.Group();
+  private readonly lintEffect = new THREE.Group();
+  private readonly reviewBeam = new THREE.Mesh(
+    new THREE.CylinderGeometry(5, 11, 1, 12),
+    new THREE.MeshBasicMaterial({
+      color: "#c0f3ff",
+      transparent: true,
+      opacity: 0.6,
+      depthWrite: false,
+    }),
+  );
+  private readonly stunLabel: THREE.Sprite;
+  private readonly dangerMaterial = new THREE.MeshBasicMaterial({
+    color: "#8faf76",
+  });
+  private readonly reducedMotion = matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+  private readonly resizeObserver: ResizeObserver;
 
-  constructor(private readonly parent:HTMLElement) {
-    this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-    this.renderer.outputColorSpace=THREE.SRGBColorSpace;
-    this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.1;
-    this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-    this.renderer.domElement.style.display='block';
-    this.renderer.domElement.style.touchAction='none';
-    this.renderer.domElement.setAttribute('aria-label','3D arcade playfield. Move to aim, left click or Space to shoot. Right click launches special weapons. Select with 1 for homing, 2 for grenades, 3 for code review, or 4 for lint bombs.');
-    this.renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();this.renderer.domElement.dispatchEvent(new Event('game-context-lost'));});
+  constructor(private readonly parent: HTMLElement) {
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: "high-performance",
+    });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.domElement.style.display = "block";
+    this.renderer.domElement.style.touchAction = "none";
+    this.renderer.domElement.setAttribute(
+      "aria-label",
+      "3D arcade playfield. Move to aim, left click or Space to shoot. Right click launches special weapons. Select with 1 for homing, 2 for grenades, 3 for code review, or 4 for lint bombs.",
+    );
+    this.renderer.domElement.addEventListener("webglcontextlost", (event) => {
+      event.preventDefault();
+      this.renderer.domElement.dispatchEvent(new Event("game-context-lost"));
+    });
     parent.appendChild(this.renderer.domElement);
-    this.scene.background=new THREE.Color('#b8d3c2');
-    this.scene.fog=new THREE.Fog('#c2d9c8',1750,3300);
-    this.camera.position.set(640,360,1400);this.camera.lookAt(640,360,0);
-    this.scene.add(new THREE.HemisphereLight('#e4f7ff','#586d55',2.4));
-    const sunlight=new THREE.DirectionalLight('#fff0c1',3.1);
-    sunlight.position.set(150,1000,750);sunlight.target.position.set(680,300,-80);
-    sunlight.castShadow=true;sunlight.shadow.mapSize.set(2048,2048);
-    sunlight.shadow.camera.left=-1000;sunlight.shadow.camera.right=1000;
-    sunlight.shadow.camera.top=750;sunlight.shadow.camera.bottom=-750;
-    sunlight.shadow.camera.near=10;sunlight.shadow.camera.far=2500;
-    sunlight.shadow.normalBias=.8;sunlight.shadow.bias=-.0002;
-    this.scene.add(sunlight,sunlight.target);
-    const rim=new THREE.DirectionalLight('#93cfff',1.15);rim.position.set(1400,400,300);this.scene.add(rim);
-    this.scene.add(createEnvironment(),this.specialist,this.cannon,this.muzzleLight,this.explosionLight);
-    this.muzzleLight.position.set(175,360,90);
-    for(let y=114;y<612;y+=15){const marker=new THREE.Mesh(new THREE.BoxGeometry(3,7,4),this.dangerMaterial);marker.position.set(23,720-y,0);this.scene.add(marker);}
-    const reticleMaterial=new THREE.MeshBasicMaterial({color:'#275749',depthTest:false});
-    const ring=new THREE.Mesh(new THREE.RingGeometry(11.6,13,40),reticleMaterial);this.reticle.add(ring);
-    for(const angle of [0,Math.PI/2,Math.PI,Math.PI*1.5]){
-      const tick=new THREE.Mesh(new THREE.BoxGeometry(6,1.6,1),reticleMaterial);
-      tick.position.set(Math.cos(angle)*19,Math.sin(angle)*19,0);tick.rotation.z=angle;this.reticle.add(tick);
+    this.scene.background = new THREE.Color("#b8d3c2");
+    this.scene.fog = new THREE.Fog("#c2d9c8", 1750, 3300);
+    this.camera.position.set(640, 360, 1400);
+    this.camera.lookAt(640, 360, 0);
+    this.scene.add(new THREE.HemisphereLight("#e4f7ff", "#586d55", 2.4));
+    const sunlight = new THREE.DirectionalLight("#fff0c1", 3.1);
+    sunlight.position.set(150, 1000, 750);
+    sunlight.target.position.set(680, 300, -80);
+    sunlight.castShadow = true;
+    sunlight.shadow.mapSize.set(2048, 2048);
+    sunlight.shadow.camera.left = -1000;
+    sunlight.shadow.camera.right = 1000;
+    sunlight.shadow.camera.top = 750;
+    sunlight.shadow.camera.bottom = -750;
+    sunlight.shadow.camera.near = 10;
+    sunlight.shadow.camera.far = 2500;
+    sunlight.shadow.normalBias = 0.8;
+    sunlight.shadow.bias = -0.0002;
+    this.scene.add(sunlight, sunlight.target);
+    const rim = new THREE.DirectionalLight("#93cfff", 1.15);
+    rim.position.set(1400, 400, 300);
+    this.scene.add(rim);
+    this.scene.add(
+      createEnvironment(),
+      this.specialist,
+      this.cannon,
+      this.muzzleLight,
+      this.explosionLight,
+    );
+    this.muzzleLight.position.set(175, 360, 90);
+    for (let y = 114; y < 612; y += 15) {
+      const marker = new THREE.Mesh(
+        new THREE.BoxGeometry(3, 7, 4),
+        this.dangerMaterial,
+      );
+      marker.position.set(23, 720 - y, 0);
+      this.scene.add(marker);
     }
-    const dot=new THREE.Mesh(new THREE.CircleGeometry(2.4,16),new THREE.MeshBasicMaterial({color:'#ffd35c',depthTest:false}));this.reticle.add(dot);
-    this.reticle.renderOrder=100;this.reticle.traverse(child=>child.renderOrder=100);this.scene.add(this.reticle);
-    for(let i=0;i<3;i++){
-      const ring=new THREE.Mesh(new THREE.TorusGeometry(71+i*5,1.5,6,64),new THREE.MeshBasicMaterial({color:i%2?'#ffaef5':'#bc65f4',transparent:true,opacity:.8}));
-      ring.rotation.set(i*.7,.45+i*.5,0);this.stun.add(ring);
+    const reticleMaterial = new THREE.MeshBasicMaterial({
+      color: "#275749",
+      depthTest: false,
+    });
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(11.6, 13, 40),
+      reticleMaterial,
+    );
+    this.reticle.add(ring);
+    for (const angle of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) {
+      const tick = new THREE.Mesh(
+        new THREE.BoxGeometry(6, 1.6, 1),
+        reticleMaterial,
+      );
+      tick.position.set(Math.cos(angle) * 19, Math.sin(angle) * 19, 0);
+      tick.rotation.z = angle;
+      this.reticle.add(tick);
     }
-    const labelCanvas=document.createElement('canvas');labelCanvas.width=256;labelCanvas.height=64;
-    const labelTexture=new THREE.CanvasTexture(labelCanvas);labelTexture.colorSpace=THREE.SRGBColorSpace;
-    this.stunLabel=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTexture,depthTest:false}));this.stunLabel.scale.set(128,32,1);this.stunLabel.position.set(0,130,0);this.stun.add(this.stunLabel);
+    const dot = new THREE.Mesh(
+      new THREE.CircleGeometry(2.4, 16),
+      new THREE.MeshBasicMaterial({ color: "#ffd35c", depthTest: false }),
+    );
+    this.reticle.add(dot);
+    this.reticle.renderOrder = 100;
+    this.reticle.traverse((child) => (child.renderOrder = 100));
+    this.scene.add(this.reticle);
+    for (let i = 0; i < 3; i++) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(71 + i * 5, 1.5, 6, 64),
+        new THREE.MeshBasicMaterial({
+          color: i % 2 ? "#ffaef5" : "#bc65f4",
+          transparent: true,
+          opacity: 0.8,
+        }),
+      );
+      ring.rotation.set(i * 0.7, 0.45 + i * 0.5, 0);
+      this.stun.add(ring);
+    }
+    const labelCanvas = document.createElement("canvas");
+    labelCanvas.width = 256;
+    labelCanvas.height = 64;
+    const labelTexture = new THREE.CanvasTexture(labelCanvas);
+    labelTexture.colorSpace = THREE.SRGBColorSpace;
+    this.stunLabel = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: labelTexture, depthTest: false }),
+    );
+    this.stunLabel.scale.set(128, 32, 1);
+    this.stunLabel.position.set(0, 130, 0);
+    this.stun.add(this.stunLabel);
     this.scene.add(this.stun);
-    for(const [effect,color] of [[this.reviewEffect,'#a4efff'],[this.lintEffect,'#d8acff']] as const) {
-      for(let i=0;i<3;i++){
-        const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.009,6,96),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.8,depthWrite:false}));
-        ring.rotation.set(i===1?.28:0,i===2?.3:0,0);ring.userData.ring=i;effect.add(ring);
+    for (const [effect, color] of [
+      [this.reviewEffect, "#a4efff"],
+      [this.lintEffect, "#d8acff"],
+    ] as const) {
+      for (let i = 0; i < 3; i++) {
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(1, 0.009, 6, 96),
+          new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false,
+          }),
+        );
+        ring.rotation.set(i === 1 ? 0.28 : 0, i === 2 ? 0.3 : 0, 0);
+        ring.userData.ring = i;
+        effect.add(ring);
       }
-      effect.position.set(640,360,55);effect.visible=false;this.scene.add(effect);
+      effect.position.set(640, 360, 55);
+      effect.visible = false;
+      this.scene.add(effect);
     }
-    this.reviewEffect.name='code-review-freeze-wave';this.lintEffect.name='lint-bomb-screen-wave';
-    this.reviewBeam.name='code-review-freeze-beam';this.reviewBeam.visible=false;this.scene.add(this.reviewBeam);
-    this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(parent);this.resize();
+    this.reviewEffect.name = "code-review-freeze-wave";
+    this.lintEffect.name = "lint-bomb-screen-wave";
+    this.reviewBeam.name = "code-review-freeze-beam";
+    this.reviewBeam.visible = false;
+    this.scene.add(this.reviewBeam);
+    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver.observe(parent);
+    this.resize();
   }
 
   resize() {
-    const available=this.parent.getBoundingClientRect();
-    const width=Math.max(1,Math.min(available.width||WIDTH,(available.height||HEIGHT)*16/9));
-    this.renderer.setSize(width,width*9/16);
-    this.renderer.domElement.style.margin='auto';
+    const available = this.parent.getBoundingClientRect();
+    const width = Math.max(
+      1,
+      Math.min(
+        available.width || WIDTH,
+        ((available.height || HEIGHT) * 16) / 9,
+      ),
+    );
+    this.renderer.setSize(width, (width * 9) / 16);
+    this.renderer.domElement.style.margin = "auto";
   }
 
-  async initialize() { this.debris=await DebrisPhysics.create(this.scene); }
-
-  private placeCode(mesh:THREE.Group,block:Block) {
-    const tumble=block.boss?(block.generation>0?.13:.065):block.generation>0?.45:.18;
-    const phase=block.id*.81+block.age*(block.generation>0?1.65:.65);
-    mesh.position.set(block.x,720-block.y,0);
-    mesh.rotation.set(Math.sin(phase)*tumble,Math.cos(phase*.83)*tumble,-block.angle,'ZYX');
+  async initialize() {
+    this.debris = await DebrisPhysics.create(this.scene);
   }
 
-  private visualEvents(sim:Simulation) {
-    const events=sim.visualEvents.splice(0);
-    const dying=new Set(events.filter(event=>event.type==='code-death').map(event=>event.block.id));
-    for(const event of events) {
-      if(event.type==='impact') this.debris.impact(event.target==='code'&&dying.has(event.blockId!)?{...event,removed:[]}:event);
-      else if(event.type==='code-death') {
-        const cached=this.blocks.get(event.block.id);
-        const mesh=cached??createCodeMesh(event.block);
-        if(!cached)this.placeCode(mesh,event.block);
-        this.debris.dismantleCode(mesh,event.block,event.seed,{...event,target:'code'});
-        if(!cached)disposeObject(mesh);
-      }
-      else if(event.type==='robot-death') {
-        let robot=this.robotMeshes.get(event.robot.id);
-        if(!robot) { robot=createRobot(event.robot.brand);robot.position.set(event.robot.x,720-event.robot.y,0);animateRobot(robot,event.robot,false); }
-        this.debris.dismantleRobot(robot,event.robot,event.seed);
-        if(!this.robotMeshes.has(event.robot.id))disposeObject(robot);
-      } else if(event.type==='split') {
-        const old=this.blocks.get(event.parent.id);
+  private placeCode(mesh: THREE.Group, block: Block) {
+    const tumble = block.boss
+      ? block.generation > 0
+        ? 0.13
+        : 0.065
+      : block.generation > 0
+        ? 0.45
+        : 0.18;
+    const phase =
+      block.id * 0.81 + block.age * (block.generation > 0 ? 1.65 : 0.65);
+    mesh.position.set(block.x, 720 - block.y, 0);
+    mesh.rotation.set(
+      Math.sin(phase) * tumble,
+      Math.cos(phase * 0.83) * tumble,
+      -block.angle,
+      "ZYX",
+    );
+  }
+
+  private visualEvents(sim: Simulation) {
+    const events = sim.visualEvents.splice(0);
+    const dying = new Set(
+      events
+        .filter((event) => event.type === "code-death")
+        .map((event) => event.block.id),
+    );
+    for (const event of events) {
+      if (event.type === "impact")
+        this.debris.impact(
+          event.target === "code" && dying.has(event.blockId!)
+            ? { ...event, removed: [] }
+            : event,
+        );
+      else if (event.type === "code-death") {
+        const cached = this.blocks.get(event.block.id);
+        const mesh = cached ?? createCodeMesh(event.block);
+        if (!cached) this.placeCode(mesh, event.block);
+        this.debris.dismantleCode(mesh, event.block, event.seed, {
+          ...event,
+          target: "code",
+        });
+        if (!cached) disposeObject(mesh);
+      } else if (event.type === "robot-death") {
+        let robot = this.robotMeshes.get(event.robot.id);
+        if (!robot) {
+          robot = createRobot(event.robot.brand);
+          robot.position.set(event.robot.x, 720 - event.robot.y, 0);
+          animateRobot(robot, event.robot, false);
+        }
+        this.debris.dismantleRobot(robot, event.robot, event.seed);
+        if (!this.robotMeshes.has(event.robot.id)) disposeObject(robot);
+      } else if (event.type === "split") {
+        const old = this.blocks.get(event.parent.id);
         // Rebuild the damaged parent first so fractures retain its new holes and surface.
-        const parent=createCodeMesh(event.parent,old);
-        if(old) { parent.position.copy(old.position);parent.quaternion.copy(old.quaternion); }
-        else this.placeCode(parent,event.parent);
+        const parent = createCodeMesh(event.parent, old);
+        if (old) {
+          parent.position.copy(old.position);
+          parent.quaternion.copy(old.quaternion);
+        } else this.placeCode(parent, event.parent);
         parent.updateMatrixWorld(true);
-        for(const child of event.children) {
-          const fragment=createFragmentMesh(child,parent,event.parent);
-          const offset=child.fracture!;
-          const origin=new THREE.Vector3(offset.offsetX,-offset.offsetY,0).applyQuaternion(parent.quaternion).add(parent.position);
-          fragment.position.copy(origin);fragment.quaternion.copy(parent.quaternion);
-          fragment.userData.splitPose={offset:origin.clone().sub(new THREE.Vector3(child.x,720-child.y,0)),quaternion:parent.quaternion.clone(),age:0};
-          const stale=this.blocks.get(child.id);if(stale)disposeObject(stale);
-          this.blocks.set(child.id,fragment);this.scene.add(fragment);
+        for (const child of event.children) {
+          const fragment = createFragmentMesh(child, parent, event.parent);
+          const offset = child.fracture!;
+          const origin = new THREE.Vector3(offset.offsetX, -offset.offsetY, 0)
+            .applyQuaternion(parent.quaternion)
+            .add(parent.position);
+          fragment.position.copy(origin);
+          fragment.quaternion.copy(parent.quaternion);
+          fragment.userData.splitPose = {
+            offset: origin
+              .clone()
+              .sub(new THREE.Vector3(child.x, 720 - child.y, 0)),
+            quaternion: parent.quaternion.clone(),
+            age: 0,
+          };
+          const stale = this.blocks.get(child.id);
+          if (stale) disposeObject(stale);
+          this.blocks.set(child.id, fragment);
+          this.scene.add(fragment);
         }
         disposeObject(parent);
       }
     }
   }
 
-  private sync<T extends Entity>(entities:T[],cache:Map<number,THREE.Group>,create:(entity:T)=>THREE.Group,update:(mesh:THREE.Group,entity:T)=>void) {
-    const alive=new Set(entities.map(e=>e.id));
-    for(const [id,mesh] of cache)if(!alive.has(id)){disposeObject(mesh);cache.delete(id);}
-    for(const entity of entities){let mesh=cache.get(entity.id);if(!mesh){mesh=create(entity);cache.set(entity.id,mesh);this.scene.add(mesh);}mesh.position.set(entity.x,720-entity.y,0);update(mesh,entity);}
-  }
-
-  private hazard(hazard:TimeoutHazard) {
-    const text=`await setTimeout(${hazard.durationMs});`,{fontSize,charWidth,widthPadding,height,depth}=TIMEOUT_METRICS,width=text.length*charWidth+widthPadding;
-    const canvas=document.createElement('canvas');canvas.width=width*3;canvas.height=height*3;
-    const c=canvas.getContext('2d')!;c.scale(3,3);c.fillStyle='#442336';c.fillRect(0,0,width,height);
-    c.strokeStyle='#ffc58b';c.lineWidth=2.5;c.strokeRect(1.25,1.25,width-2.5,height-2.5);
-    c.fillStyle='#9e5670';c.fillRect(3,3,4,height-6);
-    c.font=`bold ${fontSize}px monospace`;c.textBaseline='middle';let x=(width-text.length*charWidth)/2;
-    for(const [word,color] of [['await ','#e5baff'],['setTimeout','#fff7ce'],['(','#ffcfb0'],[String(hazard.durationMs),'#ffbd80'],[');','#ffcfb0']]){c.fillStyle=color;c.fillText(word!,x,height/2);x+=word!.length*charWidth;}
-    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
-    const face=new THREE.MeshToonMaterial({map:texture});const side=new THREE.MeshToonMaterial({color:'#df7456'});
-    const group=new THREE.Group();group.name='timeout-solid';
-    group.userData.width=width;group.userData.height=height;group.userData.fontSize=fontSize;
-    const mesh=new THREE.Mesh(new THREE.BoxGeometry(width,height,depth),[side,side,side,side,face,side]);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
-    const trail=new THREE.Mesh(new THREE.ConeGeometry(12,100,5),new THREE.MeshBasicMaterial({color:'#ff9975',transparent:true,opacity:.32}));trail.rotation.z=-Math.PI/2;trail.position.set(width/2+50,0,-3);group.add(trail);return group;
-  }
-
-  private particle(particle:Particle) {
-    if(particle.char){
-      const key=`${particle.char}:${particle.color}`;let texture=this.letterTextures.get(key);
-      if(!texture){const canvas=document.createElement('canvas');canvas.width=32;canvas.height=40;const c=canvas.getContext('2d')!;c.font='bold 27px monospace';c.fillStyle=particle.color;c.textAlign='center';c.textBaseline='middle';c.fillText(particle.char,16,20);texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;this.letterTextures.set(key,texture);}
-      return new THREE.Mesh(new THREE.PlaneGeometry(12,15),new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide,depthWrite:false}));
+  private sync<T extends Entity>(
+    entities: T[],
+    cache: Map<number, THREE.Group>,
+    create: (entity: T) => THREE.Group,
+    update: (mesh: THREE.Group, entity: T) => void,
+  ) {
+    const alive = new Set(entities.map((e) => e.id));
+    for (const [id, mesh] of cache)
+      if (!alive.has(id)) {
+        disposeObject(mesh);
+        cache.delete(id);
+      }
+    for (const entity of entities) {
+      let mesh = cache.get(entity.id);
+      if (!mesh) {
+        mesh = create(entity);
+        cache.set(entity.id, mesh);
+        this.scene.add(mesh);
+      }
+      mesh.position.set(entity.x, 720 - entity.y, 0);
+      update(mesh, entity);
     }
-    const mesh=new THREE.Mesh(new THREE.BoxGeometry(4,4,4),new THREE.MeshToonMaterial({color:particle.color,transparent:true}));mesh.castShadow=true;return mesh;
   }
 
-  render(sim:Simulation,muzzle:number,impact:number) {
-    const t=sim.elapsed;
-    const effectsDt=Math.max(0,Math.min(.25,t-this.lastEffectsTime));this.lastEffectsTime=t;
+  private hazard(hazard: TimeoutHazard) {
+    const text = `await setTimeout(${hazard.durationMs});`,
+      { fontSize, charWidth, widthPadding, height, depth } = TIMEOUT_METRICS,
+      width = text.length * charWidth + widthPadding;
+    const canvas = document.createElement("canvas");
+    canvas.width = width * 3;
+    canvas.height = height * 3;
+    const c = canvas.getContext("2d")!;
+    c.scale(3, 3);
+    c.fillStyle = "#442336";
+    c.fillRect(0, 0, width, height);
+    c.strokeStyle = "#ffc58b";
+    c.lineWidth = 2.5;
+    c.strokeRect(1.25, 1.25, width - 2.5, height - 2.5);
+    c.fillStyle = "#9e5670";
+    c.fillRect(3, 3, 4, height - 6);
+    c.font = `bold ${fontSize}px monospace`;
+    c.textBaseline = "middle";
+    let x = (width - text.length * charWidth) / 2;
+    for (const [word, color] of [
+      ["await ", "#e5baff"],
+      ["setTimeout", "#fff7ce"],
+      ["(", "#ffcfb0"],
+      [String(hazard.durationMs), "#ffbd80"],
+      [");", "#ffcfb0"],
+    ]) {
+      c.fillStyle = color;
+      c.fillText(word!, x, height / 2);
+      x += word!.length * charWidth;
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const face = new THREE.MeshToonMaterial({ map: texture });
+    const side = new THREE.MeshToonMaterial({ color: "#df7456" });
+    const group = new THREE.Group();
+    group.name = "timeout-solid";
+    group.userData.width = width;
+    group.userData.height = height;
+    group.userData.fontSize = fontSize;
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), [
+      side,
+      side,
+      side,
+      side,
+      face,
+      side,
+    ]);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+    const trail = new THREE.Mesh(
+      new THREE.ConeGeometry(12, 100, 5),
+      new THREE.MeshBasicMaterial({
+        color: "#ff9975",
+        transparent: true,
+        opacity: 0.32,
+      }),
+    );
+    trail.rotation.z = -Math.PI / 2;
+    trail.position.set(width / 2 + 50, 0, -3);
+    group.add(trail);
+    return group;
+  }
+
+  private particle(particle: Particle) {
+    if (particle.char) {
+      const key = `${particle.char}:${particle.color}`;
+      let texture = this.letterTextures.get(key);
+      if (!texture) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 32;
+        canvas.height = 40;
+        const c = canvas.getContext("2d")!;
+        c.font = "bold 27px monospace";
+        c.fillStyle = particle.color;
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        c.fillText(particle.char, 16, 20);
+        texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        this.letterTextures.set(key, texture);
+      }
+      return new THREE.Mesh(
+        new THREE.PlaneGeometry(12, 15),
+        new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        }),
+      );
+    }
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(4, 4, 4),
+      new THREE.MeshToonMaterial({ color: particle.color, transparent: true }),
+    );
+    mesh.castShadow = true;
+    return mesh;
+  }
+
+  render(sim: Simulation, muzzle: number, impact: number) {
+    const t = sim.elapsed;
+    const effectsDt = Math.max(0, Math.min(0.25, t - this.lastEffectsTime));
+    this.lastEffectsTime = t;
     this.visualEvents(sim);
     this.debris.update(effectsDt);
-    const alive=new Set(sim.blocks.map(b=>b.id));
-    for(const [id,mesh] of this.blocks)if(!alive.has(id)){disposeObject(mesh);this.blocks.delete(id);}
-    for(const block of sim.blocks){
-      let mesh=this.blocks.get(block.id);
-      if(mesh&&(mesh.userData.hits!==block.hits||mesh.userData.cellCount!==block.cells.length||mesh.userData.boss!==block.boss||mesh.userData.angry!==block.angry||mesh.userData.exception!==block.exception)){
-        const replacement=createCodeMesh(block,mesh);replacement.userData.splitPose=mesh.userData.splitPose;
-        disposeObject(mesh);mesh=replacement;this.blocks.set(block.id,mesh);this.scene.add(mesh);
+    const alive = new Set(sim.blocks.map((b) => b.id));
+    for (const [id, mesh] of this.blocks)
+      if (!alive.has(id)) {
+        disposeObject(mesh);
+        this.blocks.delete(id);
       }
-      if(!mesh){mesh=createCodeMesh(block);this.blocks.set(block.id,mesh);this.scene.add(mesh);}
-      const tumble=block.boss?(block.generation>0?.13:.065):block.generation>0 ? .45 : .18;
-      const phase=block.id*.81+block.age*(block.generation>0?1.65:.65);
-      const rattle=block.angry&&sim.freezeRemaining<=0&&!this.reducedMotion?Math.sin(block.age*47)*2:0;
-      mesh.position.set(block.x+rattle,720-block.y+Math.cos(block.age*39)*Math.abs(rattle)*.45,0);
-      mesh.rotation.set(Math.sin(phase)*tumble,Math.cos(phase*.83)*tumble,-block.angle,'ZYX');
-      const splitPose=mesh.userData.splitPose;
-      if(splitPose){splitPose.age+=effectsDt;const blend=Math.exp(-splitPose.age*12);mesh.position.addScaledVector(splitPose.offset,blend);mesh.quaternion.slerp(splitPose.quaternion,blend);if(blend<.005)delete mesh.userData.splitPose;}
-      mesh.userData.frozen=sim.freezeRemaining>0;
-      mesh.getObjectByName('frozen-code-outline')!.visible=sim.freezeRemaining>0;
-      const solid=mesh.getObjectByName('perforated-extruded-code') as THREE.Mesh;
-      (solid.material as THREE.MeshToonMaterial[]).forEach((material,index)=>{material.emissive.set(sim.freezeRemaining>0?'#286b97':block.boss&&index===1?'#7c2314':block.angry&&index===1?'#6a0f22':'#000000');material.emissiveIntensity=sim.freezeRemaining>0?.42:.3;});
-      const reactor=mesh.getObjectByName('factory-boss-reactor');if(reactor)reactor.rotation.z=block.age*2;
-      const core=mesh.getObjectByName('factory-boss-core') as THREE.Mesh|undefined;if(core)(core.material as THREE.MeshStandardMaterial).emissiveIntensity=.6+Math.sin(block.age*5)*.4;
+    for (const block of sim.blocks) {
+      let mesh = this.blocks.get(block.id);
+      if (
+        mesh &&
+        (mesh.userData.hits !== block.hits ||
+          mesh.userData.cellCount !== block.cells.length ||
+          mesh.userData.boss !== block.boss ||
+          mesh.userData.angry !== block.angry ||
+          mesh.userData.exception !== block.exception)
+      ) {
+        const replacement = createCodeMesh(block, mesh);
+        replacement.userData.splitPose = mesh.userData.splitPose;
+        disposeObject(mesh);
+        mesh = replacement;
+        this.blocks.set(block.id, mesh);
+        this.scene.add(mesh);
+      }
+      if (!mesh) {
+        mesh = createCodeMesh(block);
+        this.blocks.set(block.id, mesh);
+        this.scene.add(mesh);
+      }
+      const tumble = block.boss
+        ? block.generation > 0
+          ? 0.13
+          : 0.065
+        : block.generation > 0
+          ? 0.45
+          : 0.18;
+      const phase =
+        block.id * 0.81 + block.age * (block.generation > 0 ? 1.65 : 0.65);
+      const rattle =
+        block.angry && sim.freezeRemaining <= 0 && !this.reducedMotion
+          ? Math.sin(block.age * 47) * 2
+          : 0;
+      mesh.position.set(
+        block.x + rattle,
+        720 - block.y + Math.cos(block.age * 39) * Math.abs(rattle) * 0.45,
+        0,
+      );
+      mesh.rotation.set(
+        Math.sin(phase) * tumble,
+        Math.cos(phase * 0.83) * tumble,
+        -block.angle,
+        "ZYX",
+      );
+      const splitPose = mesh.userData.splitPose;
+      if (splitPose) {
+        splitPose.age += effectsDt;
+        const blend = Math.exp(-splitPose.age * 12);
+        mesh.position.addScaledVector(splitPose.offset, blend);
+        mesh.quaternion.slerp(splitPose.quaternion, blend);
+        if (blend < 0.005) delete mesh.userData.splitPose;
+      }
+      mesh.userData.frozen = sim.freezeRemaining > 0;
+      mesh.getObjectByName("frozen-code-outline")!.visible =
+        sim.freezeRemaining > 0;
+      const solid = mesh.getObjectByName(
+        "perforated-extruded-code",
+      ) as THREE.Mesh;
+      (solid.material as THREE.MeshToonMaterial[]).forEach(
+        (material, index) => {
+          material.emissive.set(
+            sim.freezeRemaining > 0
+              ? "#286b97"
+              : block.boss && index === 1
+                ? "#7c2314"
+                : block.angry && index === 1
+                  ? "#6a0f22"
+                  : "#000000",
+          );
+          material.emissiveIntensity = sim.freezeRemaining > 0 ? 0.42 : 0.3;
+        },
+      );
+      const reactor = mesh.getObjectByName("factory-boss-reactor");
+      if (reactor) reactor.rotation.z = block.age * 2;
+      const core = mesh.getObjectByName("factory-boss-core") as
+        THREE.Mesh | undefined;
+      if (core)
+        (core.material as THREE.MeshStandardMaterial).emissiveIntensity =
+          0.6 + Math.sin(block.age * 5) * 0.4;
     }
-    this.sync(sim.robots,this.robotMeshes,r=>createRobot(r.brand),(mesh,r)=>animateRobot(mesh,r,sim.freezeRemaining>0));
-    this.sync(sim.bullets,this.bulletMeshes,()=>createBullet(),(mesh,b)=>{mesh.rotation.z=-Math.atan2(b.vy,b.vx);});
-    this.sync(sim.pickups,this.pickupMeshes,p=>createPickup(p.type),(mesh,p)=>{mesh.rotation.set(Math.sin(p.age*2)*.28,Math.sin(p.age*2.6)*.5,Math.sin(p.age*3)*.13);});
-    this.sync(sim.specials,this.specialMeshes,p=>createSpecial(p.type),(mesh,p)=>{mesh.rotation.set(p.type==='grenade'?t*4:.12,p.type==='grenade'?t*3:.24,-p.angle);});
-    this.sync(sim.hazards,this.hazardMeshes,h=>this.hazard(h),(mesh,h)=>{mesh.rotation.set(Math.sin(h.age*8)*.045,Math.sin(h.age*6)*.055,Math.atan2(h.vy,-h.vx)*.12);});
-    for(const [effect,remaining,duration] of [[this.reviewEffect,sim.reviewPulse,.65],[this.lintEffect,sim.lintPulse,.8]] as const) {
-      effect.visible=remaining>0;
-      if(remaining>0){const progress=1-remaining/duration;effect.children.forEach((child,index)=>{const ring=child as THREE.Mesh;ring.scale.setScalar(30+progress*1100-index*24);(ring.material as THREE.MeshBasicMaterial).opacity=(1-progress)*.85;});}
+    this.sync(
+      sim.robots,
+      this.robotMeshes,
+      (r) => createRobot(r.brand),
+      (mesh, r) => animateRobot(mesh, r, sim.freezeRemaining > 0),
+    );
+    this.sync(
+      sim.bullets,
+      this.bulletMeshes,
+      () => createBullet(),
+      (mesh, b) => {
+        mesh.rotation.z = -Math.atan2(b.vy, b.vx);
+      },
+    );
+    this.sync(
+      sim.pickups,
+      this.pickupMeshes,
+      (p) => createPickup(p.type),
+      (mesh, p) => {
+        mesh.rotation.set(
+          Math.sin(p.age * 2) * 0.28,
+          Math.sin(p.age * 2.6) * 0.5,
+          Math.sin(p.age * 3) * 0.13,
+        );
+      },
+    );
+    this.sync(
+      sim.specials,
+      this.specialMeshes,
+      (p) => createSpecial(p.type),
+      (mesh, p) => {
+        mesh.rotation.set(
+          p.type === "grenade" ? t * 4 : 0.12,
+          p.type === "grenade" ? t * 3 : 0.24,
+          -p.angle,
+        );
+      },
+    );
+    this.sync(
+      sim.hazards,
+      this.hazardMeshes,
+      (h) => this.hazard(h),
+      (mesh, h) => {
+        mesh.rotation.set(
+          Math.sin(h.age * 8) * 0.045,
+          Math.sin(h.age * 6) * 0.055,
+          Math.atan2(h.vy, -h.vx) * 0.12,
+        );
+      },
+    );
+    for (const [effect, remaining, duration] of [
+      [this.reviewEffect, sim.reviewPulse, 0.65],
+      [this.lintEffect, sim.lintPulse, 0.8],
+    ] as const) {
+      effect.visible = remaining > 0;
+      if (remaining > 0) {
+        const progress = 1 - remaining / duration;
+        effect.children.forEach((child, index) => {
+          const ring = child as THREE.Mesh;
+          ring.scale.setScalar(30 + progress * 1100 - index * 24);
+          (ring.material as THREE.MeshBasicMaterial).opacity =
+            (1 - progress) * 0.85;
+        });
+      }
     }
-    this.reviewBeam.visible=sim.reviewPulse>.35;
-    if(this.reviewBeam.visible){const a=new THREE.Vector3(170,720-sim.playerY,35),b=new THREE.Vector3(sim.aimX,720-sim.aimY,40),direction=b.clone().sub(a);this.reviewBeam.position.copy(a.add(b).multiplyScalar(.5));this.reviewBeam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.clone().normalize());this.reviewBeam.scale.y=direction.length();(this.reviewBeam.material as THREE.MeshBasicMaterial).opacity=Math.min(.7,(sim.reviewPulse-.35)*3);}
+    this.reviewBeam.visible = sim.reviewPulse > 0.35;
+    if (this.reviewBeam.visible) {
+      const a = new THREE.Vector3(170, 720 - sim.playerY, 35),
+        b = new THREE.Vector3(sim.aimX, 720 - sim.aimY, 40),
+        direction = b.clone().sub(a);
+      this.reviewBeam.position.copy(a.add(b).multiplyScalar(0.5));
+      this.reviewBeam.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        direction.clone().normalize(),
+      );
+      this.reviewBeam.scale.y = direction.length();
+      (this.reviewBeam.material as THREE.MeshBasicMaterial).opacity = Math.min(
+        0.7,
+        (sim.reviewPulse - 0.35) * 3,
+      );
+    }
     // Detached letters now belong to the independent 3D debris world.
-    const particles=sim.particles.filter(p=>!p.char).slice(-100);const livingParticles=new Set(particles);
-    for(const [particle,mesh] of this.particleMeshes)if(!livingParticles.has(particle)){
-      mesh.geometry.dispose();(mesh.material as THREE.Material).dispose();mesh.removeFromParent();this.particleMeshes.delete(particle);
+    const particles = sim.particles.filter((p) => !p.char).slice(-100);
+    const livingParticles = new Set(particles);
+    for (const [particle, mesh] of this.particleMeshes)
+      if (!livingParticles.has(particle)) {
+        mesh.geometry.dispose();
+        (mesh.material as THREE.Material).dispose();
+        mesh.removeFromParent();
+        this.particleMeshes.delete(particle);
+      }
+    for (const particle of particles) {
+      let mesh = this.particleMeshes.get(particle);
+      if (!mesh) {
+        mesh = this.particle(particle);
+        this.particleMeshes.set(particle, mesh);
+        this.scene.add(mesh);
+      }
+      const age = particle.maxLife - particle.life;
+      mesh.position.set(
+        particle.x,
+        720 - particle.y,
+        Math.sin(age * 3) * 35 + 20,
+      );
+      mesh.rotation.set(age * 3, age * 4, particle.angle);
+      (mesh.material as THREE.MeshBasicMaterial).opacity = Math.min(
+        1,
+        (particle.life / particle.maxLife) * 2,
+      );
     }
-    for(const particle of particles){let mesh=this.particleMeshes.get(particle);if(!mesh){mesh=this.particle(particle);this.particleMeshes.set(particle,mesh);this.scene.add(mesh);}
-      const age=particle.maxLife-particle.life;mesh.position.set(particle.x,720-particle.y,Math.sin(age*3)*35+20);
-      mesh.rotation.set(age*3,age*4,particle.angle);(mesh.material as THREE.MeshBasicMaterial).opacity=Math.min(1,particle.life/particle.maxLife*2);
+    while (this.explosionMeshes.length < sim.explosions.length) {
+      const mesh = new THREE.Mesh(
+        new THREE.TorusGeometry(1, 0.025, 5, 64),
+        new THREE.MeshBasicMaterial({
+          color: "#ffe8a4",
+          transparent: true,
+          depthWrite: false,
+        }),
+      );
+      this.explosionMeshes.push(mesh);
+      this.scene.add(mesh);
     }
-    while(this.explosionMeshes.length<sim.explosions.length){const mesh=new THREE.Mesh(new THREE.TorusGeometry(1,.025,5,64),new THREE.MeshBasicMaterial({color:'#ffe8a4',transparent:true,depthWrite:false}));this.explosionMeshes.push(mesh);this.scene.add(mesh);}
-    this.explosionMeshes.forEach((mesh,i)=>{const explosion=sim.explosions[i];mesh.visible=!!explosion;if(!explosion)return;const progress=1-explosion.life/explosion.maxLife,radius=explosion.radius*(.35+progress*.65);mesh.position.set(explosion.x,720-explosion.y,25);mesh.rotation.set(progress*.3,progress*.5,0);mesh.scale.setScalar(radius);(mesh.material as THREE.MeshBasicMaterial).opacity=1-progress;});
-    const angle=-Math.atan2(sim.aimY-sim.playerY,Math.max(80,sim.aimX-158));
-    this.specialist.position.set(82,720-sim.playerY,0);
-    this.specialist.rotation.y=Math.sin(t*1.5)*.08;
-    this.cannon.position.set(103-(muzzle>0?4:0),720-sim.playerY,24);this.cannon.rotation.set(0,-.1,angle);
-    this.muzzleLight.position.set(103+Math.cos(angle)*88,720-sim.playerY+Math.sin(angle)*88,70);this.muzzleLight.intensity=muzzle>0?95000:0;
-    const flash=this.cannon.getObjectByName('muzzle-flash');if(flash)flash.visible=muzzle>0;
-    const blast=sim.explosions[0];this.explosionLight.intensity=blast?120000*blast.life/blast.maxLife:impact>2?18000:0;
-    if(blast)this.explosionLight.position.set(blast.x,720-blast.y,90);
-    this.reticle.position.set(sim.aimX,720-sim.aimY,0);
-    this.stun.visible=sim.isStunned;this.stun.position.set(86,720-sim.playerY,45);
-    if(sim.isStunned){for(let i=0;i<3;i++)this.stun.children[i]!.rotation.z=t*(i%2?-2:2);const canvas=(this.stunLabel.material.map!.image as HTMLCanvasElement),c=canvas.getContext('2d')!;c.clearRect(0,0,256,64);c.fillStyle='#56286e';c.fillRect(0,0,256,64);c.fillStyle='#ffe0ff';c.font='bold 25px monospace';c.textAlign='center';c.textBaseline='middle';c.fillText(`AWAIT ${sim.stunRemaining.toFixed(1)}s`,128,32);this.stunLabel.material.map!.needsUpdate=true;}
-    this.dangerMaterial.color.set(sim.blocks.some(b=>b.x<240)?'#de6a47':'#8faf76');
-    const shake=this.reducedMotion?0:Math.min(impact,3)*.35;
-    this.camera.position.set(640+Math.sin(t*145)*shake,360+Math.cos(t*133)*shake,1400);
-    this.renderer.render(this.scene,this.camera);
+    this.explosionMeshes.forEach((mesh, i) => {
+      const explosion = sim.explosions[i];
+      mesh.visible = !!explosion;
+      if (!explosion) return;
+      const progress = 1 - explosion.life / explosion.maxLife,
+        radius = explosion.radius * (0.35 + progress * 0.65);
+      mesh.position.set(explosion.x, 720 - explosion.y, 25);
+      mesh.rotation.set(progress * 0.3, progress * 0.5, 0);
+      mesh.scale.setScalar(radius);
+      (mesh.material as THREE.MeshBasicMaterial).opacity = 1 - progress;
+    });
+    const angle = -Math.atan2(
+      sim.aimY - sim.playerY,
+      Math.max(80, sim.aimX - 158),
+    );
+    this.specialist.position.set(82, 720 - sim.playerY, 0);
+    this.specialist.rotation.y = Math.sin(t * 1.5) * 0.08;
+    this.cannon.position.set(103 - (muzzle > 0 ? 4 : 0), 720 - sim.playerY, 24);
+    this.cannon.rotation.set(0, -0.1, angle);
+    this.muzzleLight.position.set(
+      103 + Math.cos(angle) * 88,
+      720 - sim.playerY + Math.sin(angle) * 88,
+      70,
+    );
+    this.muzzleLight.intensity = muzzle > 0 ? 95000 : 0;
+    const flash = this.cannon.getObjectByName("muzzle-flash");
+    if (flash) flash.visible = muzzle > 0;
+    const blast = sim.explosions[0];
+    this.explosionLight.intensity = blast
+      ? (120000 * blast.life) / blast.maxLife
+      : impact > 2
+        ? 18000
+        : 0;
+    if (blast) this.explosionLight.position.set(blast.x, 720 - blast.y, 90);
+    this.reticle.position.set(sim.aimX, 720 - sim.aimY, 0);
+    this.stun.visible = sim.isStunned;
+    this.stun.position.set(86, 720 - sim.playerY, 45);
+    if (sim.isStunned) {
+      for (let i = 0; i < 3; i++)
+        this.stun.children[i]!.rotation.z = t * (i % 2 ? -2 : 2);
+      const canvas = this.stunLabel.material.map!.image as HTMLCanvasElement,
+        c = canvas.getContext("2d")!;
+      c.clearRect(0, 0, 256, 64);
+      c.fillStyle = "#56286e";
+      c.fillRect(0, 0, 256, 64);
+      c.fillStyle = "#ffe0ff";
+      c.font = "bold 25px monospace";
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.fillText(`AWAIT ${sim.stunRemaining.toFixed(1)}s`, 128, 32);
+      this.stunLabel.material.map!.needsUpdate = true;
+    }
+    this.dangerMaterial.color.set(
+      sim.blocks.some((b) => b.x < 240) ? "#de6a47" : "#8faf76",
+    );
+    const shake = this.reducedMotion ? 0 : Math.min(impact, 3) * 0.35;
+    this.camera.position.set(
+      640 + Math.sin(t * 145) * shake,
+      360 + Math.cos(t * 133) * shake,
+      1400,
+    );
+    this.renderer.render(this.scene, this.camera);
   }
 
   reset() {
-    this.debris?.reset();this.lastEffectsTime=0;
-    for(const cache of [this.blocks,this.robotMeshes,this.bulletMeshes,this.pickupMeshes,this.specialMeshes,this.hazardMeshes]){cache.forEach(disposeObject);cache.clear();}
-    this.particleMeshes.forEach(mesh=>{mesh.geometry.dispose();(mesh.material as THREE.Material).dispose();mesh.removeFromParent();});this.particleMeshes.clear();
-    this.explosionMeshes.forEach(mesh=>mesh.visible=false);this.muzzleLight.intensity=this.explosionLight.intensity=0;
-    this.reviewEffect.visible=this.lintEffect.visible=this.reviewBeam.visible=false;
+    this.debris?.reset();
+    this.lastEffectsTime = 0;
+    for (const cache of [
+      this.blocks,
+      this.robotMeshes,
+      this.bulletMeshes,
+      this.pickupMeshes,
+      this.specialMeshes,
+      this.hazardMeshes,
+    ]) {
+      cache.forEach(disposeObject);
+      cache.clear();
+    }
+    this.particleMeshes.forEach((mesh) => {
+      mesh.geometry.dispose();
+      (mesh.material as THREE.Material).dispose();
+      mesh.removeFromParent();
+    });
+    this.particleMeshes.clear();
+    this.explosionMeshes.forEach((mesh) => (mesh.visible = false));
+    this.muzzleLight.intensity = this.explosionLight.intensity = 0;
+    this.reviewEffect.visible =
+      this.lintEffect.visible =
+      this.reviewBeam.visible =
+        false;
   }
 
   dispose() {
-    this.resizeObserver.disconnect();this.reset();this.debris?.dispose();this.letterTextures.forEach(texture=>texture.dispose());this.letterTextures.clear();
-    disposeObject(this.scene);this.renderer.dispose();this.renderer.domElement.remove();
+    this.resizeObserver.disconnect();
+    this.reset();
+    this.debris?.dispose();
+    this.letterTextures.forEach((texture) => texture.dispose());
+    this.letterTextures.clear();
+    disposeObject(this.scene);
+    this.renderer.dispose();
+    this.renderer.domElement.remove();
   }
 }
