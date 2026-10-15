@@ -324,6 +324,9 @@ test("timeout collision paralyzes movement and all weapons, then recovers", asyn
   await expect(page.locator("#combo")).toContainText("EVENT LOOP BLOCKED");
   const before = await page.evaluate(() => {
     const s = (window as any).__spaghetti.simulation;
+    // Keep slow software-WebGL input checks inside the stun window; recovery is
+    // advanced explicitly below, independently of browser scheduling delays.
+    s.stunRemaining = 30;
     return { y: s.playerY, shots: s.shotsFired, ammo: s.specialAmmo.homing };
   });
   await point(page, 900, 570);
@@ -343,6 +346,9 @@ test("timeout collision paralyzes movement and all weapons, then recovers", asyn
     return { y: s.playerY, shots: s.shotsFired, ammo: s.specialAmmo.homing };
   });
   expect(after).toEqual(before);
+  await page.evaluate(() => {
+    (window as any).__spaghetti.simulation.stunRemaining = 0.05;
+  });
   await expect(page.locator("#game-screen")).not.toHaveClass(/stunned/);
   await page.mouse.click(1000, 650);
   await expect
