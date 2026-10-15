@@ -4,7 +4,7 @@
 
 ![Spaghetti Busters opening screen](docs/screenshots/menu.png)
 
-Play as a bespectacled code quality specialist in a white suit. Blast huge, syntax-highlighted TypeScript blocks into flying letters and physics-driven fragments. Finish every chunk before it disappears through the left edge. Clear waves to take on faster, larger, tougher, and more numerous blocks from an expanded library of ridiculous code. The battlefield uses real Three.js WebGL rendering: solid code slabs tumble around all three axes, damage opens physical holes through their faces, and sculpted characters, weapons, and buildings share directional lighting and real shadows. Gameplay and collision physics remain on a 2D plane.
+Play as a bespectacled code quality specialist in a white suit. Blast huge, syntax-highlighted TypeScript blocks into flying letters and physics-driven fragments. Finish every chunk before it disappears through the left edge. Clear waves to take on faster, larger, tougher, and more numerous blocks from an expanded library of ridiculous code. The battlefield uses real Three.js WebGL rendering: solid code slabs tumble around all three axes, damage opens physical holes through their faces, and sculpted characters, weapons, and buildings share directional lighting and real shadows. Gameplay and collision physics remain on a 2D plane. Hits eject seeded 3D shrapnel, sparks, rising turbulent smoke, and actual syntax-colored letters. Rapier rigid bodies tumble, bounce, scrape, and settle on the pavement. Destroyed robots break into their posed head, torso, arms, legs, and other real assemblies. Debris has no gameplay colliders. Fractures retain the parent slab’s surface, existing holes, and code coordinates, separated by complementary jagged cuts instead of repainting two new blocks.
 
 ![Real 3D gameplay](docs/screenshots/gameplay.png)
 
@@ -40,7 +40,9 @@ Shoot highlighted `DOUBLE_SHOT` / `TRIPLE_SHOT` variables or the rarer `QUAD_SHO
 
 All four specials are available as shootable floating bonuses. Natural supply drops favor special ammo; hit `HOMING_MISSILE`, `RECYCLE_GRENADE`, `CODE_REVIEW`, or `LINT_BOMB` variables for more. Your best score is saved in your browser.
 
-**Invulnerable AI robots** occasionally run in, stop in the middle to think, and generate enormous, armored spaghetti code before leaving. Their shields absorb cannon shots, missiles, and grenades. Shoot around them or freeze them with Code Review. Each carries one of eight logos: OpenAI, Anthropic, Google, X, Moonshot, Z.ai, DeepSeek, or Meta.
+**Heavily armored AI robots** occasionally run in, stop in the middle to think, and generate enormous spaghetti code before leaving. Each takes **15 cannon hits** to destroy; missile and grenade blasts deal 4 and 5 damage. Destroying a robot stops its generation immediately. Its label shows remaining armor, and Code Review can freeze it. Each carries one of eight logos: OpenAI, Anthropic, Google, X, Moonshot, Z.ai, DeepSeek, or Meta.
+
+![Robot breakup and physical impact debris](docs/screenshots/robot-physics.png)
 
 **Angry code** is red, rattles, and regularly throws smaller `Error`, `TypeError`, `RangeError`, and rejected-promise blocks. Destroy or split the angry parent to stop its attacks, then clean up every exception too.
 
@@ -64,13 +66,14 @@ npm run test:e2e
 
 `preview` serves the production build on port 3000; stop the development server first. Browser tests reuse a running development server or start one automatically. They run one browser at a time to keep software WebGL rendering responsive in CI. On headless Linux without a GPU, Mesa/EGL libraries (`libegl1`, `libegl-mesa0`, and `mesa-vulkan-drivers`) provide the real WebGL 2 context used by the tests.
 
-The deterministic simulation tests cover damage, splitting, impulses and bounces, difficulty progression, two-stage pickups, scarce ammunition, homing and area weapons, timeout collisions, stun and recovery, loss conditions, and reset. Playwright exercises the actual rendered game, separate left/right fire, number-key selection, touch special controls, paralysis and recovery, pause/resume, help, sound controls, restart, score persistence, real mesh depth and rotation, physical damage holes, GPU-resource disposal, graphics context recovery, robot shields/generation, angry exception attacks, four-special controls, fifth-wave boss progression, shared factory generation, boss armor/health, the one-second headline, and bundled voice playback.
+The deterministic simulation tests cover damage, splitting, impulses and bounces, difficulty progression, two-stage pickups, scarce ammunition, homing and area weapons, timeout collisions, stun and recovery, loss conditions, and reset. Playwright exercises the actual rendered game, separate left/right fire, number-key selection, touch special controls, paralysis and recovery, pause/resume, help, sound controls, restart, score persistence, real mesh depth and rotation, physical damage holes, GPU-resource disposal, graphics context recovery, robot armor/destruction/generation, angry exception attacks, four-special controls, fifth-wave boss progression, shared factory generation, boss armor/health, the one-second headline, and bundled voice playback.
 
 ## Project
 
 - `src/game/simulation.ts`: renderer-independent gameplay and collision simulation, with small fixed substeps.
 - `src/game/scene.ts`: native pointer/keyboard input, frame loop, and simulation-to-renderer adapter.
 - `src/game/world3d.ts`, `models3d.ts`, `robot3d.ts`, `code-mesh.ts`: Three.js scene, perspective camera, solid procedural models, perforated code geometry, shadows, and GPU resource cleanup.
+- `src/game/debris-physics.ts`, `fracture-geometry.ts`: independent Rapier debris, pooled smoke/sparks, and seeded perforated fracture surfaces.
 - `src/game/audio.ts`: original Web Audio music and effects; opening theme, seamless menu/game transitions, and four crossfading scores.
 - `src/main.ts` and `src/style.css`: responsive menus, HUD, dialogs, and accessibility.
 - `public/assets`: original cartoon SVG artwork and a locally bundled opening-screen photograph.

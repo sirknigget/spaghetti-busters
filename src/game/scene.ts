@@ -16,9 +16,11 @@ interface Callbacks {
 /** Inputs and the frame loop adapt the 2D simulation to the actual 3D scene. */
 export async function createGame(parent:string, callbacks:Callbacks):Promise<GameController> {
   const host=document.getElementById(parent)!;
+  const world=new WorldRenderer(host);
+  try { await world.initialize(); } catch(error) { world.dispose();throw error; }
   class PlayScene implements GameController {
     sim=new Simulation();
-    world=new WorldRenderer(host);
+    world=world;
     paused=true;
     holding=false;
     holdingSpecial=false;
@@ -90,6 +92,8 @@ export async function createGame(parent:string, callbacks:Callbacks):Promise<Gam
       for(const event of this.sim.events.splice(0)){
         if(event==='shot'||event==='missile'||event==='grenade'||event==='review'||event==='lint')this.muzzle=.065;
         if(event==='hit')this.impact=3;
+        if(event==='robot-hit')this.impact=2;
+        if(event==='robot-destroy')this.impact=6;
         if(event==='split'||event==='destroy')this.impact=5;
         if(event==='explosion'||event==='lint')this.impact=8;
         if(event==='generate')this.impact=3;

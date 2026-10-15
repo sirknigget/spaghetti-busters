@@ -51,10 +51,14 @@ test('WebGL renders solid code and models with real three-axis rotation and dama
     const positions = group.children[0].geometry.attributes.position;
     const frontCount = group.children[0].geometry.groups[0].count;
     let coversHole = false;
-    for (let i = 0; i < frontCount; i += 6) {
-      const x0 = positions.getX(i), y0 = positions.getY(i);
-      const x1 = positions.getX(i + 2), y1 = positions.getY(i + 2);
-      if (cell.x > x0 && cell.x < x1 && -cell.y > y0 && -cell.y < y1) coversHole = true;
+    for (let i = 0; i < frontCount; i += 3) {
+      const ax=positions.getX(i), ay=positions.getY(i), bx=positions.getX(i+1), by=positions.getY(i+1), cx=positions.getX(i+2), cy=positions.getY(i+2);
+      const cross=(x1:number,y1:number,x2:number,y2:number)=>x1*y2-y1*x2;
+      const area=cross(bx-ax,by-ay,cx-ax,cy-ay);
+      if(Math.abs(area)<.00001)continue;
+      const u=cross(cell.x-ax,-cell.y-ay,cx-ax,cy-ay)/area;
+      const v=cross(bx-ax,by-ay,cell.x-ax,-cell.y-ay)/area;
+      if(u>=0&&v>=0&&u+v<=1)coversHole=true;
     }
     runtime.reset();
     return { removed: group.userData.removedCells, coversHole, disposed, staleRemoved: old.parent === null, cache: w.blocks.size, live: s.blocks.length };

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 type Brand='openai'|'anthropic'|'google'|'x'|'moonshot'|'zai'|'deepseek'|'meta';
-interface RobotPose {brand:Brand;state:'running'|'thinking'|'leaving';age:number;stateTime:number;hitFlash:number;}
+interface RobotPose {brand:Brand;state:'running'|'thinking'|'leaving';age:number;stateTime:number;hitFlash:number;health:number;maxHealth:number;}
 const names:Record<Brand,string>={openai:'OpenAI',anthropic:'Anthropic',google:'Google',x:'X',moonshot:'Moonshot',zai:'Z.ai',deepseek:'DeepSeek',meta:'Meta'};
 
 /** Every robot owns its geometry, badge texture and label; no immortal resource cache. */
@@ -37,7 +37,7 @@ export function createRobot(brand:Brand):THREE.Group {
   const logo=new THREE.TextureLoader().load(`/assets/brands/${brand}.svg`);logo.colorSpace=THREE.SRGBColorSpace;
   const mark=new THREE.Mesh(new THREE.PlaneGeometry(31,28),new THREE.MeshBasicMaterial({map:logo,transparent:true}));mark.position.set(0,4,19.5);group.add(mark);
   for(let i=0;i<3;i++)box(group,cyan,-10+i*10,-19,17,5,2,2);
-  const shield=new THREE.Mesh(new THREE.SphereGeometry(67,20,14),new THREE.MeshStandardMaterial({color:'#74cfe2',transparent:true,opacity:.075,roughness:.12,metalness:.3,depthWrite:false}));shield.name='robot-absorption-shield';shield.scale.set(.72,1.05,.7);shield.position.y=5;group.add(shield);
+  const shield=new THREE.Mesh(new THREE.SphereGeometry(67,20,14),new THREE.MeshStandardMaterial({color:'#74cfe2',transparent:true,opacity:.075,roughness:.12,metalness:.3,depthWrite:false}));shield.name='robot-armor-flash';shield.scale.set(.72,1.05,.7);shield.position.y=5;group.add(shield);
   const labelCanvas=document.createElement('canvas');labelCanvas.width=512;labelCanvas.height=110;
   const texture=new THREE.CanvasTexture(labelCanvas);texture.colorSpace=THREE.SRGBColorSpace;
   const label=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,depthTest:false}));label.name='robot-status';label.scale.set(208,45,1);label.position.set(0,113,0);group.add(label);
@@ -57,18 +57,19 @@ export function animateRobot(group:THREE.Group,robot:RobotPose,frozen:boolean) {
   group.rotation.y=robot.state==='leaving'?-.38:.25;
   group.position.y+=running&&!frozen?Math.abs(Math.sin(phase))*5:Math.sin(robot.age*3)*1.3;
   group.getObjectByName('robot-head')!.rotation.z=robot.state==='thinking'?Math.sin(robot.age*4)*.12:0;
-  const shield=group.getObjectByName('robot-absorption-shield') as THREE.Mesh;
-  (shield.material as THREE.MeshStandardMaterial).opacity=robot.hitFlash>0?.32:.055;
+  const shield=group.getObjectByName('robot-armor-flash') as THREE.Mesh;
+  (shield.material as THREE.MeshStandardMaterial).opacity=robot.hitFlash>0?.2:0;
   (shield.material as THREE.MeshStandardMaterial).color.set(robot.hitFlash>0?'#fff0ad':'#74cfe2');
   const shell=group.userData.shell as THREE.MeshStandardMaterial;shell.emissive.set(frozen?'#286c9c':robot.hitFlash>0?'#bd8e35':'#000000');shell.emissiveIntensity=.45;
   const thought=group.getObjectByName('robot-thinking')!;thought.visible=robot.state==='thinking';
   thought.children.forEach((dot,i)=>{dot.scale.setScalar(.7+Math.max(0,Math.sin(robot.age*7-i*1.2))*.6);});
-  const state=frozen?'REVIEW PAUSED':robot.state==='thinking'?'THINKING…':robot.state==='leaving'?'CODE DELIVERED':'INVULNERABLE';
+  const activity=frozen?'REVIEW PAUSED':robot.state==='thinking'?'THINKING…':robot.state==='leaving'?'CODE DELIVERED':'ARMORED';
+  const state=`${activity} · ${robot.health}/${robot.maxHealth}`;
   if(group.userData.labelState!==state) {
     group.userData.labelState=state;const canvas=group.userData.labelCanvas as HTMLCanvasElement,c=canvas.getContext('2d')!;
     c.clearRect(0,0,512,110);c.fillStyle='#173849';c.beginPath();c.roundRect(0,0,512,110,16);c.fill();
     c.textAlign='center';c.textBaseline='middle';c.font='bold 40px monospace';c.fillStyle='#fff1be';c.fillText(names[robot.brand],256,32);
-    c.font='bold 24px monospace';c.fillStyle=frozen?'#9deaff':'#b4e7e7';c.fillText(state,256,77);
+    c.font='bold 22px monospace';c.fillStyle=frozen?'#9deaff':'#b4e7e7';c.fillText(state,256,77);
     (group.userData.labelTexture as THREE.CanvasTexture).needsUpdate=true;
   }
 }

@@ -7,7 +7,7 @@ async function start(page:Page) {
   await page.waitForFunction(()=>!!(window as any).__spaghetti);
 }
 
-test('an invulnerable branded robot shields code, thinks, and creates a huge solid block',async({page})=>{
+test('a tough branded robot intercepts shots, thinks, and creates a huge solid block',async({page})=>{
   const errors:string[]=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('response',response=>{if(response.status()>=400)errors.push(`${response.status()} ${response.url()}`);});
@@ -21,9 +21,9 @@ test('an invulnerable branded robot shields code, thinks, and creates a huge sol
     s.aimY=360;s.aimX=900;s.fire();
     for(let i=0;i<4;i++)s.update(.1);
     r.draw();
-    return {robots:s.robots.length,hitFlash:robot.hitFlash,hits:block.hits,absorbed:s.events.includes('absorb'),model:!!w.scene.getObjectByName('ai-code-robot-openai')};
+    return {robots:s.robots.length,hitFlash:robot.hitFlash,hits:block.hits,damaged:s.events.includes('robot-hit'),health:robot.health,model:!!w.scene.getObjectByName('ai-code-robot-openai')};
   });
-  expect(shielding).toMatchObject({robots:1,hits:0,absorbed:true,model:true});
+  expect(shielding).toMatchObject({robots:1,hits:0,damaged:true,health:14,model:true});
   const generated=await page.evaluate(()=>{
     const {simulation:s,scene:r,world:w}=(window as any).__spaghetti;
     for(let i=0;i<9;i++)s.update(.25);

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { Simulation, TIMEOUT_METRICS, type Particle, type TimeoutHazard } from './simulation';
-import { createCodeMesh, disposeObject } from './code-mesh';
+import { Simulation, TIMEOUT_METRICS, type Block, type Particle, type TimeoutHazard } from './simulation';
+import { createCodeMesh, createFragmentMesh, disposeObject } from './code-mesh';
+import { DebrisPhysics } from './debris-physics';
 import { createEnvironment, createSpecialist, createCannon, createBullet, createSpecial, createPickup } from './models3d';
 import { createRobot, animateRobot } from './robot3d';
 
@@ -12,6 +13,8 @@ export class WorldRenderer {
   readonly camera=new THREE.PerspectiveCamera(2*Math.atan(360/1400)*180/Math.PI,16/9,1,4000);
   readonly blocks=new Map<number,THREE.Group>();
   readonly robotMeshes=new Map<number,THREE.Group>();
+  debris!:DebrisPhysics;
+  private lastEffectsTime=0;
   private readonly specialist=createSpecialist();
   private readonly cannon=createCannon();
   private readonly bulletMeshes=new Map<number,THREE.Group>();
@@ -95,6 +98,44 @@ export class WorldRenderer {
     this.renderer.domElement.style.margin='auto';
   }
 
+  async initialize() { this.debris=await DebrisPhysics.create(this.scene); }
+
+  private placeCode(mesh:THREE.Group,block:Block) {
+    const tumble=block.boss?(block.generation>0?.13:.065):block.generation>0?.45:.18;
+    const phase=block.id*.81+block.age*(block.generation>0?1.65:.65);
+    mesh.position.set(block.x,720-block.y,0);
+    mesh.rotation.set(Math.sin(phase)*tumble,Math.cos(phase*.83)*tumble,-block.angle,'ZYX');
+  }
+
+  private visualEvents(sim:Simulation) {
+    for(const event of sim.visualEvents.splice(0)) {
+      if(event.type==='impact') this.debris.impact(event);
+      else if(event.type==='robot-death') {
+        let robot=this.robotMeshes.get(event.robot.id);
+        if(!robot) { robot=createRobot(event.robot.brand);robot.position.set(event.robot.x,720-event.robot.y,0);animateRobot(robot,event.robot,false); }
+        this.debris.dismantleRobot(robot,event.robot,event.seed);
+        if(!this.robotMeshes.has(event.robot.id))disposeObject(robot);
+      } else {
+        const old=this.blocks.get(event.parent.id);
+        // Rebuild the damaged parent first so fractures retain its new holes and surface.
+        const parent=createCodeMesh(event.parent,old);
+        if(old) { parent.position.copy(old.position);parent.quaternion.copy(old.quaternion); }
+        else this.placeCode(parent,event.parent);
+        parent.updateMatrixWorld(true);
+        for(const child of event.children) {
+          const fragment=createFragmentMesh(child,parent,event.parent);
+          const offset=child.fracture!;
+          const origin=new THREE.Vector3(offset.offsetX,-offset.offsetY,0).applyQuaternion(parent.quaternion).add(parent.position);
+          fragment.position.copy(origin);fragment.quaternion.copy(parent.quaternion);
+          fragment.userData.splitPose={offset:origin.clone().sub(new THREE.Vector3(child.x,720-child.y,0)),quaternion:parent.quaternion.clone(),age:0};
+          const stale=this.blocks.get(child.id);if(stale)disposeObject(stale);
+          this.blocks.set(child.id,fragment);this.scene.add(fragment);
+        }
+        disposeObject(parent);
+      }
+    }
+  }
+
   private sync<T extends Entity>(entities:T[],cache:Map<number,THREE.Group>,create:(entity:T)=>THREE.Group,update:(mesh:THREE.Group,entity:T)=>void) {
     const alive=new Set(entities.map(e=>e.id));
     for(const [id,mesh] of cache)if(!alive.has(id)){disposeObject(mesh);cache.delete(id);}
@@ -128,17 +169,25 @@ export class WorldRenderer {
 
   render(sim:Simulation,muzzle:number,impact:number) {
     const t=sim.elapsed;
+    const effectsDt=Math.max(0,Math.min(.25,t-this.lastEffectsTime));this.lastEffectsTime=t;
+    this.visualEvents(sim);
+    this.debris.update(effectsDt);
     const alive=new Set(sim.blocks.map(b=>b.id));
     for(const [id,mesh] of this.blocks)if(!alive.has(id)){disposeObject(mesh);this.blocks.delete(id);}
     for(const block of sim.blocks){
       let mesh=this.blocks.get(block.id);
-      if(mesh&&(mesh.userData.hits!==block.hits||mesh.userData.cellCount!==block.cells.length||mesh.userData.boss!==block.boss||mesh.userData.angry!==block.angry||mesh.userData.exception!==block.exception)){disposeObject(mesh);this.blocks.delete(block.id);mesh=undefined;}
+      if(mesh&&(mesh.userData.hits!==block.hits||mesh.userData.cellCount!==block.cells.length||mesh.userData.boss!==block.boss||mesh.userData.angry!==block.angry||mesh.userData.exception!==block.exception)){
+        const replacement=createCodeMesh(block,mesh);replacement.userData.splitPose=mesh.userData.splitPose;
+        disposeObject(mesh);mesh=replacement;this.blocks.set(block.id,mesh);this.scene.add(mesh);
+      }
       if(!mesh){mesh=createCodeMesh(block);this.blocks.set(block.id,mesh);this.scene.add(mesh);}
       const tumble=block.boss?(block.generation>0?.13:.065):block.generation>0 ? .45 : .18;
       const phase=block.id*.81+block.age*(block.generation>0?1.65:.65);
       const rattle=block.angry&&sim.freezeRemaining<=0&&!this.reducedMotion?Math.sin(block.age*47)*2:0;
       mesh.position.set(block.x+rattle,720-block.y+Math.cos(block.age*39)*Math.abs(rattle)*.45,0);
       mesh.rotation.set(Math.sin(phase)*tumble,Math.cos(phase*.83)*tumble,-block.angle,'ZYX');
+      const splitPose=mesh.userData.splitPose;
+      if(splitPose){splitPose.age+=effectsDt;const blend=Math.exp(-splitPose.age*12);mesh.position.addScaledVector(splitPose.offset,blend);mesh.quaternion.slerp(splitPose.quaternion,blend);if(blend<.005)delete mesh.userData.splitPose;}
       mesh.userData.frozen=sim.freezeRemaining>0;
       mesh.getObjectByName('frozen-code-outline')!.visible=sim.freezeRemaining>0;
       const solid=mesh.getObjectByName('perforated-extruded-code') as THREE.Mesh;
@@ -157,7 +206,8 @@ export class WorldRenderer {
     }
     this.reviewBeam.visible=sim.reviewPulse>.35;
     if(this.reviewBeam.visible){const a=new THREE.Vector3(170,720-sim.playerY,35),b=new THREE.Vector3(sim.aimX,720-sim.aimY,40),direction=b.clone().sub(a);this.reviewBeam.position.copy(a.add(b).multiplyScalar(.5));this.reviewBeam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.clone().normalize());this.reviewBeam.scale.y=direction.length();(this.reviewBeam.material as THREE.MeshBasicMaterial).opacity=Math.min(.7,(sim.reviewPulse-.35)*3);}
-    const particles=sim.particles.slice(-220);const livingParticles=new Set(particles);
+    // Detached letters now belong to the independent 3D debris world.
+    const particles=sim.particles.filter(p=>!p.char).slice(-100);const livingParticles=new Set(particles);
     for(const [particle,mesh] of this.particleMeshes)if(!livingParticles.has(particle)){
       mesh.geometry.dispose();(mesh.material as THREE.Material).dispose();mesh.removeFromParent();this.particleMeshes.delete(particle);
     }
@@ -185,6 +235,7 @@ export class WorldRenderer {
   }
 
   reset() {
+    this.debris?.reset();this.lastEffectsTime=0;
     for(const cache of [this.blocks,this.robotMeshes,this.bulletMeshes,this.pickupMeshes,this.specialMeshes,this.hazardMeshes]){cache.forEach(disposeObject);cache.clear();}
     this.particleMeshes.forEach(mesh=>{mesh.geometry.dispose();(mesh.material as THREE.Material).dispose();mesh.removeFromParent();});this.particleMeshes.clear();
     this.explosionMeshes.forEach(mesh=>mesh.visible=false);this.muzzleLight.intensity=this.explosionLight.intensity=0;
@@ -192,7 +243,7 @@ export class WorldRenderer {
   }
 
   dispose() {
-    this.resizeObserver.disconnect();this.reset();this.letterTextures.forEach(texture=>texture.dispose());this.letterTextures.clear();
+    this.resizeObserver.disconnect();this.reset();this.debris?.dispose();this.letterTextures.forEach(texture=>texture.dispose());this.letterTextures.clear();
     disposeObject(this.scene);this.renderer.dispose();this.renderer.domElement.remove();
   }
 }

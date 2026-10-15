@@ -146,7 +146,7 @@ describe('arcade simulation', () => {
     });
     let equipped = 0;
     // Exercise baseline wave solvability; new attackers are covered independently below.
-    sim.spawnRobot = () => ({ id: -1, x: 1500, y: 500, brand: 'openai', state: 'leaving', age: 0, stateTime: 0, hitFlash: 0 });
+    sim.spawnRobot = () => ({ id: -1, x: 1500, y: 500, brand: 'openai', state: 'leaving', age: 0, stateTime: 0, hitFlash: 0, health: 15, maxHealth: 15 });
     for (let tick = 0; tick < 60 * 130 && sim.wave < 4 && sim.status === 'playing'; tick++) {
       sim.blocks.forEach(block => { block.angry = false; });
       let target: { x: number; y: number } | undefined;
@@ -382,7 +382,7 @@ describe('arcade simulation', () => {
     expect(Math.abs(sim.explosions[0]!.y - 450)).toBeLessThan(4);
   });
 
-  it('lets an invulnerable robot absorb bullets and specials without rewards, generate code, and leave', () => {
+  it('lets a damaged armored robot survive and finish generating code before leaving', () => {
     const sim = game();
     sim.blocks = [];
     const robot = sim.spawnRobot({ x: 700, y: 400, brand: 'anthropic' });
@@ -394,9 +394,10 @@ describe('arcade simulation', () => {
     sim.update(0.025);
     expect(sim.bullets).toHaveLength(0);
     expect(sim.specials).toHaveLength(0);
-    expect(sim.explosions).toHaveLength(0);
+    expect(sim.explosions).toHaveLength(1);
     expect(sim.score).toBe(score);
-    expect(sim.events.filter(event => event === 'absorb')).toHaveLength(2);
+    expect(robot.health).toBe(9);
+    expect(sim.events.filter(event => event === 'robot-hit')).toHaveLength(2);
     expect(sim.robots).toContain(robot);
     expect(robot.hitFlash).toBeGreaterThan(0);
     for (let i = 0; i < 8; i++) sim.update(0.25);
@@ -751,6 +752,87 @@ describe('arcade simulation', () => {
     dodge.spawnHazard({ x: 280, y: 445, vx: -400, vy: 0 });
     dodge.update(1 / 120);
     expect(dodge.isStunned).toBe(false);
+  });
+
+  it('requires exactly fifteen primary bullet impacts to destroy an armored robot and stops generation', () => {
+    const sim = game();
+    sim.blocks = [];
+    const robot = sim.spawnRobot({ x: 700, y: 400 });
+    expect(robot.health).toBe(15);
+    expect(robot.maxHealth).toBe(15);
+    const hit = () => {
+      sim.bullets.push({ id: 19000, x: 648, y: 400, vx: 1080, vy: 0, life: 1, weapon: 'single' });
+      sim.update(1 / 120);
+    };
+    for (let i = 0; i < 14; i++) hit();
+    expect(robot.health).toBe(1);
+    expect(sim.robots).toContain(robot);
+    expect(sim.events).not.toContain('robot-destroy');
+    hit();
+    expect(robot.health).toBe(0);
+    expect(sim.robots).not.toContain(robot);
+    expect(sim.events.filter(event => event === 'robot-destroy')).toHaveLength(1);
+    const death = sim.visualEvents.find(event => event.type === 'robot-death');
+    expect(death?.type === 'robot-death' && death.robot.id).toBe(robot.id);
+    expect(sim.visualEvents.filter(event => event.type === 'impact' && event.target === 'robot')).toHaveLength(15);
+    for (let i = 0; i < 9; i++) sim.update(0.25);
+    expect(sim.events).not.toContain('generate');
+    expect(sim.blocks).toHaveLength(0);
+    sim.reset();
+    expect(sim.visualEvents).toHaveLength(0);
+    expect(sim.robots).toHaveLength(0);
+  });
+
+  it('damages robots once per special blast, including nearby robots in the blast radius', () => {
+    for (const type of ['homing', 'grenade'] as const) {
+      const sim = game();
+      sim.blocks = [];
+      const direct = sim.spawnRobot({ x: 700, y: 400 });
+      const nearby = sim.spawnRobot({ x: 800, y: 400 });
+      nearby.state = 'thinking';
+      const outside = sim.spawnRobot({ x: 1200, y: 400 });
+      outside.state = 'thinking';
+      sim.specials.push({ id: 19100, type, x: 648, y: 400, vx: 640, vy: 0, life: 1, angle: 0, fuse: 1 });
+      sim.update(1 / 120);
+      const power = SPECIAL_BLASTS[type].power;
+      expect(direct.health).toBe(15 - power);
+      expect(nearby.health).toBe(15 - power);
+      expect(outside.health).toBe(15);
+      expect(sim.explosions).toHaveLength(1);
+      expect(sim.specials).toHaveLength(0);
+      expect(sim.events.filter(event => event === 'robot-hit')).toHaveLength(2);
+    }
+  });
+
+  it('exports immutable split surface ancestry and glyph impacts without coupling rendering to gameplay', () => {
+    const sim = game();
+    const block = sim.blocks[0]!;
+    hitCell(sim, block, block.cells[30]!);
+    const impact = sim.visualEvents.find(event => event.type === 'impact' && event.target === 'code');
+    expect(impact?.type === 'impact' && impact.removed!.length).toBeGreaterThan(0);
+    sim.specialWeapon = 'lint';
+    sim.fireSpecial();
+    const split = sim.visualEvents.find(event => event.type === 'split');
+    expect(split?.type).toBe('split');
+    if (!split || split.type !== 'split') throw new Error('Missing split snapshot');
+    expect(split.children).toHaveLength(2);
+    expect(split.parent.cells.some(cell => !cell.alive)).toBe(true);
+    for (const child of split.children) {
+      const ancestry = child.fracture!;
+      expect(ancestry.parentId).toBe(block.id);
+      expect(ancestry.seed).toBe(split.seed);
+      for (const cell of child.cells) {
+        expect(split.parent.cells.some(parentCell => parentCell.alive && parentCell.char === cell.char
+          && Math.abs(parentCell.x - (cell.x + ancestry.offsetX)) < 0.001
+          && Math.abs(parentCell.y - (cell.y + ancestry.offsetY)) < 0.001)).toBe(true);
+      }
+    }
+    const saved = split.children[0]!.cells[0]!.health;
+    sim.blocks[0]!.cells[0]!.health = 0;
+    expect(split.children[0]!.cells[0]!.health).toBe(saved);
+    const events = sim.visualEvents.splice(0);
+    expect(events.length).toBeGreaterThan(0);
+    expect(sim.blocks).toHaveLength(2);
   });
 
 });

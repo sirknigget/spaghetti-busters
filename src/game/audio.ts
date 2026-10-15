@@ -186,6 +186,7 @@ export class AudioEngine {
         this.tone(970 + Math.random() * 220, time, 0.13, 'square', 0.045, bus, 340);
         this.tone(470, time + 0.055, 0.09, 'triangle', 0.09, bus, 690);
         break;
+      case 'robot-hit':
       case 'absorb':
         this.tone(170 + Math.random() * 55, time, 0.09, 'sine', 0.09, bus, 80);
         this.noise(time, 0.045, 0.045, 2800, bus, true);
@@ -234,6 +235,10 @@ export class AudioEngine {
         this.noise(time, 0.19, 0.2, 1300, bus);
         this.tone(230, time, 0.19, 'sawtooth', 0.08, bus, 45);
         this.tone(570, time + 0.025, 0.1, 'square', 0.04, bus, 165);
+        break;
+      case 'robot-destroy':
+        this.noise(time, .48, .2, 1100, bus);
+        [210, 150, 92, 55].forEach((hz,i)=>this.tone(hz,time+i*.065,.25,'triangle',.12,bus,hz*.45));
         break;
       case 'destroy':
         this.noise(time, 0.28, 0.2, 850, bus);

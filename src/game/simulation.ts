@@ -14,7 +14,7 @@ export const LINT_SMALL_BLOCK_CELLS = 160;
 export const SPECIAL_BLASTS = { homing: { radius: 180, power: 4 }, grenade: { radius: 300, power: 5 } } as const;
 export type SpecialWeapon = 'homing' | 'grenade' | 'review' | 'lint';
 export type Magic = Pickup['type'] | 'ammo';
-export type GameEvent = 'shot' | 'hit' | 'split' | 'destroy' | 'pickup' | 'ammo' | 'wave' | 'gameover' | 'missile' | 'grenade' | 'explosion' | 'stun' | 'hazard' | 'recover' | 'robot' | 'generate' | 'exception' | 'review' | 'lint' | 'bonus' | 'absorb' | 'boss' | 'boss-spawn' | 'boss-defeated';
+export type GameEvent = 'shot' | 'hit' | 'split' | 'destroy' | 'pickup' | 'ammo' | 'wave' | 'gameover' | 'missile' | 'grenade' | 'explosion' | 'stun' | 'hazard' | 'recover' | 'robot' | 'generate' | 'exception' | 'review' | 'lint' | 'bonus' | 'absorb' | 'boss' | 'boss-spawn' | 'boss-defeated' | 'robot-hit' | 'robot-destroy';
 
 export interface Cell {
   x: number;
@@ -50,6 +50,8 @@ export interface Block {
   boss: boolean;
   bossRoot?: number;
   bossMinion?: boolean;
+  /** Render-only ancestry: child local coordinates plus offsets recover the parent surface. */
+  fracture?: { parentId: number; offsetX: number; offsetY: number; axis: 'x' | 'y'; cut: number; side: -1 | 1; seed: number };
 }
 
 export interface Bullet {
@@ -106,7 +108,13 @@ export type RobotBrand = 'openai' | 'anthropic' | 'google' | 'x' | 'moonshot' | 
 export interface Robot {
   id: number; x: number; y: number; brand: RobotBrand;
   state: 'running' | 'thinking' | 'leaving'; age: number; stateTime: number; hitFlash: number;
+  health: number; maxHealth: number;
 }
+
+export type VisualEvent =
+  | { type: 'impact'; target: 'code' | 'robot'; x: number; y: number; vx: number; vy: number; radius: number; seed: number; blockId?: number; robotId?: number; removed?: { x: number; y: number; char: string; color: string }[] }
+  | { type: 'split'; parent: Block; children: Block[]; seed: number }
+  | { type: 'robot-death'; robot: Robot; seed: number };
 
 export interface Explosion { x: number; y: number; radius: number; life: number; maxLife: number; }
 export interface TimeoutHazard {
@@ -130,6 +138,9 @@ export class Simulation {
   particles: Particle[] = [];
   pickups: Pickup[] = [];
   events: GameEvent[] = [];
+  /** Consumed by the renderer; never read by gameplay or the gameplay RNG. */
+  visualEvents: VisualEvent[] = [];
+  private visualSeed = 0;
   specialWeapon: SpecialWeapon = 'homing';
   specialAmmo: Record<SpecialWeapon, number> = { homing: 3, grenade: 2, review: 1, lint: 1 };
   specials: SpecialProjectile[] = [];
@@ -204,6 +215,8 @@ export class Simulation {
     this.stunRemaining = this.specialCooldown = this.ammoCaches = 0;
     this.hazardTimer = 9;
     this.events = [];
+    this.visualEvents = [];
+    this.visualSeed = 0;
     this.score = this.combo = this.ammo = this.elapsed = 0;
     this.shotsFired = this.blocksDestroyed = 0;
     this.wave = 1;
@@ -428,7 +441,7 @@ export class Simulation {
     const robot: Robot = { id: this.nextId++, x: options.x ?? 1370,
       y: options.y ?? 440 + this.random() * 130,
       brand: options.brand ?? brands[Math.floor(this.random() * brands.length)]!,
-      state: 'running', age: 0, stateTime: 0, hitFlash: 0 };
+      state: 'running', age: 0, stateTime: 0, hitFlash: 0, health: 15, maxHealth: 15 };
     this.robots.push(robot);
     this.events.push('robot');
     return robot;
@@ -447,10 +460,36 @@ export class Simulation {
     return pickup;
   }
 
-  private absorb(robot: Robot) {
+  private visual(event: VisualEvent) {
+    this.visualEvents.push(event);
+    if (this.visualEvents.length > 240) this.visualEvents.splice(0, this.visualEvents.length - 240);
+  }
+
+  private snapshot(block: Block): Block {
+    return { ...block, cells: block.cells.map(cell => ({ ...cell })), fracture: block.fracture && { ...block.fracture } };
+  }
+
+  private damageRobot(robot: Robot, power: number, x: number, y: number, vx: number, vy: number) {
+    if (robot.health <= 0) return;
+    robot.health = Math.max(0, robot.health - power);
     robot.hitFlash = 0.2;
-    this.burst(robot.x - 40, robot.y, '#b7c7e9', 8);
-    this.events.push('absorb');
+    this.visual({ type: 'impact', target: 'robot', robotId: robot.id, x, y, vx, vy, radius: 19, seed: ++this.visualSeed });
+    this.events.push('robot-hit');
+    if (robot.health === 0) {
+      this.robots = this.robots.filter(item => item.id !== robot.id);
+      this.visual({ type: 'robot-death', robot: { ...robot }, seed: ++this.visualSeed });
+      this.events.push('robot-destroy');
+      this.score += 250;
+    }
+  }
+
+  private robotContact(robot: Robot, ax: number, ay: number, bx: number, by: number) {
+    // Segment clipping gives the surface contact rather than the robot's center.
+    let t = 0;
+    for (const [start, delta, half] of [[ax - robot.x, bx - ax, 51], [ay - robot.y, by - ay, 79]]) {
+      if (Math.abs(delta!) > 0.000001) t = Math.max(t, Math.min((-half! - start!) / delta!, (half! - start!) / delta!));
+    }
+    return { x: ax + (bx - ax) * t, y: ay + (by - ay) * t };
   }
 
   private interceptRobot(ax: number, ay: number, bx: number, by: number): Robot | undefined {
@@ -587,7 +626,13 @@ export class Simulation {
         special.vy *= -0.65;
       }
       const robot = this.interceptRobot(oldX, oldY, special.x, special.y);
-      if (robot) { this.absorb(robot); special.life = 0; continue; }
+      if (robot) {
+        const contact = this.robotContact(robot, oldX, oldY, special.x, special.y);
+        const blast = SPECIAL_BLASTS[special.type];
+        this.explode(contact.x, contact.y, blast.radius, blast.power);
+        special.life = 0;
+        continue;
+      }
       let collision = false;
       for (const block of this.blocks) {
         if (Math.abs(block.x - special.x) > block.width + 40 || Math.abs(block.y - special.y) > block.height + 100) continue;
@@ -616,6 +661,13 @@ export class Simulation {
     this.burst(x, y, '#8cf5cd', 38);
     for (const hazard of this.hazards) {
       if (Math.hypot(hazard.x - x, hazard.y - y) < radius) hazard.life = 0;
+    }
+    for (const robot of [...this.robots]) {
+      const nearX = clamp(x, robot.x - 51, robot.x + 51);
+      const nearY = clamp(y, robot.y - 79, robot.y + 79);
+      if (Math.hypot(nearX - x, nearY - y) <= radius) {
+        this.damageRobot(robot, power, nearX, nearY, (robot.x - x) * 2, (robot.y - y) * 2);
+      }
     }
     for (const block of [...this.blocks]) {
       const cos = Math.cos(block.angle), sin = Math.sin(block.angle);
@@ -758,8 +810,12 @@ export class Simulation {
       bullet.x += bullet.vx * dt;
       bullet.y += bullet.vy * dt;
       let hit = false;
-      const shield = this.interceptRobot(oldX, oldY, bullet.x, bullet.y);
-      if (shield) { this.absorb(shield); hit = true; }
+      const robot = this.interceptRobot(oldX, oldY, bullet.x, bullet.y);
+      if (robot) {
+        const contact = this.robotContact(robot, oldX, oldY, bullet.x, bullet.y);
+        this.damageRobot(robot, 1, contact.x, contact.y, bullet.vx, bullet.vy);
+        hit = true;
+      }
       for (const hazard of this.hazards) {
         if (hit) break;
         if (hazard.life > 0 && this.hitsHazard(oldX, oldY, bullet.x, bullet.y, hazard)) {
@@ -827,10 +883,11 @@ export class Simulation {
     this.particles = this.particles.filter(particle => particle.life > 0).slice(-700);
   }
 
-  private damage(block: Block, x: number, y: number, bullet: Pick<Bullet, "vy">, blastRadius?: number, power = 1) {
+  private damage(block: Block, x: number, y: number, bullet: Pick<Bullet, "vy"> & Partial<Pick<Bullet, "vx">>, blastRadius?: number, power = 1) {
     const cos = Math.cos(block.angle), sin = Math.sin(block.angle);
     const radius = blastRadius ?? (block.cells.filter(cell => cell.alive).length < 28 ? 43 : 34);
     let removed = 0;
+    const removedGlyphs: { x: number; y: number; char: string; color: string }[] = [];
     for (const cell of block.cells) {
       if (!cell.alive || Math.hypot(cell.x - x, cell.y - y) > radius) continue;
       cell.health -= power;
@@ -839,6 +896,7 @@ export class Simulation {
       removed++;
       const worldX = block.x + cell.x * cos - cell.y * sin;
       const worldY = block.y + cell.x * sin + cell.y * cos;
+      removedGlyphs.push({ x: worldX, y: worldY, char: cell.char, color: cell.color });
       const life = 0.45 + this.random() * 0.65;
       this.particles.push({ x: worldX, y: worldY, vx: 50 + this.random() * 230,
         vy: (this.random() - 0.5) * 320 - 65, life, maxLife: life,
@@ -867,8 +925,14 @@ export class Simulation {
     this.comboTimer = 2.4;
     this.score += removed * (2 + Math.min(6, Math.floor(this.combo / 5)));
     this.events.push('hit');
+    this.visual({ type: 'impact', target: 'code', blockId: block.id,
+      x: block.x + x * cos - y * sin, y: block.y + x * sin + y * cos,
+      vx: bullet.vx ?? block.vx, vy: bullet.vy, radius, seed: ++this.visualSeed, removed: removedGlyphs });
     const remaining = block.cells.filter(cell => cell.alive);
     if (remaining.length < (block.boss ? 8 : 18) || (!block.boss && block.generation > 1 && remaining.length < 32)) {
+      // The last visible glyphs become debris too; this is only a render snapshot.
+      for (const cell of remaining) removedGlyphs.push({ x: block.x + cell.x * cos - cell.y * sin,
+        y: block.y + cell.x * sin + cell.y * cos, char: cell.char, color: cell.color });
       this.blocks = this.blocks.filter(item => item.id !== block.id);
       this.score += 75 + block.generation * 25;
       this.blocksDestroyed++;
@@ -884,7 +948,11 @@ export class Simulation {
     const sorted = [...cells].sort((a, b) => horizontal ? a.y - b.y : a.x - b.x);
     const middle = Math.floor(sorted.length / 2);
     const halves = [sorted.slice(0, middle), sorted.slice(middle)];
+    const cut = horizontal ? (sorted[middle - 1]!.y + sorted[middle]!.y) / 2 : (sorted[middle - 1]!.x + sorted[middle]!.x) / 2;
     const cos = Math.cos(block.angle), sin = Math.sin(block.angle);
+    const parent = this.snapshot(block);
+    const children: Block[] = [];
+    const seed = ++this.visualSeed;
     this.blocks = this.blocks.filter(item => item.id !== block.id);
     halves.forEach((half, index) => {
       const minX = Math.min(...half.map(cell => cell.x));
@@ -895,7 +963,7 @@ export class Simulation {
       const centerY = (minY + maxY) / 2;
       const sign = index === 0 ? -1 : 1;
       const width = maxX - minX + 30, height = maxY - minY + 34;
-      this.blocks.push({
+      const child: Block = {
         id: this.nextId++, title: block.title, x: block.x + centerX * cos - centerY * sin,
         y: block.y + centerX * sin + centerY * cos,
         vx: block.vx + sign * (block.boss ? 6 : 27),
@@ -906,8 +974,12 @@ export class Simulation {
         hits: 0, age: 0, generation: block.generation + 1, toughness: block.toughness,
         angry: false, exception: block.exception, throwTimer: 3,
         boss: block.boss, bossRoot: block.bossRoot, bossMinion: block.bossMinion,
-      });
+        fracture: { parentId: block.id, offsetX: centerX, offsetY: centerY, axis: horizontal ? 'y' : 'x', cut, side: sign as -1 | 1, seed },
+      };
+      this.blocks.push(child);
+      children.push(this.snapshot(child));
     });
+    this.visual({ type: 'split', parent, children, seed });
     this.score += 50;
     this.events.push('split');
   }

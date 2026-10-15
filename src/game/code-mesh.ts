@@ -1,13 +1,60 @@
 import * as THREE from 'three';
 import type { Block } from './simulation';
+import { chippedHole, fractureMask, perforatedGeometry, type Polygon } from './fracture-geometry';
+
+interface FractureVisual {
+  canvas:HTMLCanvasElement; width:number; height:number; depth:number;
+  offset:{x:number;y:number}; regions:Polygon[]; holes:Map<string,Polygon>; scars:Set<string>; fractured:boolean;
+}
+
+/** A child uses the parent's surface and the complementary side of one seeded broken cut. */
+export function createFragmentMesh(block:Block,parent:THREE.Group,parentBlock:Block):THREE.Group {
+  const inherited=parent.userData.fractureVisual as FractureVisual|undefined;
+  if(!inherited||!block.fracture)return createCodeMesh(block);
+  const f=block.fracture,axis=f.axis;
+  const bounds={left:-inherited.width/2-1,right:inherited.width/2+1,bottom:-inherited.height/2-1,top:inherited.height/2+27};
+  const cut=axis==='x'?inherited.offset.x+f.cut:inherited.offset.y-f.cut;
+  const region=fractureMask(axis,cut,axis==='x'?f.side:-f.side,f.seed,bounds);
+  const parentVisual:FractureVisual={...inherited,holes:new Map(inherited.holes)};
+  addRemovedCells(parentVisual,parentBlock);
+  const visual:FractureVisual={...parentVisual,offset:{x:inherited.offset.x+f.offsetX,y:inherited.offset.y-f.offsetY},regions:[...inherited.regions,region],holes:new Map(parentVisual.holes),fractured:true};
+  return createCodeMesh(block,undefined,visual);
+}
+
+
+function addDamageScars(visual:FractureVisual,block:Block) {
+  const context=visual.canvas.getContext('2d')!;
+  context.save();
+  const scale=visual.canvas.width/visual.width;
+  context.setTransform(scale,0,0,scale,visual.width*scale/2,(visual.height/2+26)*scale);
+  for(const cell of block.cells)if(cell.alive&&cell.health<cell.maxHealth){
+    const x=cell.x+visual.offset.x,y=cell.y-visual.offset.y,key=`${x}:${y}:${cell.health}`;
+    if(visual.scars.has(key))continue;visual.scars.add(key);
+    // Cracks accumulate in the original sheet's coordinates, including on surviving armor.
+    context.lineWidth=.75;context.strokeStyle='#ffb471';context.beginPath();
+    context.moveTo(x-4,y-8);context.lineTo(x+2,y-3);context.lineTo(x-2,y+1);context.lineTo(x+3,y+7);
+    context.moveTo(x-2,y+1);context.lineTo(x-7,y+3);context.stroke();
+    context.lineWidth=.5;context.strokeStyle='#050c13';context.beginPath();context.moveTo(x-3,y-7);context.lineTo(x+3,y-3);context.lineTo(x-1,y+1);context.lineTo(x+4,y+7);context.stroke();
+  }
+  context.restore();
+}
+
+function addRemovedCells(visual:FractureVisual,block:Block) {
+  for(const cell of block.cells)if(!cell.alive){
+    const x=cell.x+visual.offset.x,y=-cell.y+visual.offset.y,key=`${x.toFixed(3)}:${y.toFixed(3)}`;
+    if(!visual.holes.has(key))visual.holes.set(key,chippedHole(x,y,Math.round(x*7919+y*193+visual.width)));
+  }
+}
 
 /** A real, perforated solid: removed code cells remove both faces and expose the cut edges. */
-export function createCodeMesh(block: Block): THREE.Group {
+export function createCodeMesh(block: Block,previous?:THREE.Group,inherited?:FractureVisual): THREE.Group {
   const group = new THREE.Group();
   group.name = `code-solid-${block.id}`;
   const w = block.width, h = block.height, top = h / 2 + 26, bottom = -h / 2;
-  const canvas = document.createElement('canvas');
+  const prior=inherited??previous?.userData.fractureVisual as FractureVisual|undefined;
+  const canvas = prior?.canvas??document.createElement('canvas');
   const scale = 2;
+  if(!prior){
   canvas.width = Math.ceil(w * scale); canvas.height = Math.ceil((h + 26) * scale);
   const context = canvas.getContext('2d')!;
   context.scale(scale, scale); context.translate(w / 2, top);
@@ -25,52 +72,26 @@ export function createCodeMesh(block: Block): THREE.Group {
     if (!cell.alive) continue;
     if (cell.magic) { context.fillStyle = '#ffe75b2b'; context.fillRect(cell.x-4.5,cell.y-9,9,18); }
     context.fillStyle = cell.color; context.fillText(cell.char, cell.x, cell.y);
-    if (cell.health < cell.maxHealth) {
-      context.strokeStyle = '#ffbc79'; context.lineWidth = .7; context.beginPath();
-      context.moveTo(cell.x-3,cell.y-8);context.lineTo(cell.x+2,cell.y);context.lineTo(cell.x-2,cell.y+7);context.stroke();
-    }
+
   }
+  }
+  const visual:FractureVisual=prior?{...prior,holes:new Map(prior.holes)}:{canvas,width:w,height:h,depth:block.boss?32:14+Math.min(8,block.generation*2),offset:{x:0,y:0},regions:[[{x:-w/2,y:bottom},{x:w/2,y:bottom},{x:w/2,y:top},{x:-w/2,y:top}]],holes:new Map(),scars:new Set(),fractured:false};
+  addRemovedCells(visual,block);
+  addDamageScars(visual,block);
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   const front = new THREE.MeshToonMaterial({ map: texture, color: '#ffffff' });
   const side = new THREE.MeshToonMaterial({ color: block.boss?'#bd492e':block.angry?'#e95860':block.exception?'#9d6387':'#547e92', emissive:block.boss?'#7c2314':block.angry?'#6a0f22':'#000000',emissiveIntensity:.3 });
-  const rects: [number, number, number, number][] = [];
-  const dead = block.cells.filter(cell => !cell.alive);
-  // Sweep horizontal bands around holes, avoiding overlapping Shape holes and keeping two draw calls per slab.
-  const cuts = [...new Set([bottom, top,...dead.flatMap(c => [Math.max(bottom,-c.y-10), Math.min(top,-c.y+10)])])].sort((a,b)=>a-b);
-  for(let row=0;row<cuts.length-1;row++) {
-    const y0=cuts[row]!, y1=cuts[row+1]!;
-    if(y1-y0<.01)continue;
-    const middle=(y0+y1)/2;
-    const holes=dead.filter(c=>Math.abs(middle+c.y)<10).map(c=>[Math.max(-w/2,c.x-5),Math.min(w/2,c.x+5)]).sort((a,b)=>a[0]!-b[0]!);
-    let x=-w/2;
-    for(const hole of holes) {if(hole[0]!>x)rects.push([x,y0,hole[0]!,y1]);x=Math.max(x,hole[1]!);}
-    if(x<w/2)rects.push([x,y0,w/2,y1]);
-  }
-  const positions:number[]=[], normals:number[]=[], uvs:number[]=[];
-  const face=(points:number[][],normal:number[])=>{
-    for(const index of [0,1,2,0,2,3]) {const p=points[index]!;positions.push(...p);normals.push(...normal);uvs.push((p[0]!+w/2)/w,(p[1]!-bottom)/(h+26));}
-  };
-  const z=block.boss?32:14+Math.min(8,block.generation*2);
-  for(const [x0,y0,x1,y1] of rects) face([[x0,y0,z],[x1,y0,z],[x1,y1,z],[x0,y1,z]],[0,0,1]);
-  const frontCount=positions.length/3;
-  for(const [x0,y0,x1,y1] of rects) {
-    face([[x1,y0,-z],[x0,y0,-z],[x0,y1,-z],[x1,y1,-z]],[0,0,-1]);
-    face([[x0,y0,-z],[x1,y0,-z],[x1,y0,z],[x0,y0,z]],[0,-1,0]);
-    face([[x0,y1,z],[x1,y1,z],[x1,y1,-z],[x0,y1,-z]],[0,1,0]);
-    face([[x0,y0,-z],[x0,y0,z],[x0,y1,z],[x0,y1,-z]],[-1,0,0]);
-    face([[x1,y0,z],[x1,y0,-z],[x1,y1,-z],[x1,y1,z]],[1,0,0]);
-  }
-  const geometry=new THREE.BufferGeometry();
-  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
-  geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
-  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
-  geometry.addGroup(0,frontCount,0);geometry.addGroup(frontCount,positions.length/3-frontCount,1);
-  geometry.computeBoundingSphere();
+  const z=visual.depth;
+  const dead=block.cells.filter(cell=>!cell.alive);
+  const geometry=perforatedGeometry(visual.regions,[...visual.holes.values()],z,visual.offset,{width:visual.width,height:visual.height});
   const mesh = new THREE.Mesh(geometry,[front,side]); mesh.castShadow=true;mesh.receiveShadow=true;
   mesh.name='perforated-extruded-code';group.add(mesh);
-  if(block.boss) createBossArmor(group,w,h,z);
-  if(block.angry) {
+  if(block.boss) {
+    createBossArmor(group,visual.width,visual.height,z);
+    if(visual.fractured) clipBossArmor(group,visual,z);
+  }
+  if(block.angry&&!visual.fractured) {
     const face=new THREE.Group();face.name='angry-code-face';face.position.set(w/2-29,h/2+13,z+3);group.add(face);
     const eyeMaterial=new THREE.MeshBasicMaterial({color:'#fff4ba'}),browMaterial=new THREE.MeshToonMaterial({color:'#44122a'});
     for(const side of [-1,1]) {
@@ -84,11 +105,46 @@ export function createCodeMesh(block: Block): THREE.Group {
   const crystalMaterial=new THREE.MeshToonMaterial({color:'#b6eeff',emissive:'#2885ac',emissiveIntensity:.35,transparent:true,opacity:.85});
   for(const x of [-w/2,w/2])for(const y of [-h/2,h/2+26]){const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(7),crystalMaterial);crystal.position.set(x,y,z+3);crystal.scale.set(.7,1.4,.8);ice.add(crystal);}
   group.add(ice);
+  group.userData.fractureVisual=visual;
+  group.userData.fractured=visual.fractured;
   group.userData.hits=block.hits;group.userData.cellCount=block.cells.length;
   group.userData.solidDepth=z*2;group.userData.removedCells=dead.length;
   group.userData.angry=block.angry;group.userData.exception=block.exception;
   group.userData.boss=block.boss;group.userData.bossTitle=block.boss?'FactoryFactoryFactory':undefined;
   return group;
+}
+
+
+function insideRegions(point:{x:number;y:number},regions:Polygon[]) {
+  return regions.every(polygon=>{let inside=false;for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
+    const a=polygon[i]!,b=polygon[j]!;if((a.y>point.y)!==(b.y>point.y)&&point.x<(b.x-a.x)*(point.y-a.y)/(b.y-a.y)+a.x)inside=!inside;
+  }return inside;});
+}
+
+/** Cut the original housing at the same physical seam as the code, retaining its old bolts/core. */
+function clipBossArmor(group:THREE.Group,visual:FractureVisual,z:number) {
+  const armor=group.getObjectByName('factory-boss-reinforced-frame')!;
+  const removed:THREE.Object3D[]=[];
+  for(const child of [...armor.children]){
+    const mesh=child as THREE.Mesh;
+    if(mesh.geometry instanceof THREE.BoxGeometry){
+      const {width,height,depth}=mesh.geometry.parameters,x=mesh.position.x,y=mesh.position.y;
+      const rectangle=[{x:x-width/2,y:y-height/2},{x:x+width/2,y:y-height/2},{x:x+width/2,y:y+height/2},{x:x-width/2,y:y+height/2}];
+      mesh.geometry.dispose();mesh.geometry=perforatedGeometry([...visual.regions,rectangle],[],depth/2,visual.offset,{width:visual.width,height:visual.height});
+      mesh.position.x=mesh.position.y=0;
+    }else if(insideRegions(child.position,visual.regions)){
+      child.position.x-=visual.offset.x;child.position.y-=visual.offset.y;
+    }else {
+      // Geometry/materials may be shared by other retained bolts; dispose centrally once.
+      child.removeFromParent();removed.push(child);
+    }
+  }
+  const liveGeometries=new Set<THREE.BufferGeometry>(),liveMaterials=new Set<THREE.Material>();
+  armor.traverse(object=>{const mesh=object as THREE.Mesh;if(mesh.geometry)liveGeometries.add(mesh.geometry);for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material])if(material)liveMaterials.add(material);});
+  const deadGeometries=new Set<THREE.BufferGeometry>(),deadMaterials=new Set<THREE.Material>();
+  removed.forEach(object=>object.traverse(child=>{const mesh=child as THREE.Mesh;if(mesh.geometry&&!liveGeometries.has(mesh.geometry))deadGeometries.add(mesh.geometry);for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material])if(material&&!liveMaterials.has(material))deadMaterials.add(material);}));
+  deadGeometries.forEach(geometry=>geometry.dispose());deadMaterials.forEach(material=>material.dispose());
+  armor.userData.originalDepth=z*2;
 }
 
 /** A thick industrial housing stays outside the readable code, inside the collider's XY bounds. */
