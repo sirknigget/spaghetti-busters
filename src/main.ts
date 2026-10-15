@@ -36,6 +36,8 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <div id="game-canvas"></div>
     <div class="orientation-hint"><span>↻</span><div>MORE ROOM FOR MAYHEM<small>Rotate your phone to landscape.</small></div></div>
     <header class="game-hud"><div class="hud-brand">{${bolt}}<span>SPAGHETTI<br>BUSTERS</span></div><div class="score-group"><span class="hud-label">CLEANUP SCORE</span><strong id="score">000000</strong><span id="combo" class="combo">READY TO REFACTOR</span></div><div class="wave-group"><span class="hud-label">CURRENT WAVE</span><strong id="wave">01 <small>/ THE LEGACY BEGINS</small></strong></div><div class="hud-actions"><button data-sound class="icon-button" aria-label="Turn sound off">${audioIcon}</button><button id="pause" class="icon-button" aria-label="Pause game"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg></button></div></header>
+    <div id="boss-health" class="boss-health" hidden><div class="boss-health-label"><span>FactoryFactoryFactory</span><span id="boss-health-value"></span></div><div id="boss-health-meter" class="boss-health-meter" role="progressbar" aria-label="FactoryFactoryFactory health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span id="boss-health-fill"></span></div></div>
+    <div id="boss-announcement" class="boss-announcement" role="status" hidden><div class="boss-announcement-card"><h2>Boss fight - <strong>FactoryFactoryFactory</strong> is pushed to main!</h2></div></div>
     <div class="weapon-hud"><div class="weapon-icon">${bolt}</div><div><span class="hud-label">ACTIVE WEAPON</span><strong id="weapon">SINGLE SHOT</strong><span id="ammo">∞ UNLIMITED AMMO</span></div></div>
     <div class="special-hud" aria-label="Special weapons"><div class="special-caption">RIGHT CLICK TO LAUNCH <span> / </span> <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> TO SELECT</div><div class="special-slots"><button id="select-homing" class="special-slot selected" aria-label="Select backspace homing missiles" aria-pressed="true"><kbd>1</kbd><span class="backspace-icon">⌫</span><span class="special-name">BACKSPACE<small>HOMING MISSILE</small></span><b id="homing-ammo">3</b></button><button id="select-grenade" class="special-slot" aria-label="Select recycle bin grenades" aria-pressed="false"><kbd>2</kbd>${recycleIcon}<span class="special-name">RECYCLE BIN<small>AREA GRENADE</small></span><b id="grenade-ammo">2</b></button><button id="select-review" class="special-slot" aria-label="Select code review freeze gun" aria-pressed="false"><kbd>3</kbd>${reviewIcon}<span class="special-name">CODE REVIEW<small>FREEZE · 2 SECONDS</small></span><b id="review-ammo">1</b></button><button id="select-lint" class="special-slot" aria-label="Select lint bomb" aria-pressed="false"><kbd>4</kbd>${lintIcon}<span class="special-name">LINT BOMB<small>SPLIT ALL BLOCKS</small></span><b id="lint-ammo">1</b></button><button id="fire-special" aria-label="Fire selected special weapon">${bolt}<span>FIRE</span></button></div></div>
     <div class="game-instruction">MOVE TO AIM <span>·</span> LEFT CLICK TO FIRE <span>·</span> <kbd>P</kbd> PAUSE</div>
@@ -43,7 +45,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <div id="toast" class="game-toast" role="status"></div>
     <div id="game-overlay" class="game-overlay" hidden><div class="overlay-card"><span class="eyebrow" id="overlay-eyebrow">TAKE A BREATHER</span><h2 id="overlay-title">REFACTOR<br>PAUSED.</h2><p id="overlay-description">The spaghetti can wait. For a moment.</p><div id="results" hidden></div><button id="resume" class="primary-button">BACK TO BUSTING <span>↗</span></button><button id="restart" class="secondary-button">START A FRESH RUN ↻</button><button id="quit" class="text-button">BACK TO MAIN MENU</button></div></div>
   </section>
-  <dialog id="help-dialog"><button id="close-help" class="close-button" aria-label="Close help">×</button><span class="eyebrow">A QUICK FIELD GUIDE</span><h2>MAKE A MESS.<br>CLEAN THE CODE.</h2><p class="help-intro">Keep every last chunk from escaping through the left edge. Each wave brings more, bigger, tougher code.</p><div class="help-steps"><div><span>01</span><p><b>POINT. HOLD. OBLITERATE.</b>Move your mouse to aim and hold left click to fire. On touchscreens, drag and hold. <kbd>↑</kbd> <kbd>↓</kbd> + <kbd>SPACE</kbd> work too.</p></div><div><span>02</span><p><b>BRING OUT THE HEAVY REFACTORING.</b>Press <kbd>1</kbd> for backspace homing missiles, <kbd>2</kbd> for recycle-bin grenades, <kbd>3</kbd> for the code review gun, or <kbd>4</kbd> for the lint bomb. <b class="inline-emphasis">Right click</b> fires the selected special. On touchscreens, choose a slot and tap FIRE. Review freezes all enemies for 2 seconds; lint splits every block in half. All four drop as bonuses.</p></div><div><span>03</span><p><b>MAKE EVERY UPGRADE COUNT.</b>Hit <code>DOUBLE_SHOT</code> or <code>TRIPLE_SHOT</code> variables, then shoot the floating weapon to equip it. Rarer <code>QUAD_SHOT</code> and <code>QUINT_SHOT</code> guns fire 4 or 5 shots. Hit <code>AMMO_CACHE</code> to reload. Special-weapon variables release bonus ammo too.</p></div><div><span>04</span><p><b>DON’T BLOCK THE EVENT LOOP.</b>Fast red <code>await setTimeout(…);</code> hazards hunt the specialist. Shoot them down or dodge vertically. A collision freezes movement and every weapon for the shown duration.</p></div><div><span>05</span><p><b>THE MACHINES KEEP SHIPPING.</b>Invulnerable AI robots absorb your shots, run to the middle, think, and generate huge code blocks. Shoot around them. Red, rattling angry code throws smaller exception blocks: clean up the parent and every exception.</p></div></div><div class="help-bottom"><span>Split the blocks. Finish every fragment.</span><button id="help-play" class="primary-button">GOT IT. LET’S GO ↗</button></div></dialog>
+  <dialog id="help-dialog"><button id="close-help" class="close-button" aria-label="Close help">×</button><span class="eyebrow">A QUICK FIELD GUIDE</span><h2>MAKE A MESS.<br>CLEAN THE CODE.</h2><p class="help-intro">Keep every last chunk from escaping through the left edge. Each wave brings more, bigger, tougher code.</p><div class="help-steps"><div><span>01</span><p><b>POINT. HOLD. OBLITERATE.</b>Move your mouse to aim and hold left click to fire. On touchscreens, drag and hold. <kbd>↑</kbd> <kbd>↓</kbd> + <kbd>SPACE</kbd> work too.</p></div><div><span>02</span><p><b>BRING OUT THE HEAVY REFACTORING.</b>Press <kbd>1</kbd> for backspace homing missiles, <kbd>2</kbd> for recycle-bin grenades, <kbd>3</kbd> for the code review gun, or <kbd>4</kbd> for the lint bomb. <b class="inline-emphasis">Right click</b> fires the selected special. On touchscreens, choose a slot and tap FIRE. Review freezes all enemies for 2 seconds; lint splits every block in half. All four drop as bonuses.</p></div><div><span>03</span><p><b>MAKE EVERY UPGRADE COUNT.</b>Hit <code>DOUBLE_SHOT</code> or <code>TRIPLE_SHOT</code> variables, then shoot the floating weapon to equip it. Rarer <code>QUAD_SHOT</code> and <code>QUINT_SHOT</code> guns fire 4 or 5 shots. Hit <code>AMMO_CACHE</code> to reload. Special-weapon variables release bonus ammo too.</p></div><div><span>04</span><p><b>DON’T BLOCK THE EVENT LOOP.</b>Fast red <code>await setTimeout(…);</code> hazards hunt the specialist. Shoot them down or dodge vertically. A collision freezes movement and every weapon for the shown duration.</p></div><div><span>05</span><p><b>THE MACHINES KEEP SHIPPING.</b>Invulnerable AI robots absorb your shots, run to the middle, think, and generate huge code blocks. Shoot around them. Red, rattling angry code throws smaller exception blocks: clean up the parent and every exception. Every 5 levels, face <code>FactoryFactoryFactory</code>: a boss that keeps manufacturing more bad code.</p></div></div><div class="help-bottom"><span>Split the blocks. Finish every fragment.</span><button id="help-play" class="primary-button">GOT IT. LET’S GO ↗</button></div></dialog>
 `;
 
 const $ = <T extends HTMLElement = HTMLElement>(s:string) => document.querySelector<T>(s)!;
@@ -54,6 +56,26 @@ let paused = false;
 let finished = false;
 let menuSoundUnlocked = false;
 let toastTimeout: ReturnType<typeof setTimeout>;
+let bossAnnouncementTimer: ReturnType<typeof setTimeout> | undefined;
+let bossAnnouncementRemaining = 0;
+let bossAnnounced = false;
+
+function clearBossAnnouncement() {
+  clearTimeout(bossAnnouncementTimer);
+  bossAnnouncementTimer = undefined;
+  bossAnnouncementRemaining = 0;
+  $('#boss-announcement').hidden = true;
+}
+function announceBoss() {
+  if(bossAnnounced) return;
+  bossAnnounced = true;
+  clearBossAnnouncement();
+  clearTimeout(toastTimeout);
+  $('#toast').classList.remove('visible');
+  $('#boss-announcement').hidden = false;
+  bossAnnouncementRemaining = 1000;
+  bossAnnouncementTimer = setTimeout(clearBossAnnouncement,1000);
+}
 
 $('#enter').addEventListener('click',()=>{
   audio.enterMenu();
@@ -69,6 +91,7 @@ document.querySelectorAll<HTMLButtonElement>('#menu button, #help-dialog button'
 });
 
 function showToast(message:string) {
+  if(bossAnnouncementRemaining>0) return;
   $('#toast').textContent = message;
   $('#toast').classList.add('visible');
   clearTimeout(toastTimeout);
@@ -78,6 +101,9 @@ function showToast(message:string) {
 async function start() {
   if(starting) return;
   starting = true;
+  clearBossAnnouncement();
+  bossAnnounced = false;
+  $('#boss-health').hidden = true;
   $<HTMLDialogElement>('#help-dialog').close();
   $('#start').setAttribute('disabled','');
   $('#start span').textContent = 'LOADING THE CANNON…';
@@ -87,8 +113,17 @@ async function start() {
     if(!controller) controller = await createGame('game-canvas', {
       onState: s => {
         $('#score').textContent = String(s.score).padStart(6,'0');
+        if(!s.isBossWave) bossAnnounced = false;
+        const bossHealth = s.bossHealth;
+        $('#boss-health').hidden = !bossHealth || bossHealth.current<=0;
+        if(bossHealth) {
+          const healthPercent = Math.max(0,Math.min(100,bossHealth.current/Math.max(1,bossHealth.max)*100));
+          $('#boss-health-value').textContent = `${Math.ceil(bossHealth.current)} / ${Math.ceil(bossHealth.max)}`;
+          $('#boss-health-fill').style.width = `${healthPercent}%`;
+          $('#boss-health-meter').setAttribute('aria-valuenow',String(Math.round(healthPercent)));
+        }
         const waveNames = ['THE LEGACY BEGINS','CALLBACK CATASTROPHE','DEPENDENCY HELL','ENTERPRISE EDITION','PRODUCTION IS ON FIRE'];
-        $('#wave').innerHTML = `${String(s.wave).padStart(2,'0')} <small>/ ${waveNames[Math.min(s.wave-1,4)]}</small>`;
+        $('#wave').innerHTML = `${String(s.wave).padStart(2,'0')} <small>/ ${s.isBossWave ? 'FACTORYFACTORYFACTORY' : waveNames[Math.min(s.wave-1,4)]}</small>`;
         $('#combo').textContent = s.combo > 1 ? `${s.combo}× COMBO · KEEP IT CLEAN` : 'READY TO REFACTOR';
         $('#weapon').textContent = `${s.weapon.toUpperCase()} SHOT`;
         $('#ammo').textContent = s.weapon === 'single' ? '∞ UNLIMITED AMMO' : `${s.ammo} ROUNDS REMAINING`;
@@ -108,6 +143,8 @@ async function start() {
         $('#track-name').textContent = audio.trackName.toUpperCase();
       },
       onEvent: event => {
+        if(event === 'boss') {if(bossAnnounced)return;announceBoss();}
+        if(event === 'boss-defeated') {clearBossAnnouncement();$('#boss-health').hidden=true;showToast('FACTORY SHUT DOWN // BUILD APPROVED');}
         if(event !== 'gameover') audio.play(event === 'shoot' ? 'shot' : event);
         if(event === 'wave') showToast('NEW WAVE // MORE CODE. LESS MERCY.');
         if(event === 'pickup') showToast('BONUS COLLECTED // LET IT RIP!');
@@ -156,6 +193,8 @@ function setPause(value:boolean) {
 }
 
 function endRun(score:number,wave:number) {
+  clearBossAnnouncement();
+  $('#boss-health').hidden = true;
   finished = true;
   controller?.setPaused(true);
   audio.finish();
@@ -182,6 +221,8 @@ $('#restart').addEventListener('click',start);
 for(const type of specialTypes) $(`#select-${type}`).addEventListener('click',()=>controller?.selectSpecial(type));
 $('#fire-special').addEventListener('click',()=>controller?.fireSpecial());
 $('#quit').addEventListener('click',()=>{
+  clearBossAnnouncement();
+  $('#boss-health').hidden = true;
   controller?.setPaused(true);
   $('#game-screen').hidden = true; $('#menu').hidden = false;
   audio.enterMenu();

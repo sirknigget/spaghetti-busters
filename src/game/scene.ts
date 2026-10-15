@@ -93,6 +93,7 @@ export async function createGame(parent:string, callbacks:Callbacks):Promise<Gam
         if(event==='split'||event==='destroy')this.impact=5;
         if(event==='explosion'||event==='lint')this.impact=8;
         if(event==='generate')this.impact=3;
+        if(event==='boss'||event==='boss-spawn')this.impact=window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:4;
         if(event==='stun')this.impact=7;
         callbacks.onEvent(event);
       }

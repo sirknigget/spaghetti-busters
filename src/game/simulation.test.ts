@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Simulation, type Block, type Cell, CODE_SLICES, PRIMARY_AMMO, SPECIAL_AMMO_CAPS, type Pickup, type RobotBrand } from './simulation';
+import { Simulation, type Block, type Cell, CODE_SLICES, PRIMARY_AMMO, SPECIAL_AMMO_CAPS, type Pickup, type RobotBrand, TIMEOUT_METRICS } from './simulation';
 
 function game() { return new Simulation(() => 0.5); }
 
@@ -564,6 +564,143 @@ describe('arcade simulation', () => {
     expect(sim.hazards[0]!.x).toBe(170);
     for (let i = 0; i < 8; i++) sim.update(0.25);
     expect(sim.isStunned).toBe(true);
+  });
+
+  it('replaces every fifth wave with exactly one factory boss and clears ordinary visitors', () => {
+    for (const priorWave of [4, 9]) {
+      const sim = game(); sim.wave = priorWave;
+      sim.spawnRobot(); sim.spawnHazard({ x: 1400, y: 220 });
+      for (let i = 0; i < 220 && sim.wave === priorWave; i++) {
+        sim.blocks = []; sim.update(0.05);
+      }
+      expect(sim.wave).toBe(priorWave + 1);
+      expect(sim.isBossWave).toBe(true);
+      expect(sim.waveTotal).toBe(1);
+      sim.update(0.02);
+      expect(sim.blocks).toHaveLength(1);
+      const boss = sim.blocks[0]!;
+      expect(boss.boss).toBe(true);
+      expect(boss.title).toBe('FactoryFactoryFactory');
+      expect(boss.cells.length).toBeGreaterThan(650);
+      expect(boss.height).toBe(348);
+      expect(boss.width).toBeGreaterThan(600);
+      expect(boss.width).toBeLessThan(780);
+      expect(boss.toughness).toBe(6 + Math.floor((priorWave + 1) / 5) - 1);
+      expect(sim.events.filter(event => event === 'boss')).toHaveLength(1);
+      expect(sim.robots).toHaveLength(0);
+      expect(sim.hazards).toHaveLength(0);
+      for (let i = 0; i < 12; i++) sim.update(0.25);
+      expect(sim.blocks).toHaveLength(1);
+    }
+  });
+
+  it('keeps boss drift slow, glyphs armored and fragmentation harder than ordinary code', () => {
+    const sim = game(); sim.wave = 5; sim.blocks = [];
+    const boss = sim.spawnBoss();
+    const baseline = sim.bossHealth!;
+    expect(baseline.current).toBe(baseline.max);
+    expect(baseline.max).toBeGreaterThan(4000);
+    expect(boss.toughness).toBeGreaterThan(5);
+    for (let i = 0; i < 12; i++) {
+      hitCell(sim, boss, boss.cells.find(cell => cell.alive)!);
+    }
+    expect(sim.blocks.filter(block => block.boss)).toHaveLength(1);
+    expect(sim.bossHealth!.current).toBeLessThan(baseline.current);
+    expect(sim.bossHealth!.max).toBe(baseline.max);
+    for (let i = 0; i < 12; i++) sim.update(0.25);
+    expect(Math.abs(boss.vx)).toBeLessThan(35);
+    expect(Math.abs(boss.vx)).toBeLessThan(sim.driftSpeed / 4);
+    expect(boss.cells.filter(cell => cell.alive).every(cell => cell.maxHealth === 6)).toBe(true);
+  });
+
+  it('lint preserves boss lineage, armor, health baseline and a single shared minion generator', () => {
+    const sim = game(); sim.wave = 5; sim.blocks = [];
+    const boss = sim.spawnBoss(); boss.x = 1000;
+    const root = boss.bossRoot;
+    const health = sim.bossHealth!;
+    const count = boss.cells.length;
+    sim.selectSpecial('lint'); expect(sim.fireSpecial()).toBe(true);
+    expect(sim.blocks).toHaveLength(2);
+    expect(sim.blocks.every(block => block.boss && block.bossRoot === root)).toBe(true);
+    expect(sim.blocks.reduce((n, block) => n + block.cells.length, 0)).toBe(count);
+    expect(sim.blocks.every(block => block.cells.every(cell => cell.health === 6))).toBe(true);
+    expect(sim.bossHealth).toEqual(health);
+    for (let i = 0; i < 17; i++) sim.update(0.25);
+    expect(sim.events.filter(event => event === 'boss-spawn')).toHaveLength(1);
+    expect(sim.blocks.filter(block => block.bossMinion)).toHaveLength(1);
+    expect(sim.blocks.filter(block => block.boss).every(block => Math.abs(block.vx) < 40)).toBe(true);
+    expect(sim.bossHealth!.max).toBe(health.max);
+    expect(sim.events.filter(event => event === 'boss')).toHaveLength(1);
+  });
+
+  it('pauses factory production during review and caps live minions without regular hazards or robots', () => {
+    const sim = game(); sim.wave = 5; sim.blocks = [];
+    sim.spawnBoss();
+    sim.selectSpecial('review'); sim.fireSpecial();
+    for (let i = 0; i < 8; i++) sim.update(0.25);
+    expect(sim.events).not.toContain('boss-spawn');
+    for (let i = 0; i < 15; i++) sim.update(0.25);
+    expect(sim.events).not.toContain('boss-spawn');
+    sim.update(0.25);
+    sim.update(0.02);
+    expect(sim.events.filter(event => event === 'boss-spawn')).toHaveLength(1);
+    for (let i = 0; i < 155; i++) {
+      sim.blocks.forEach(block => { block.x = block.boss ? 1050 : 650; block.y = block.boss ? 350 : 560; });
+      sim.update(0.25);
+    }
+    expect(sim.status).toBe('playing');
+    expect(sim.blocks.filter(block => block.bossMinion)).toHaveLength(7);
+    expect(sim.events.filter(event => event === 'boss-spawn')).toHaveLength(7);
+    expect(sim.robots).toHaveLength(0);
+    expect(sim.hazards).toHaveLength(0);
+    expect(sim.events).toContain('bonus');
+  });
+
+  it('rewards the factory defeat once, waits for minions and then advances to a regular wave', () => {
+    const sim = game(); sim.wave = 5; sim.blocks = [];
+    const boss = sim.spawnBoss();
+    // Put the factory on its final few damaged glyphs and leave one generated service alive.
+    boss.x = 850; boss.y = 350; boss.angle = 0;
+    boss.cells = boss.cells.slice(0, 7).map(cell => ({ ...cell, health: 1 }));
+    const minion = sim.spawnBlock({ x: 1200, y: 550, code: ['const leftover = factory(anything);'] });
+    minion.bossMinion = true; minion.bossRoot = boss.bossRoot;
+    hitCell(sim, boss, boss.cells[0]!);
+    expect(sim.blocks.some(block => block.boss)).toBe(false);
+    expect(sim.bossHealth).toBeUndefined();
+    expect(sim.events.filter(event => event === 'boss-defeated')).toHaveLength(1);
+    expect(sim.pickups.map(pickup => pickup.type)).toEqual(['quint', 'lint']);
+    const score = sim.score;
+    for (let i = 0; i < 6; i++) sim.update(0.25);
+    expect(sim.wave).toBe(5);
+    expect(sim.score).toBe(score);
+    expect(sim.events.filter(event => event === 'boss-defeated')).toHaveLength(1);
+    sim.blocks = [];
+    for (let i = 0; i < 5; i++) sim.update(0.25);
+    expect(sim.wave).toBe(6);
+    expect(sim.isBossWave).toBe(false);
+    expect(sim.waveTotal).toBeGreaterThan(1);
+    expect(sim.blocks.some(block => !block.boss)).toBe(true);
+    expect(sim.events.filter(event => event === 'boss-defeated')).toHaveLength(1);
+    sim.reset();
+    expect(sim.bossHealth).toBeUndefined();
+    expect(sim.events).toEqual([]);
+    expect(sim.blocks.every(block => !block.boss)).toBe(true);
+  });
+
+  it('matches the enlarged timeout text width and vertical face for shots and dodging', () => {
+    expect(TIMEOUT_METRICS).toEqual({ fontSize: 20, charWidth: 12, widthPadding: 36, height: 54, depth: 30 });
+    const sim = game();
+    sim.spawnHazard({ x: 700, y: 360, vx: -400, vy: 0 });
+    sim.bullets.push({ id: 12001, x: 535, y: 389, vx: 1080, vy: 0, life: 1, weapon: 'single' });
+    sim.update(1 / 120);
+    expect(sim.hazards).toHaveLength(0);
+    sim.spawnHazard({ x: 280, y: 424, vx: -400, vy: 0 });
+    sim.update(1 / 120);
+    expect(sim.isStunned).toBe(true);
+    const dodge = game();
+    dodge.spawnHazard({ x: 280, y: 445, vx: -400, vy: 0 });
+    dodge.update(1 / 120);
+    expect(dodge.isStunned).toBe(false);
   });
 
 });

@@ -5,13 +5,14 @@ export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 export const CELL_WIDTH = 9;
 export const CELL_HEIGHT = 20;
+export const TIMEOUT_METRICS = { fontSize: 20, charWidth: 12, widthPadding: 36, height: 54, depth: 30 } as const;
 
 export type Weapon = 'single' | 'double' | 'triple' | 'quad' | 'quint';
 export const PRIMARY_AMMO = { double: 30, triple: 24, quad: 16, quint: 12 } as const;
 export const SPECIAL_AMMO_CAPS = { homing: 6, grenade: 5, review: 4, lint: 3 } as const;
 export type SpecialWeapon = 'homing' | 'grenade' | 'review' | 'lint';
 export type Magic = Pickup['type'] | 'ammo';
-export type GameEvent = 'shot' | 'hit' | 'split' | 'destroy' | 'pickup' | 'ammo' | 'wave' | 'gameover' | 'missile' | 'grenade' | 'explosion' | 'stun' | 'hazard' | 'recover' | 'robot' | 'generate' | 'exception' | 'review' | 'lint' | 'bonus' | 'absorb';
+export type GameEvent = 'shot' | 'hit' | 'split' | 'destroy' | 'pickup' | 'ammo' | 'wave' | 'gameover' | 'missile' | 'grenade' | 'explosion' | 'stun' | 'hazard' | 'recover' | 'robot' | 'generate' | 'exception' | 'review' | 'lint' | 'bonus' | 'absorb' | 'boss' | 'boss-spawn' | 'boss-defeated';
 
 export interface Cell {
   x: number;
@@ -44,6 +45,9 @@ export interface Block {
   angry: boolean;
   exception: boolean;
   throwTimer: number;
+  boss: boolean;
+  bossRoot?: number;
+  bossMinion?: boolean;
 }
 
 export interface Bullet {
@@ -88,6 +92,7 @@ export interface SpawnBlockOptions {
   code?: string[];
   angry?: boolean;
   exception?: boolean;
+  boss?: boolean;
 }
 
 export interface SpecialProjectile {
@@ -154,13 +159,26 @@ export class Simulation {
   private comboTimer = 0;
   private waveTimer = 0;
   private triggeredMagics = new Set<string>();
+  private activeBossRoot?: number;
+  private bossMaxHealth = 0;
+  private bossSpawnTimer = 4;
+  private bossRewarded = false;
 
   constructor(private readonly random: () => number = Math.random) {
     this.reset();
   }
 
   get waveRemaining() { return this.blocks.length + this.pendingBlocks; }
-  get waveTotal() { return Math.min(16, 4 + Math.floor((this.wave - 1) * 1.4)); }
+  get isBossWave() { return this.wave % 5 === 0; }
+  get bossHealth(): { current: number; max: number } | undefined {
+    if (this.activeBossRoot === undefined || this.bossRewarded) return undefined;
+    const fragments = this.blocks.filter(block => block.boss && block.bossRoot === this.activeBossRoot);
+    if (fragments.length === 0) return undefined;
+    const current = fragments.reduce((health, block) => health + block.cells.reduce((sum, cell) => sum + (cell.alive ? Math.max(0, cell.health) : 0), 0), 0);
+    return { current, max: this.bossMaxHealth };
+  }
+  private get bossDriftSpeed() { return Math.min(30, 20 + Math.floor(this.wave / 5) * 2.5); }
+  get waveTotal() { return this.isBossWave ? 1 : Math.min(16, 4 + Math.floor((this.wave - 1) * 1.4)); }
   get isStunned() { return this.stunRemaining > 0; }
   get driftSpeed() { return Math.min(265, 68 + this.wave * 11 + this.wave * this.wave * 1.8); }
   get waveLabel() { return `WAVE ${String(this.wave).padStart(2, '0')}`; }
@@ -192,6 +210,10 @@ export class Simulation {
     this.nextId = 1;
     this.cooldown = this.comboTimer = this.waveTimer = 0;
     this.triggeredMagics.clear();
+    this.activeBossRoot = undefined;
+    this.bossMaxHealth = 0;
+    this.bossSpawnTimer = 4;
+    this.bossRewarded = false;
     this.pendingBlocks = this.waveTotal - 1;
     this.spawnTimer = 3.2;
     this.spawnBlock({ x: 1050, y: 330, vx: -this.driftSpeed, vy: 22, angle: -0.035 });
@@ -216,7 +238,8 @@ export class Simulation {
         : roll < 0.18 ? 'RECYCLE_GRENADE' : roll < 0.24 ? 'HOMING_MISSILE' : undefined;
       if (keyword) code.push(`const ${keyword} = proxyFactory(await import("legacy"));`);
     }
-    const toughness = Math.min(3, 1 + Math.floor((this.wave - 1) / 3));
+    const toughness = options.boss ? 6 + Math.max(0, Math.floor(this.wave / 5) - 1)
+      : Math.min(3, 1 + Math.floor((this.wave - 1) / 3));
     const width = Math.max(...code.map(line => line.length)) * CELL_WIDTH + 28;
     const height = code.length * CELL_HEIGHT + 28;
     const cells: Cell[] = [];
@@ -252,16 +275,86 @@ export class Simulation {
       id, title: ['legacy-service.ts', 'factory-factory.ts', 'utils-final-v9.ts', 'types-of-doom.ts'][(this.wave + id - 2) % 4]!,
       x: options.x ?? GAME_WIDTH + width / 2 + 12,
       y: options.y ?? 235 + this.random() * 270,
-      vx: options.vx ?? -(this.driftSpeed + this.random() * 16),
+      vx: options.vx ?? -(options.boss ? this.bossDriftSpeed : this.driftSpeed + this.random() * 16),
       vy: options.vy ?? (this.random() - 0.5) * Math.min(160, 55 + this.wave * 10),
       angle: options.angle ?? (this.random() - 0.5) * 0.13,
       angularVelocity: (this.random() - 0.5) * 0.045,
       width, height, cells, hits: 0, age: 0, generation: 0, toughness,
-      angry: options.exception ? false : options.angry ?? (id > 1 && this.random() < 0.13),
+      angry: options.exception || options.boss ? false : options.angry ?? (id > 1 && this.random() < 0.13),
       exception: options.exception ?? false, throwTimer: 2.5 + this.random() * 1.5,
+      boss: options.boss ?? false, bossRoot: options.boss ? id : undefined,
     };
     this.blocks.push(block);
     return block;
+  }
+
+  spawnBoss(): Block {
+    const existing = this.blocks.find(block => block.boss && block.bossRoot === this.activeBossRoot);
+    if (existing) return existing;
+    const boss = this.spawnBlock({ boss: true, x: 1300, y: 370,
+      vx: -this.bossDriftSpeed, vy: 8, angle: -0.015,
+      code: [
+        'export class FactoryFactoryFactory<T extends Record<string, any>> {',
+        '  private factories = new WeakMap<object, Promise<FactoryFactory<T>>>();',
+        '  async createFactoryFactoryFactory(input: T): Promise<any> {',
+        '    const recursive = new Proxy(JSON.parse(JSON.stringify(input)), {',
+        '      get: (target, key) => Reflect.get(target, key) ?? recursive',
+        '    }); // architecture approved by the architecture factory',
+        '    const factory = await Promise.resolve().then(async () => {',
+        '      return new Promise(async (resolveFactory, rejectFactory) => {',
+        '        for (const key of Object.keys(recursive).sort().reverse()) {',
+        '          const clone = JSON.parse(JSON.stringify(recursive[key]));',
+        '          await Promise.resolve().then(() => Promise.resolve(clone));',
+        '          resolveFactory(() => () => () => eval(JSON.stringify(clone)));',
+        '        } rejectFactory(new Error("FactoryFactoryFactoryFactory"));',
+        '      }); // TODO: inject a factory factory to test this factory',
+        '    }); return factory instanceof Promise ? await factory : factory;',
+        '  } } // generated 4,096 more services; complexity is a feature',
+      ] });
+    boss.title = 'FactoryFactoryFactory';
+    boss.angularVelocity = 0.008;
+    this.pendingBlocks = 0;
+    this.activeBossRoot = boss.id;
+    this.bossMaxHealth = boss.cells.reduce((health, cell) => health + cell.maxHealth, 0);
+    this.bossSpawnTimer = 4;
+    this.bossRewarded = false;
+    this.robots = [];
+    this.hazards = [];
+    this.events.push('boss');
+    return boss;
+  }
+
+  private updateBoss(dt: number) {
+    if (this.activeBossRoot === undefined || this.bossRewarded) return;
+    const fragments = this.blocks.filter(block => block.boss && block.bossRoot === this.activeBossRoot);
+    if (fragments.length === 0) {
+      this.bossRewarded = true;
+      this.score += 2000 + Math.floor(this.wave / 5) * 500;
+      this.spawnBonus('quint', 850, 320);
+      this.spawnBonus('lint', 930, 440);
+      this.events.push('boss-defeated');
+      return;
+    }
+    this.bossSpawnTimer -= dt;
+    if (dt <= 0 || this.bossSpawnTimer > 0) return;
+    const minions = this.blocks.filter(block => block.bossMinion && block.bossRoot === this.activeBossRoot);
+    // One timer for the original factory: fragmentation cannot multiply production.
+    if (minions.length >= 7) { this.bossSpawnTimer = 1; return; }
+    const source = fragments.reduce((largest, block) => block.cells.length > largest.cells.length ? block : largest);
+    const code = [
+      ['const service = factory(factory(input));', 'return service.map((x: any) => eval("x"));', '// TODO: extract another microservice'],
+      ['async function minionFactory(x: any) {', '  return await Promise.resolve(() => x);', '} // generated without any tests'],
+      ['const dependency = new Proxy({}, {});', 'export default () => () => dependency;', '// infinite scalability, finite uptime'],
+    ][Math.floor(this.random() * 3)]!;
+    const minion = this.spawnBlock({ x: clamp(source.x - source.width / 2 - 70, 400, 1120),
+      y: clamp(source.y + (this.random() - 0.5) * 260, 180, 580),
+      vx: -Math.min(230, this.driftSpeed), vy: (this.random() - 0.5) * 80,
+      angle: (this.random() - 0.5) * 0.1, angry: false, code });
+    minion.title = 'factory-generated.ts';
+    minion.bossMinion = true;
+    minion.bossRoot = this.activeBossRoot;
+    this.bossSpawnTimer = Math.max(3.2, 4.6 - Math.floor(this.wave / 5) * 0.2);
+    this.events.push('boss-spawn');
   }
 
   fire(): boolean {
@@ -426,7 +519,7 @@ export class Simulation {
       hazard.life -= dt;
       hazard.x += hazard.vx * dt;
       hazard.y += hazard.vy * dt;
-      if (this.segmentRectangle(oldX - 100, oldY - this.playerY, hazard.x - 100, hazard.y - this.playerY, this.hazardHalfWidth(hazard) + 30, 58)) {
+      if (this.segmentRectangle(oldX - 100, oldY - this.playerY, hazard.x - 100, hazard.y - this.playerY, this.hazardHalfWidth(hazard) + 30, 65)) {
         this.stunRemaining = Math.max(this.stunRemaining, hazard.durationMs / 1000);
         hazard.life = 0;
         this.burst(100, this.playerY, '#ff88bb', 30);
@@ -546,7 +639,7 @@ export class Simulation {
     this.lintPulse = Math.max(0, this.lintPulse - dt);
     this.robotTimer -= enemyDt;
     this.bonusTimer -= dt;
-    if (enemyDt > 0 && this.robotTimer <= 0 && this.robots.length === 0) {
+    if (!this.isBossWave && enemyDt > 0 && this.robotTimer <= 0 && this.robots.length === 0) {
       this.spawnRobot();
       this.robotTimer = Math.max(13, 24 - this.wave * 0.5) + this.random() * 9;
     }
@@ -555,7 +648,7 @@ export class Simulation {
       this.bonusTimer = 17 + this.random() * 10;
     }
     this.hazardTimer -= enemyDt;
-    if (enemyDt > 0 && this.hazardTimer <= 0) {
+    if (!this.isBossWave && enemyDt > 0 && this.hazardTimer <= 0) {
       this.spawnHazard();
       this.hazardTimer = Math.max(4.8, 11.5 - this.wave * 0.55) + this.random() * 3;
     }
@@ -563,14 +656,19 @@ export class Simulation {
     if (this.comboTimer <= 0) this.combo = 0;
     this.spawnTimer -= enemyDt;
     if (enemyDt > 0 && this.pendingBlocks > 0 && this.spawnTimer <= 0 && this.blocks.length < 48) {
-      this.spawnBlock();
-      this.pendingBlocks--;
+      if (this.isBossWave) this.spawnBoss();
+      else { this.spawnBlock(); this.pendingBlocks--; }
       this.spawnTimer = Math.max(0.95, 3.6 - this.wave * 0.24);
     }
     if (this.blocks.length === 0 && this.pendingBlocks === 0) {
       this.waveTimer += dt;
       if (this.waveTimer > 1.0) {
         this.wave++;
+        this.activeBossRoot = undefined;
+        this.bossMaxHealth = 0;
+        this.bossRewarded = false;
+        this.bossSpawnTimer = 4;
+        if (this.isBossWave) { this.robots = []; this.hazards = []; }
         this.score += 250 * (this.wave - 1);
         this.pendingBlocks = this.waveTotal;
         this.spawnTimer = 0;
@@ -586,7 +684,8 @@ export class Simulation {
         block.throwTimer -= enemyDt;
         if (block.throwTimer <= 0) { this.throwException(block); block.throwTimer = Math.max(1.2, 3.8 - this.wave * 0.12) + this.random(); }
       }
-      block.vx += (-this.driftSpeed - block.vx) * enemyDt * 0.42;
+      block.vx += (-(block.boss ? this.bossDriftSpeed : this.driftSpeed) - block.vx) * enemyDt * 0.42;
+      if (block.boss) { block.vx = clamp(block.vx, -this.bossDriftSpeed * 1.5, 22); block.vy = clamp(block.vy, -38, 38); }
       block.vy *= Math.exp(-enemyDt * 0.12);
       block.angularVelocity *= Math.exp(-enemyDt * 0.2);
       block.x += block.vx * enemyDt;
@@ -700,6 +799,7 @@ export class Simulation {
       }
       if (hit) bullet.life = 0;
     }
+    this.updateBoss(enemyDt);
     this.bullets = this.bullets.filter(bullet => bullet.life > 0 && bullet.x < 1340 && bullet.y > 70 && bullet.y < 710);
     this.pickups = this.pickups.filter(pickup => pickup.life > 0);
     this.hazards = this.hazards.filter(hazard => hazard.life > 0);
@@ -747,7 +847,7 @@ export class Simulation {
       }
     }
     block.hits++;
-    block.vx = Math.min(125, block.vx + (blastRadius ? 65 : 28) / Math.sqrt(block.toughness));
+    block.vx = Math.min(block.boss ? 22 : 125, block.vx + (blastRadius ? 65 : 28) / Math.sqrt(block.toughness) * (block.boss ? 0.18 : 1));
     block.vy += bullet.vy * 0.035 + (y / Math.max(block.height, 1)) * 35;
     block.angularVelocity += clamp(y * 0.0013, -0.16, 0.16);
     this.combo = Math.min(99, this.combo + 1);
@@ -755,13 +855,13 @@ export class Simulation {
     this.score += removed * (2 + Math.min(6, Math.floor(this.combo / 5)));
     this.events.push('hit');
     const remaining = block.cells.filter(cell => cell.alive);
-    if (remaining.length < 18 || (block.generation > 1 && remaining.length < 32)) {
+    if (remaining.length < (block.boss ? 8 : 18) || (!block.boss && block.generation > 1 && remaining.length < 32)) {
       this.blocks = this.blocks.filter(item => item.id !== block.id);
       this.score += 75 + block.generation * 25;
       this.blocksDestroyed++;
       this.burst(block.x, block.y, '#79e7ff', 15);
       this.events.push('destroy');
-    } else if (block.hits >= 4 + block.toughness && remaining.length > 38 && this.blocks.length < 48) {
+    } else if (block.hits >= (block.boss ? 14 + block.toughness * 2 : 4 + block.toughness) && remaining.length > 38 && this.blocks.length < 48) {
       this.split(block, remaining, x, y);
     }
   }
@@ -785,13 +885,14 @@ export class Simulation {
       this.blocks.push({
         id: this.nextId++, title: block.title, x: block.x + centerX * cos - centerY * sin,
         y: block.y + centerX * sin + centerY * cos,
-        vx: block.vx + sign * 27,
-        vy: block.vy + sign * 85 + (centerY - hitY) * 0.1,
+        vx: block.vx + sign * (block.boss ? 6 : 27),
+        vy: block.vy + sign * (block.boss ? 24 : 85) + (centerY - hitY) * 0.1,
         angle: block.angle + sign * 0.025,
         angularVelocity: block.angularVelocity + sign * (0.12 + Math.abs(hitX) * 0.0006),
         width, height, cells: half.map(cell => ({ ...cell, x: cell.x - centerX, y: cell.y - centerY })),
         hits: 0, age: 0, generation: block.generation + 1, toughness: block.toughness,
         angry: false, exception: block.exception, throwTimer: 3,
+        boss: block.boss, bossRoot: block.bossRoot, bossMinion: block.bossMinion,
       });
     });
     this.score += 50;
@@ -837,7 +938,7 @@ export class Simulation {
   }
 
   private hazardHalfWidth(hazard: TimeoutHazard) {
-    return (`await setTimeout(${hazard.durationMs});`.length * 9 + 28) / 2;
+    return (`await setTimeout(${hazard.durationMs});`.length * TIMEOUT_METRICS.charWidth + TIMEOUT_METRICS.widthPadding) / 2;
   }
 
   private hitsHazard(ax: number, ay: number, bx: number, by: number, hazard: TimeoutHazard) {
@@ -846,7 +947,7 @@ export class Simulation {
     const local = (x: number, y: number) => ({ x: (x - hazard.x) * cos + (y - hazard.y) * sin,
       y: -(x - hazard.x) * sin + (y - hazard.y) * cos });
     const a = local(ax, ay), b = local(bx, by);
-    return this.segmentRectangle(a.x, a.y, b.x, b.y, this.hazardHalfWidth(hazard) + 4, 24);
+    return this.segmentRectangle(a.x, a.y, b.x, b.y, this.hazardHalfWidth(hazard) + 4, TIMEOUT_METRICS.height / 2 + 4);
   }
 
   private segmentRectangle(ax: number, ay: number, bx: number, by: number, halfWidth: number, halfHeight: number) {

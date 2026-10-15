@@ -141,3 +141,35 @@ test('real audio context crossfades scores and preserves transport through pause
   expect(end.sting).toBeGreaterThan(0);
   expect(end.stopped).toBe(true);
 });
+
+test('bundled boss voice decodes, plays once with its cue and stops on pause or mute', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#enter').click();
+  await page.evaluate(async () => {
+    const { AudioEngine } = await new Function('return import("/src/game/audio.ts")')();
+    const audio = new AudioEngine();
+    (window as any).__bossAudio = audio;
+    audio.enterGame();
+  });
+  await page.waitForFunction(() => !!(window as any).__bossAudio.bossVoice);
+  const voice = await page.evaluate(() => {
+    const a = (window as any).__bossAudio;
+    a.play('boss');
+    const source = [...a.sources].find((s: any) => s.buffer === a.bossVoice) as AudioBufferSourceNode;
+    const data = a.bossVoice.getChannelData(0);
+    const result = { duration: a.bossVoice.duration, audible: data.some((v: number) => Math.abs(v) > .1),
+      sources: [...a.sources].filter((s: any) => s.buffer === a.bossVoice).length, played: !!source };
+    a.pause();
+    return { ...result, stopped: a.sources.size === 0 };
+  });
+  expect(voice).toMatchObject({ audible: true, sources: 1, played: true, stopped: true });
+  expect(voice.duration).toBeGreaterThan(.7);
+  expect(voice.duration).toBeLessThan(1.5);
+  expect(await page.evaluate(() => {
+    const a = (window as any).__bossAudio;
+    a.resume(); a.setEnabled(false); a.play('boss');
+    const muted = a.sources.size === 0;
+    a.pause(); void a.context.close();
+    return muted;
+  })).toBe(true);
+});

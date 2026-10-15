@@ -8,7 +8,7 @@ interface MusicDeck {
   retireAt?: number;
 }
 
-/** Original, asset-free melodic soundtrack and arcade effects. Starts on a user gesture. */
+/** Original melodic soundtrack and arcade effects. Starts on a user gesture. */
 export class AudioEngine {
   enabled = true;
 
@@ -17,6 +17,7 @@ export class AudioEngine {
   private music: GainNode | null = null;
   private effects: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
+  private bossVoice: AudioBuffer | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private sources = new Set<AudioScheduledSourceNode>();
   private lastEffects = new Map<string, number>();
@@ -136,6 +137,30 @@ export class AudioEngine {
       case 'menu-click':
         this.tone(this.frequency(76), time, 0.12, 'triangle', 0.065, bus);
         this.tone(this.frequency(88), time + 0.055, 0.18, 'sine', 0.05, bus);
+        break;
+      case 'boss': {
+        // A short warning sting leaves room for the bundled spoken announcement.
+        this.tone(this.frequency(45), time, 0.5, 'sawtooth', 0.065, bus);
+        this.tone(this.frequency(52), time + 0.08, 0.4, 'triangle', 0.075, bus);
+        this.tone(this.frequency(46), time + 0.19, 0.3, 'square', 0.035, bus);
+        if(this.bossVoice) {
+          const voice=context.createBufferSource();
+          voice.buffer=this.bossVoice;
+          voice.connect(bus);
+          this.track(voice,()=>undefined);
+          voice.start(time + 0.07);
+        }
+        break;
+      }
+      case 'boss-spawn':
+        this.tone(105, time, 0.17, 'triangle', 0.12, bus, 53);
+        this.noise(time, 0.09, 0.055, 1800, bus);
+        break;
+      case 'boss-defeated':
+        [57, 64, 69, 76, 81, 88].forEach((note, i) => {
+          this.tone(this.frequency(note), time + i * 0.075, 0.36, 'triangle', 0.11, bus);
+        });
+        this.tone(this.frequency(93), time + 0.38, 0.7, 'sine', 0.08, bus);
         break;
       case 'missile':
         this.noise(time, 0.26, 0.10, 2100, bus, true);
@@ -280,6 +305,13 @@ export class AudioEngine {
       this.noiseBuffer = context.createBuffer(1, context.sampleRate, context.sampleRate);
       const data = this.noiseBuffer.getChannelData(0);
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      // Decode once while the opening screen plays. Never start a delayed voice
+      // from this promise: a pause, mute, or finished run must stay quiet.
+      void fetch('/assets/audio/boss-fight.wav')
+        .then(response => response.ok ? response.arrayBuffer() : Promise.reject(new Error('Boss voice unavailable')))
+        .then(data => context.decodeAudioData(data))
+        .then(buffer => { this.bossVoice = buffer; })
+        .catch(() => { /* The synthesized warning remains available if audio cannot load. */ });
       return true;
     } catch {
       this.context = null;

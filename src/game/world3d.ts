@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Simulation, type Particle, type TimeoutHazard } from './simulation';
+import { Simulation, TIMEOUT_METRICS, type Particle, type TimeoutHazard } from './simulation';
 import { createCodeMesh, disposeObject } from './code-mesh';
 import { createEnvironment, createSpecialist, createCannon, createBullet, createSpecial, createPickup } from './models3d';
 import { createRobot, animateRobot } from './robot3d';
@@ -102,16 +102,18 @@ export class WorldRenderer {
   }
 
   private hazard(hazard:TimeoutHazard) {
-    const text=`await setTimeout(${hazard.durationMs});`,width=text.length*9+28;
-    const canvas=document.createElement('canvas');canvas.width=width*2;canvas.height=80;
-    const c=canvas.getContext('2d')!;c.scale(2,2);c.fillStyle='#692e3a';c.fillRect(0,0,width,40);
-    c.strokeStyle='#ffbe7c';c.lineWidth=2;c.strokeRect(1,1,width-2,38);
-    c.font='bold 15px monospace';c.textBaseline='middle';let x=14;
-    for(const [word,color] of [['await ','#dcadff'],['setTimeout','#fff0c2'],['(','#ffc2a8'],[String(hazard.durationMs),'#ffb778'],[');','#ffc2a8']]){c.fillStyle=color;c.fillText(word!,x,20);x+=word!.length*9;}
+    const text=`await setTimeout(${hazard.durationMs});`,{fontSize,charWidth,widthPadding,height,depth}=TIMEOUT_METRICS,width=text.length*charWidth+widthPadding;
+    const canvas=document.createElement('canvas');canvas.width=width*3;canvas.height=height*3;
+    const c=canvas.getContext('2d')!;c.scale(3,3);c.fillStyle='#442336';c.fillRect(0,0,width,height);
+    c.strokeStyle='#ffc58b';c.lineWidth=2.5;c.strokeRect(1.25,1.25,width-2.5,height-2.5);
+    c.fillStyle='#9e5670';c.fillRect(3,3,4,height-6);
+    c.font=`bold ${fontSize}px monospace`;c.textBaseline='middle';let x=(width-text.length*charWidth)/2;
+    for(const [word,color] of [['await ','#e5baff'],['setTimeout','#fff7ce'],['(','#ffcfb0'],[String(hazard.durationMs),'#ffbd80'],[');','#ffcfb0']]){c.fillStyle=color;c.fillText(word!,x,height/2);x+=word!.length*charWidth;}
     const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
     const face=new THREE.MeshToonMaterial({map:texture});const side=new THREE.MeshToonMaterial({color:'#df7456'});
     const group=new THREE.Group();group.name='timeout-solid';
-    const mesh=new THREE.Mesh(new THREE.BoxGeometry(width,40,26),[side,side,side,side,face,side]);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
+    group.userData.width=width;group.userData.height=height;group.userData.fontSize=fontSize;
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(width,height,depth),[side,side,side,side,face,side]);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
     const trail=new THREE.Mesh(new THREE.ConeGeometry(12,100,5),new THREE.MeshBasicMaterial({color:'#ff9975',transparent:true,opacity:.32}));trail.rotation.z=-Math.PI/2;trail.position.set(width/2+50,0,-3);group.add(trail);return group;
   }
 
@@ -130,9 +132,9 @@ export class WorldRenderer {
     for(const [id,mesh] of this.blocks)if(!alive.has(id)){disposeObject(mesh);this.blocks.delete(id);}
     for(const block of sim.blocks){
       let mesh=this.blocks.get(block.id);
-      if(mesh&&(mesh.userData.hits!==block.hits||mesh.userData.cellCount!==block.cells.length)){disposeObject(mesh);this.blocks.delete(block.id);mesh=undefined;}
+      if(mesh&&(mesh.userData.hits!==block.hits||mesh.userData.cellCount!==block.cells.length||mesh.userData.boss!==block.boss||mesh.userData.angry!==block.angry||mesh.userData.exception!==block.exception)){disposeObject(mesh);this.blocks.delete(block.id);mesh=undefined;}
       if(!mesh){mesh=createCodeMesh(block);this.blocks.set(block.id,mesh);this.scene.add(mesh);}
-      const tumble=block.generation>0 ? .45 : .18;
+      const tumble=block.boss?(block.generation>0?.13:.065):block.generation>0 ? .45 : .18;
       const phase=block.id*.81+block.age*(block.generation>0?1.65:.65);
       const rattle=block.angry&&sim.freezeRemaining<=0&&!this.reducedMotion?Math.sin(block.age*47)*2:0;
       mesh.position.set(block.x+rattle,720-block.y+Math.cos(block.age*39)*Math.abs(rattle)*.45,0);
@@ -140,13 +142,15 @@ export class WorldRenderer {
       mesh.userData.frozen=sim.freezeRemaining>0;
       mesh.getObjectByName('frozen-code-outline')!.visible=sim.freezeRemaining>0;
       const solid=mesh.getObjectByName('perforated-extruded-code') as THREE.Mesh;
-      (solid.material as THREE.MeshToonMaterial[]).forEach((material,index)=>{material.emissive.set(sim.freezeRemaining>0?'#286b97':block.angry&&index===1?'#6a0f22':'#000000');material.emissiveIntensity=sim.freezeRemaining>0?.42:.3;});
+      (solid.material as THREE.MeshToonMaterial[]).forEach((material,index)=>{material.emissive.set(sim.freezeRemaining>0?'#286b97':block.boss&&index===1?'#7c2314':block.angry&&index===1?'#6a0f22':'#000000');material.emissiveIntensity=sim.freezeRemaining>0?.42:.3;});
+      const reactor=mesh.getObjectByName('factory-boss-reactor');if(reactor)reactor.rotation.z=block.age*2;
+      const core=mesh.getObjectByName('factory-boss-core') as THREE.Mesh|undefined;if(core)(core.material as THREE.MeshStandardMaterial).emissiveIntensity=.6+Math.sin(block.age*5)*.4;
     }
     this.sync(sim.robots,this.robotMeshes,r=>createRobot(r.brand),(mesh,r)=>animateRobot(mesh,r,sim.freezeRemaining>0));
     this.sync(sim.bullets,this.bulletMeshes,()=>createBullet(),(mesh,b)=>{mesh.rotation.z=-Math.atan2(b.vy,b.vx);});
     this.sync(sim.pickups,this.pickupMeshes,p=>createPickup(p.type),(mesh,p)=>{mesh.rotation.set(Math.sin(p.age*2)*.28,Math.sin(p.age*2.6)*.5,Math.sin(p.age*3)*.13);});
     this.sync(sim.specials,this.specialMeshes,p=>createSpecial(p.type),(mesh,p)=>{mesh.rotation.set(p.type==='grenade'?t*4:.12,p.type==='grenade'?t*3:.24,-p.angle);});
-    this.sync(sim.hazards,this.hazardMeshes,h=>this.hazard(h),(mesh,h)=>{mesh.rotation.set(Math.sin(h.age*8)*.12,Math.sin(h.age*6)*.16,Math.atan2(h.vy,-h.vx)*.12);});
+    this.sync(sim.hazards,this.hazardMeshes,h=>this.hazard(h),(mesh,h)=>{mesh.rotation.set(Math.sin(h.age*8)*.045,Math.sin(h.age*6)*.055,Math.atan2(h.vy,-h.vx)*.12);});
     for(const [effect,remaining,duration] of [[this.reviewEffect,sim.reviewPulse,.65],[this.lintEffect,sim.lintPulse,.8]] as const) {
       effect.visible=remaining>0;
       if(remaining>0){const progress=1-remaining/duration;effect.children.forEach((child,index)=>{const ring=child as THREE.Mesh;ring.scale.setScalar(30+progress*1100-index*24);(ring.material as THREE.MeshBasicMaterial).opacity=(1-progress)*.85;});}
