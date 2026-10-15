@@ -38,28 +38,12 @@ file with local contracts and verification advice.
 | `.github/`             | Parallel CI matrix and shared dependency setup                                  | `.github/workflows/ci.yml`                                                                                   |
 | `docs/`                | Dependency policy assessment, duplicate calibration, model editing, screenshots | [Dependency enforcement](docs/dependency-enforcement.md), [Duplicate detection](docs/duplicate-detection.md) |
 
-## Dependency boundaries
+## Dependency policy
 
-These are blocking checks, including indirect dependencies. Keep contracts with
-their owning domain instead of importing a renderer type into gameplay.
-
-- Simulation cannot reach presentation, audio, or browser UI, even through type
-  imports. It cannot load Three.js or Rapier at runtime.
-- Geometry, graphics, and content are foundations: they cannot reach gameplay or
-  application orchestration. Geometry and graphics may use Three.js.
-- Rendering, code surfaces, and debris may use simulation types and the shared
-  runtime data in `simulation-types.ts` and `simulation-values.json`; they cannot
-  load simulation implementations.
-- Audio cannot import application source outside its own subsystem. The app
-  forwards gameplay events to it.
-- Eager runtime module and source-folder cycles are forbidden. Lazy imports are
-  still included in architectural reachability checks.
-- Production source cannot depend on tests, lint tooling, or development-only
-  runtime packages. Knip checks normal and production reachability separately.
-
-The authoritative configuration is `.dependency-cruiser.json`,
+Respect the enforced dependency rules. Modify them only with the user's explicit
+approval. Their authoritative configuration is `.dependency-cruiser.json`,
 `lint/dependencies/runtime.json`, `lint/dependencies/architecture.json`, and
-`knip.json`. See the dependency assessment linked above for graph-pass details.
+`knip.json`; the dependency assessment linked above explains the checks.
 
 ## Existing code policies
 

@@ -1,9 +1,7 @@
 # Geometry foundations
 
-Geometry is a foundation with no dependency on simulation, rendering orchestration,
-code-surface builders, or application state. Three.js geometry types and outputs
-are permitted. Accept explicit geometry inputs rather than importing gameplay
-entities to obtain coordinates.
+This subsystem provides shared geometry algorithms with explicit geometry inputs
+and Three.js geometry outputs.
 
 ## Algorithm map
 

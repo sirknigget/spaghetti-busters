@@ -1,9 +1,7 @@
 # World rendering
 
 `WorldRenderer` in `world3d.ts` coordinates Three.js presentation. The scene layer
-owns gameplay updates and calls it to draw. Import simulation implementations only
-as erased types; runtime access is limited to the shared domain constants/data
-allowed by the root architecture policy.
+owns gameplay updates and calls it to draw.
 
 ## Rendering map
 

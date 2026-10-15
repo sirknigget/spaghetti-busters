@@ -1,8 +1,6 @@
 # Audio
 
-Audio is self-contained: application code calls `AudioEngine`, and no source in
-this subsystem imports the rest of the app. Event names cross the boundary as
-strings. Keep gameplay/rendering dependencies out of audio helpers and scores.
+Application code calls `AudioEngine` and forwards event names as strings.
 
 ## Sound map
 
