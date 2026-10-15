@@ -152,12 +152,12 @@ const eslintConfig: TSESLint.FlatConfig.Config[] = [
   {
     name: "quality/source",
     files: ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"],
-    ignores: ["tests/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}", "src/**/*.test.ts"],
+    ignores: ["tests/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}", "**/*.test.ts"],
     rules: sourceRules,
   },
   {
     name: "quality/tests",
-    files: ["tests/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}", "src/**/*.test.ts"],
+    files: ["tests/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}", "**/*.test.ts"],
     rules: testRules,
   },
 ];

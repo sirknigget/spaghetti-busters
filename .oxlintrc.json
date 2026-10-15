@@ -90,7 +90,7 @@
   "overrides": [
     {
       "files": ["**/*"],
-      "excludeFiles": ["tests/**", "src/**/*.test.ts"],
+      "excludeFiles": ["tests/**", "**/*.test.ts"],
       "rules": {
         "no-empty-function": [
           "error",
@@ -558,7 +558,7 @@
         "node_modules/**",
         "tests/**/*-snapshots/**",
         ".quality-results/**",
-        "src/**/*.test.ts"
+        "**/*.test.ts"
       ],
       "rules": {
         "sonarjs/no-collapsible-if": "error",
@@ -708,7 +708,7 @@
       }
     },
     {
-      "files": ["tests/**/*.{ts,tsx,js,jsx}", "src/**/*.test.ts"],
+      "files": ["tests/**/*.{ts,tsx,js,jsx}", "**/*.test.ts"],
       "excludeFiles": [
         "**/*.d.ts",
         "dist/**",
@@ -740,7 +740,7 @@
       }
     },
     {
-      "files": ["**/*.spec.ts", "tests/**/*.ts", "src/**/*.test.ts"],
+      "files": ["**/*.spec.ts", "tests/**/*.ts", "**/*.test.ts"],
       "rules": {
         "anti-slop/require-safety-comment-for-type-assertion": "off"
       }
