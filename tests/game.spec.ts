@@ -35,7 +35,7 @@ test('opening screen, help popup and sound control',async({page})=>{
   await expect(page.locator('dialog')).toBeVisible();
   await expect(page.locator('dialog')).toContainText('TRIPLE_SHOT');
   await expect(page.locator('dialog')).toContainText('Invulnerable AI robots');
-  await expect(page.locator('dialog')).toContainText('lint splits every block in half');
+  await expect(page.locator('dialog')).toContainText('lint splits big blocks in half and destroys small ones');
   await page.keyboard.press('Escape');
   await expect(page.locator('dialog')).not.toBeVisible();
   await page.locator('#menu [data-sound]').click();
@@ -158,7 +158,7 @@ test('timeout collision paralyzes movement and all weapons, then recovers',async
   await expect.poll(()=>page.evaluate(()=>(window as any).__spaghetti.simulation.shotsFired)).toBeGreaterThan(before.shots);
 });
 
-test('review and lint use keys 3 and 4, freeze enemies, then split all visible code',async({page})=>{
+test('review and lint use keys 3 and 4, freeze enemies, then split large code and clear small fragments',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await start(page);
   await page.evaluate(()=>{
@@ -169,9 +169,16 @@ test('review and lint use keys 3 and 4, freeze enemies, then split all visible c
         'const redundant = values.map(value => ({ ...value }));',
         'if (true === Boolean(redundant.length !== 0)) {',
         '  return redundant.filter(item => Boolean(!!item));',
+        '  return JSON.parse(JSON.stringify(redundant.map(value => ({value}))));',
+        '  // factoryFactoryFactory approves another unnecessary abstraction',
         '}',
       ]});
     }
+  });
+  await page.evaluate(() => {
+    const s = (window as any).__spaghetti.simulation;
+    const small = s.spawnBlock({ x: 400, y: 520, vx: -80, vy: 0, exception: true, code: ['throw new Error("oops");'] });
+    (window as any).__lintSmallId = small.id;
   });
   await page.keyboard.press('Digit3');
   await expect(page.locator('#select-review')).toHaveAttribute('aria-pressed','true');
@@ -188,6 +195,7 @@ test('review and lint use keys 3 and 4, freeze enemies, then split all visible c
   await page.mouse.down({button:'right'});await page.mouse.up({button:'right'});
   await expect(page.locator('#lint-ammo')).toHaveText('0');
   expect(await page.evaluate(()=>(window as any).__spaghetti.simulation.blocks.length)).toBe(4);
+  expect(await page.evaluate(()=>(window as any).__spaghetti.simulation.blocks.some((b:any)=>b.id===(window as any).__lintSmallId))).toBe(false);
   expect(await page.evaluate(()=>(window as any).__spaghetti.simulation.shotsFired)).toBe(0);
   await page.keyboard.press('Numpad3');
   await expect(page.locator('#select-review')).toHaveAttribute('aria-pressed','true');

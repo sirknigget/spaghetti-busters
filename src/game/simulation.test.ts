@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Simulation, type Block, type Cell, CODE_SLICES, PRIMARY_AMMO, SPECIAL_AMMO_CAPS, type Pickup, type RobotBrand, TIMEOUT_METRICS } from './simulation';
+import { Simulation, type Block, type Cell, CODE_SLICES, PRIMARY_AMMO, SPECIAL_AMMO_CAPS, type Pickup, type RobotBrand, TIMEOUT_METRICS, LINT_SMALL_BLOCK_CELLS, SPECIAL_BLASTS } from './simulation';
 
 function game() { return new Simulation(() => 0.5); }
 
@@ -286,6 +286,40 @@ describe('arcade simulation', () => {
     expect(sim.events).toContain('explosion');
   });
 
+  it('homing prioritizes the rotated left edge over distance or center and follows changing urgency', () => {
+    const sim = game(); sim.blocks = [];
+    const close = sim.spawnBlock({ x: 510, y: 230, angle: 0, code: ['const x=1;'] });
+    const wide = sim.spawnBlock({ x: 620, y: 560, angle: .35, code: ['const distantButUrgent = factoryFactory(input);'] });
+    const missile = { id: 991, type: 'homing' as const, x: 400, y: 200, vx: 640, vy: 0, angle: 0, life: 5, targetId: undefined as number | undefined };
+    sim.specials.push(missile); sim.update(1 / 120);
+    expect(missile.targetId).toBe(wide.id);
+    const urgent = sim.spawnBlock({ x: 100, y: 530, angle: -.2, code: ['const escaping=1;'] });
+    sim.update(1 / 120);
+    expect(missile.targetId).toBe(urgent.id);
+    urgent.x = 1200; sim.update(1 / 120);
+    expect(missile.targetId).toBe(wide.id);
+    sim.blocks = [close]; sim.update(1 / 120);
+    expect(missile.targetId).toBe(close.id);
+  });
+
+  it.each(['homing', 'grenade'] as const)('%s blasts clear armored neighbors over a wide finite radius while bosses survive', type => {
+    const sim = game(); sim.wave = 7; sim.blocks = [];
+    const blast = SPECIAL_BLASTS[type];
+    const a = sim.spawnBlock({ x: 700, y: 360, angle: .3, code: ['const a=1;'] });
+    const b = sim.spawnBlock({ x: 700 + blast.radius - 80, y: 390, angle: -.3, code: ['const b=2;'] });
+    const far = sim.spawnBlock({ x: 1250, y: 550, angle: .2, code: ['const far=3;'] });
+    const boss = sim.spawnBoss(); boss.x = 700; boss.y = 360;
+    const health = sim.bossHealth!.current;
+    sim.specials.push({ id: 992, type, x: 700, y: 360, vx: 0, vy: 0, angle: 0, life: 2, fuse: .001 });
+    sim.update(1 / 120);
+    expect(sim.explosions[0]!.radius).toBe(blast.radius);
+    expect(sim.blocks).not.toContain(a);
+    expect(sim.blocks).not.toContain(b);
+    expect(far.cells.every(cell => cell.alive)).toBe(true);
+    expect(sim.bossHealth!.current).toBeGreaterThan(0);
+    expect(sim.bossHealth!.current).toBeLessThan(health);
+  });
+
   it('detonates recycle grenades across multiple rotated blocks with a finite radius', () => {
     const sim = game();
     sim.blocks = [];
@@ -300,7 +334,7 @@ describe('arcade simulation', () => {
     expect(a.cells.filter(cell => cell.alive).length).toBeLessThan(countA);
     expect(b.cells.filter(cell => cell.alive).length).toBeLessThan(countB);
     expect(far.cells.every(cell => cell.alive)).toBe(true);
-    expect(sim.explosions[0]!.radius).toBe(205);
+    expect(sim.explosions[0]!.radius).toBe(SPECIAL_BLASTS.grenade.radius);
     expect(sim.specials).toHaveLength(0);
   });
 
@@ -438,24 +472,40 @@ describe('arcade simulation', () => {
     expect(sim.events).toContain('exception');
   });
 
-  it('lint splits every visible block once, conserves living glyphs, and ignores the usual fragment cap', () => {
-    const sim = game();
-    sim.blocks = [];
+  it('lint clears small fragments instead of multiplying them and splits only large visible slabs once', () => {
+    const sim = game(); sim.blocks = [];
     for (let i = 0; i < 52; i++) sim.spawnBlock({ x: 500 + i * 5, y: 300, exception: i % 2 === 0,
       code: ['const nested = (((((x: any) => x)))))();'] });
+    const large = sim.spawnBlock({ x: 900, y: 450, code: Array(8).fill('return factoryFactory(JSON.parse(JSON.stringify(input)));') });
+    const largeCount = large.cells.length;
     const offscreen = sim.spawnBlock({ x: 2200, y: 350 });
-    const originalIds = sim.blocks.map(block => block.id);
-    const cellCount = sim.blocks.reduce((count, block) => count + block.cells.filter(cell => cell.alive).length, 0);
-    sim.selectSpecial('lint');
-    expect(sim.fireSpecial()).toBe(true);
-    expect(sim.blocks).toHaveLength(105);
+    sim.selectSpecial('lint'); expect(sim.fireSpecial()).toBe(true);
+    expect(sim.blocks).toHaveLength(3);
     expect(sim.blocks).toContain(offscreen);
-    expect(sim.blocks.filter(block => originalIds.includes(block.id))).toHaveLength(1);
-    expect(sim.blocks.every(block => block === offscreen || block.generation === 1)).toBe(true);
-    expect(sim.blocks.reduce((count, block) => count + block.cells.filter(cell => cell.alive).length, 0)).toBe(cellCount);
+    const halves = sim.blocks.filter(block => block !== offscreen);
+    expect(halves.every(block => block.generation === 1)).toBe(true);
+    expect(halves.reduce((count, block) => count + block.cells.length, 0)).toBe(largeCount);
+    expect(sim.blocksDestroyed).toBe(52);
     expect(sim.specialAmmo.lint).toBe(0);
     expect(sim.lintPulse).toBeGreaterThan(0);
     expect(sim.events).toContain('lint');
+    expect(sim.events.filter(event => event === 'destroy')).toHaveLength(52);
+  });
+
+  it('lint uses living glyph count at its boundary, clears worn armor and preserves magic rewards once', () => {
+    const sim = game(); sim.wave = 10; sim.blocks = [];
+    const small = sim.spawnBlock({ boss: true, x: 650, code: ['x'.repeat(LINT_SMALL_BLOCK_CELLS)] });
+    const large = sim.spawnBlock({ x: 700, code: ['x'.repeat(LINT_SMALL_BLOCK_CELLS + 1)] });
+    const worn = sim.spawnBlock({ x: 850, code: Array(8).fill('const hugeButMostlyMissing = overcomplicate(input);') });
+    worn.cells.forEach((cell, i) => { cell.alive = i < 10; });
+    const magic = sim.spawnBlock({ x: 600, code: ['const QUINT_SHOT = factory();'] });
+    sim.selectSpecial('lint'); sim.fireSpecial();
+    expect(sim.blocks.some(block => [small.id, worn.id, magic.id, large.id].includes(block.id))).toBe(false);
+    expect(sim.blocks).toHaveLength(2);
+    expect(sim.blocks.reduce((n, block) => n + block.cells.length, 0)).toBe(LINT_SMALL_BLOCK_CELLS + 1);
+    expect(sim.pickups.filter(pickup => pickup.type === 'quint')).toHaveLength(1);
+    expect(sim.blocksDestroyed).toBe(3);
+    expect(sim.score).toBeGreaterThan(0);
   });
 
   it('releases all weapon types from their magic variables, then grants them only on a second hit', () => {

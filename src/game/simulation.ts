@@ -10,6 +10,8 @@ export const TIMEOUT_METRICS = { fontSize: 20, charWidth: 12, widthPadding: 36, 
 export type Weapon = 'single' | 'double' | 'triple' | 'quad' | 'quint';
 export const PRIMARY_AMMO = { double: 30, triple: 24, quad: 16, quint: 12 } as const;
 export const SPECIAL_AMMO_CAPS = { homing: 6, grenade: 5, review: 4, lint: 3 } as const;
+export const LINT_SMALL_BLOCK_CELLS = 160;
+export const SPECIAL_BLASTS = { homing: { radius: 180, power: 4 }, grenade: { radius: 300, power: 5 } } as const;
 export type SpecialWeapon = 'homing' | 'grenade' | 'review' | 'lint';
 export type Magic = Pickup['type'] | 'ammo';
 export type GameEvent = 'shot' | 'hit' | 'split' | 'destroy' | 'pickup' | 'ammo' | 'wave' | 'gameover' | 'missile' | 'grenade' | 'explosion' | 'stun' | 'hazard' | 'recover' | 'robot' | 'generate' | 'exception' | 'review' | 'lint' | 'bonus' | 'absorb' | 'boss' | 'boss-spawn' | 'boss-defeated';
@@ -96,7 +98,7 @@ export interface SpawnBlockOptions {
 }
 
 export interface SpecialProjectile {
-  id: number; type: SpecialWeapon; x: number; y: number;
+  id: number; type: 'homing' | 'grenade'; x: number; y: number;
   vx: number; vy: number; life: number; angle: number; fuse?: number;
   targetId?: number;
 }
@@ -392,12 +394,17 @@ export class Simulation {
         this.events.push('review');
       } else {
         this.lintPulse = 0.8;
-        // Snapshot ensures each original block splits exactly once, with no fragment cap.
+        // Each original block is handled once; new halves wait for the next bomb.
         for (const block of [...this.blocks]) {
           const extent = this.extents(block);
           if (block.x + extent.x < 0 || block.x - extent.x > GAME_WIDTH) continue;
           const cells = block.cells.filter(cell => cell.alive);
-          if (cells.length > 1) this.split(block, cells, 0, 0);
+          if (cells.length > LINT_SMALL_BLOCK_CELLS) this.split(block, cells, 0, 0);
+          else {
+            // Remaining letters define size, so chipped slabs and armored fragments clear too.
+            this.damage(block, 0, 0, { vy: 0 }, Math.hypot(block.width, block.height),
+              Math.max(1, ...cells.map(cell => cell.health)));
+          }
         }
         this.events.push('lint');
       }
@@ -538,14 +545,19 @@ export class Simulation {
       if (special.life <= 0) continue;
       const oldX = special.x, oldY = special.y;
       if (special.type === 'homing') {
-        // Reacquire every substep: splitting or destroying a target never strands a missile.
+        // Reacquire the most urgent slab each substep, including chunks passing the player.
+        let targetBlock: Block | undefined;
+        let leftEdge = Infinity;
+        for (const block of this.blocks) {
+          const extent = this.extents(block);
+          const edge = block.x - extent.x;
+          if (block.x + extent.x < 0 || edge > GAME_WIDTH || !block.cells.some(cell => cell.alive)) continue;
+          if (edge < leftEdge) { leftEdge = edge; targetBlock = block; }
+        }
         let target: { x: number; y: number; id: number } | undefined;
         let nearest = Infinity;
-        for (const block of this.blocks) {
-          if (block.x < 150 || block.x > GAME_WIDTH + 150) continue;
-          const centerDistance = Math.hypot(block.x - special.x, block.y - special.y);
-          const closestPossible = Math.max(0, centerDistance - Math.hypot(block.width, block.height) / 2);
-          if (closestPossible * closestPossible > nearest) continue;
+        if (targetBlock) {
+          const block = targetBlock;
           const cos = Math.cos(block.angle), sin = Math.sin(block.angle);
           for (const cell of block.cells) {
             if (!cell.alive) continue;
@@ -590,7 +602,8 @@ export class Simulation {
         }
       }
       if (collision || (special.type === 'grenade' && (special.fuse ?? 0) <= 0)) {
-        this.explode(special.x, special.y, special.type === 'grenade' ? 205 : 82, special.type === 'grenade' ? 3 : 2);
+        const blast = SPECIAL_BLASTS[special.type];
+        this.explode(special.x, special.y, blast.radius, blast.power);
         special.life = 0;
       }
     }
