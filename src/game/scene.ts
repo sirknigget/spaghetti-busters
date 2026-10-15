@@ -1,6 +1,7 @@
 import { preloadModels } from "./model-assets";
-import { Simulation, type SpecialWeapon } from "./simulation";
+import type { Simulation, SpecialWeapon } from "./simulation";
 import { WorldRenderer } from "./world3d";
+import { PlayScene } from "./play-scene";
 
 export interface GameController {
   reset(): void;
@@ -8,30 +9,12 @@ export interface GameController {
   selectSpecial(type: SpecialWeapon): void;
   fireSpecial(): void;
 }
-const INPUT = {
-  viewportWidth: 1280,
-  viewportHeight: 720,
-  pointerMinX: 220,
-  pointerMinY: 130,
-  pointerMaxY: 640,
-  secondaryButton: 2,
-  keyboardMinY: 145,
-  keyboardMaxY: 630,
-  keyboardSpeed: 450,
-  millisecondsPerSecond: 1000,
-  maxFrameSeconds: 0.05,
-  impactDecay: 30,
-  hudInterval: 0.07,
-  bossImpact: 4,
-};
-const MUZZLE_EVENTS = new Set(["shot", "missile", "grenade", "review", "lint"]);
-interface Callbacks {
+export interface Callbacks {
   onState: (s: Simulation) => void;
   onEvent: (event: string) => void;
   onGameOver: (score: number, wave: number) => void;
 }
 
-/** Inputs and the frame loop adapt the 2D simulation to the actual 3D scene. */
 export async function createGame(
   parent: string,
   callbacks: Callbacks,
@@ -45,190 +28,8 @@ export async function createGame(
     world.dispose();
     throw error;
   }
-  class PlayScene implements GameController {
-    sim = new Simulation();
-    world = world;
-    paused = true;
-    holding = false;
-    holdingSpecial = false;
-    muzzle = 0;
-    impact = 0;
-    lastHud = 0;
-    lastFrame = performance.now();
-    keys = new Set<string>();
 
-    constructor() {
-      const canvas = this.world.renderer.domElement;
-      canvas.setAttribute(
-        "aria-label",
-        "3D arcade playfield. Move to aim, left click or Space to shoot. Right click launches special weapons. Press 1 for homing backspace missiles, 2 for recycle grenades, 3 for the code review freeze gun, or 4 for the lint bomb.",
-      );
-      const point = (event: PointerEvent) => {
-        const box = canvas.getBoundingClientRect();
-        if (box.width <= 0 || box.height <= 0) return;
-        this.sim.aimX = Math.max(
-          INPUT.pointerMinX,
-          Math.min(
-            INPUT.viewportWidth,
-            ((event.clientX - box.left) / box.width) * INPUT.viewportWidth,
-          ),
-        );
-        this.sim.aimY = Math.max(
-          INPUT.pointerMinY,
-          Math.min(
-            INPUT.pointerMaxY,
-            ((event.clientY - box.top) / box.height) * INPUT.viewportHeight,
-          ),
-        );
-      };
-      canvas.addEventListener("pointermove", (event) => {
-        if (!this.paused) point(event);
-      });
-      canvas.addEventListener("pointerdown", (event) => {
-        if (this.paused) return;
-        event.preventDefault();
-        point(event);
-        canvas.setPointerCapture(event.pointerId);
-        if (event.button === INPUT.secondaryButton) {
-          this.sim.fireSpecial();
-          this.holdingSpecial = true;
-        } else if (event.button === 0) {
-          this.sim.fire();
-          this.holding = true;
-        }
-      });
-      window.addEventListener("pointerup", (event) => {
-        this.holding = (event.buttons & 1) !== 0;
-        this.holdingSpecial = (event.buttons & INPUT.secondaryButton) !== 0;
-      });
-      canvas.addEventListener("pointercancel", () => this.release());
-      canvas.addEventListener("lostpointercapture", () => this.release());
-      canvas.addEventListener("contextmenu", (event) => event.preventDefault());
-      window.addEventListener("keydown", (event) => {
-        if (this.paused) return;
-        if (
-          ["Space", "ArrowUp", "ArrowDown", "KeyW", "KeyS"].includes(event.code)
-        ) {
-          event.preventDefault();
-          this.keys.add(event.code);
-        }
-        if (event.code === "Digit1" || event.code === "Numpad1")
-          this.selectSpecial("homing");
-        if (event.code === "Digit2" || event.code === "Numpad2")
-          this.selectSpecial("grenade");
-        if (event.code === "Digit3" || event.code === "Numpad3")
-          this.selectSpecial("review");
-        if (event.code === "Digit4" || event.code === "Numpad4")
-          this.selectSpecial("lint");
-      });
-      window.addEventListener("keyup", (event) => this.keys.delete(event.code));
-      window.addEventListener("blur", () => this.release());
-      window.addEventListener("resize", () => {
-        this.world.resize();
-        this.draw();
-      });
-      canvas.addEventListener("webglcontextlost", (event) => {
-        event.preventDefault();
-        this.setPaused(true);
-        host.dispatchEvent(new CustomEvent("game-context-lost"));
-      });
-      canvas.addEventListener("webglcontextrestored", () => {
-        this.world.resize();
-        this.draw();
-        host.dispatchEvent(new CustomEvent("game-context-restored"));
-      });
-      this.draw();
-      requestAnimationFrame(this.frame);
-    }
-
-    release() {
-      this.holding = this.holdingSpecial = false;
-      this.keys.clear();
-    }
-    reset() {
-      this.sim.reset();
-      this.world.reset();
-      this.release();
-      this.muzzle = this.impact = 0;
-      callbacks.onState(this.sim);
-      this.draw();
-    }
-    setPaused(value: boolean) {
-      this.paused = value;
-      this.release();
-      this.lastFrame = performance.now();
-      if (!value) {
-        this.world.resize();
-        this.draw();
-      }
-    }
-    selectSpecial(type: SpecialWeapon) {
-      if (!this.paused) {
-        this.sim.selectSpecial(type);
-        callbacks.onState(this.sim);
-      }
-    }
-    fireSpecial() {
-      if (!this.paused) this.sim.fireSpecial();
-    }
-    draw() {
-      this.world.render(this.sim, this.muzzle, this.impact);
-    }
-
-    frame = (now: number) => {
-      const dt = Math.min(
-        Math.max(0, (now - this.lastFrame) / INPUT.millisecondsPerSecond),
-        INPUT.maxFrameSeconds,
-      );
-      this.lastFrame = now;
-      if (!this.paused) this.update(dt);
-      requestAnimationFrame(this.frame);
-    };
-    update(dt: number) {
-      if (this.keys.has("ArrowUp") || this.keys.has("KeyW"))
-        this.sim.aimY = Math.max(
-          INPUT.keyboardMinY,
-          this.sim.aimY - dt * INPUT.keyboardSpeed,
-        );
-      if (this.keys.has("ArrowDown") || this.keys.has("KeyS"))
-        this.sim.aimY = Math.min(
-          INPUT.keyboardMaxY,
-          this.sim.aimY + dt * INPUT.keyboardSpeed,
-        );
-      if (this.holding || this.keys.has("Space")) this.sim.fire();
-      if (this.holdingSpecial) this.sim.fireSpecial();
-      this.sim.update(dt);
-      for (const event of this.sim.events.splice(0)) {
-        if (MUZZLE_EVENTS.has(event)) this.muzzle = 0.065;
-        if (event === "hit") this.impact = 3;
-        if (event === "robot-hit") this.impact = 2;
-        if (event === "robot-destroy") this.impact = 6;
-        if (event === "split" || event === "destroy") this.impact = 5;
-        if (event === "explosion" || event === "lint") this.impact = 8;
-        if (event === "generate") this.impact = 3;
-        if (event === "boss" || event === "boss-spawn")
-          this.impact = window.matchMedia("(prefers-reduced-motion: reduce)")
-            .matches
-            ? 0
-            : INPUT.bossImpact;
-        if (event === "stun") this.impact = 7;
-        callbacks.onEvent(event);
-      }
-      this.muzzle = Math.max(0, this.muzzle - dt);
-      this.impact = Math.max(0, this.impact - dt * INPUT.impactDecay);
-      this.lastHud += dt;
-      if (this.lastHud > INPUT.hudInterval) {
-        callbacks.onState(this.sim);
-        this.lastHud = 0;
-      }
-      if (this.sim.status === "gameover") {
-        callbacks.onState(this.sim);
-        callbacks.onGameOver(this.sim.score, this.sim.wave);
-      }
-      this.draw();
-    }
-  }
-  const scene = new PlayScene();
+  const scene = new PlayScene(world, callbacks, host);
   if (import.meta.env.DEV || import.meta.env.MODE === "test") {
     Object.assign(window, {
       __spaghetti: {
@@ -239,5 +40,6 @@ export async function createGame(
       },
     });
   }
+
   return scene;
 }

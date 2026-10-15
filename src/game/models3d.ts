@@ -18,7 +18,10 @@ export function createSpecial(type: SpecialType): THREE.Group {
 }
 
 export function createPickup(type: PickupType): THREE.Group {
-  if (type === "review" || type === "lint") return instantiateModel(type);
+  if (type === "review" || type === "lint") {
+    return instantiateModel(type);
+  }
+
   return instantiateModel(`pickup-${type}`);
 }
 

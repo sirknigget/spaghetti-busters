@@ -2,6 +2,8 @@
  * Applies typed SonarJS and remaining ESLint-only checks in source and test scopes.
  * Uses a dedicated TypeScript project covering source, tests, and tools.
  */
+import { limitRules } from "./lint/limits";
+import { spacingRules } from "./lint/spacing";
 import parser from "@typescript-eslint/parser";
 import sonarjs from "eslint-plugin-sonarjs";
 import unicorn from "eslint-plugin-unicorn";
@@ -83,7 +85,6 @@ const testRules: Linter.RulesRecord = {
 const eslintConfig: TSESLint.FlatConfig.Config[] = [
   {
     ignores: [
-      "**/*.d.ts",
       "dist/**",
       "playwright-report/**",
       "test-results/**",
@@ -94,7 +95,7 @@ const eslintConfig: TSESLint.FlatConfig.Config[] = [
   },
   {
     name: "quality/package",
-    files: ["**/*.{ts,tsx,js,jsx}"],
+    files: ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"],
     languageOptions: {
       parser,
       parserOptions: {
@@ -110,14 +111,19 @@ const eslintConfig: TSESLint.FlatConfig.Config[] = [
     },
   },
   {
+    name: "quality/spacing",
+    files: ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"],
+    rules: { ...spacingRules, ...limitRules },
+  },
+  {
     name: "quality/source",
-    files: ["**/*.{ts,tsx,js,jsx}"],
-    ignores: ["tests/**/*.{ts,tsx,js,jsx}", "src/**/*.test.ts"],
+    files: ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"],
+    ignores: ["tests/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}", "src/**/*.test.ts"],
     rules: sourceRules,
   },
   {
     name: "quality/tests",
-    files: ["tests/**/*.{ts,tsx,js,jsx}", "src/**/*.test.ts"],
+    files: ["tests/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}", "src/**/*.test.ts"],
     rules: testRules,
   },
 ];

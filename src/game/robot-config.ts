@@ -1,0 +1,54 @@
+export type Brand =
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "x"
+  | "moonshot"
+  | "zai"
+  | "deepseek"
+  | "meta";
+export interface RobotPose {
+  brand: Brand;
+  state: "running" | "thinking" | "leaving";
+  age: number;
+  stateTime: number;
+  hitFlash: number;
+  health: number;
+  maxHealth: number;
+}
+export const ROBOT_MOTION = {
+  strideFrequency: 14,
+  legsPerStride: 2,
+  legSwing: 0.75,
+  legSway: 0.24,
+  armSwing: 0.8,
+  restingArmAngle: -0.35,
+  leavingYaw: -0.38,
+  runningYaw: 0.25,
+  runningBounce: 5,
+  idleFrequency: 3,
+  idleBounce: 1.3,
+  thinkingFrequency: 4,
+  thinkingTilt: 0.12,
+  hitShieldOpacity: 0.2,
+  thoughtBaseScale: 0.7,
+  thoughtFrequency: 7,
+  thoughtPhase: 1.2,
+  thoughtPulse: 0.6,
+};
+export const LABEL_LAYOUT = {
+  cornerRadius: 16,
+  companyY: 32,
+  statusY: 77,
+  centerDivisor: 2,
+};
+export const names: Record<Brand, string> = {
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  google: "Google",
+  x: "X",
+  moonshot: "Moonshot",
+  zai: "Z.ai",
+  deepseek: "DeepSeek",
+  meta: "Meta",
+};

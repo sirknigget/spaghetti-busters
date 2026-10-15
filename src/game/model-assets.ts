@@ -51,6 +51,7 @@ export function preloadModels(bytes?: ArrayBuffer): Promise<void> {
     loading = undefined;
     throw error;
   });
+
   return loading;
 }
 
@@ -63,13 +64,18 @@ async function loadTemplates(bytes?: ArrayBuffer): Promise<void> {
       );
   gltf.scene.traverse((object) => {
     const assetId = object.userData.assetId;
-    if (typeof assetId === "string") templates.set(assetId, object);
+    if (typeof assetId === "string") {
+      templates.set(assetId, object);
+    }
   });
 }
 
 function template(name: ModelName): THREE.Object3D {
   const object = templates.get(name);
-  if (!object) throw new Error(`Model is unavailable: ${name}`);
+  if (!object) {
+    throw new Error(`Model is unavailable: ${name}`);
+  }
+
   return object;
 }
 
@@ -78,19 +84,24 @@ function restoreGeometryGroups(
   object: THREE.Mesh,
 ): void {
   const groups = object.userData.geometryGroups;
-  if (!Array.isArray(groups) || groups.length === 0) return;
+  if (!Array.isArray(groups) || groups.length === 0) {
+    return;
+  }
   geometry.clearGroups();
-  for (const group of groups)
+  for (const group of groups) {
     geometry.addGroup(group.start, group.count, group.materialIndex);
+  }
 }
 
 /** Geometry copies belong to the caller, including the original face-material slots. */
 export function loadGeometry(name: ModelName): THREE.BufferGeometry {
   const object = template(name);
-  if (!(object instanceof THREE.Mesh))
+  if (!(object instanceof THREE.Mesh)) {
     throw new Error(`Expected a mesh model: ${name}`);
+  }
   const geometry = object.geometry.clone();
   restoreGeometryGroups(geometry, object);
+
   return geometry;
 }
 
@@ -103,7 +114,29 @@ function ownedMaterial(
     copy = material.clone();
     materials.set(material, copy);
   }
+
   return copy;
+}
+
+function restoreRenderSettings(object: THREE.Mesh): void {
+  const settings = object.userData.renderSettings;
+  if (settings) {
+    object.castShadow = settings.castShadow;
+    object.receiveShadow = settings.receiveShadow;
+    object.renderOrder = settings.renderOrder;
+  }
+  const instanceMaterials = Array.isArray(object.material)
+    ? object.material
+    : [object.material];
+  for (const [index, material] of instanceMaterials.entries()) {
+    const flags = object.userData.materialSettings?.[index];
+    if (!flags) {
+      continue;
+    }
+    material.depthTest = flags.depthTest;
+    material.depthWrite = flags.depthWrite;
+    material.transparent = flags.transparent;
+  }
 }
 
 /** Instances own their resources; disposing one never invalidates another or the library. */
@@ -113,8 +146,12 @@ function instantiate(name: ModelName): THREE.Object3D {
   const geometries = new Map<THREE.BufferGeometry, THREE.BufferGeometry>();
   instance.traverse((object) => {
     const originalName = object.userData.assetNodeName;
-    if (typeof originalName === "string") object.name = originalName;
-    if (!(object instanceof THREE.Mesh)) return;
+    if (typeof originalName === "string") {
+      object.name = originalName;
+    }
+    if (!(object instanceof THREE.Mesh)) {
+      return;
+    }
     const originalGeometry: THREE.BufferGeometry = object.geometry;
     let geometry = geometries.get(originalGeometry);
     if (!geometry) {
@@ -127,40 +164,32 @@ function instantiate(name: ModelName): THREE.Object3D {
       object.material = object.material.map((material) =>
         ownedMaterial(material, materials),
       );
-    } else object.material = ownedMaterial(object.material, materials);
-    const settings = object.userData.renderSettings;
-    if (settings) {
-      object.castShadow = settings.castShadow;
-      object.receiveShadow = settings.receiveShadow;
-      object.renderOrder = settings.renderOrder;
+    } else {
+      object.material = ownedMaterial(object.material, materials);
     }
-    const instanceMaterials = Array.isArray(object.material)
-      ? object.material
-      : [object.material];
-    for (const [index, material] of instanceMaterials.entries()) {
-      const flags = object.userData.materialSettings?.[index];
-      if (!flags) continue;
-      material.depthTest = flags.depthTest;
-      material.depthWrite = flags.depthWrite;
-      material.transparent = flags.transparent;
-    }
+    restoreRenderSettings(object);
   });
+
   return instance;
 }
 
 export function instantiateModel(name: ModelName): THREE.Group {
   const object = instantiate(name);
-  if (object instanceof THREE.Mesh)
-    throw new Error(`Expected a grouped model: ${name}`);
+  if (object instanceof THREE.Mesh) {
+    throw new TypeError(`Expected a grouped model: ${name}`);
+  }
   const group = new THREE.Group();
   group.copy(object, false);
   group.add(...object.children);
+
   return group;
 }
 
 export function loadMesh(name: ModelName): THREE.Mesh {
   const object = instantiate(name);
-  if (!(object instanceof THREE.Mesh))
+  if (!(object instanceof THREE.Mesh)) {
     throw new Error(`Expected a mesh model: ${name}`);
+  }
+
   return object;
 }

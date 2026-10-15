@@ -81,8 +81,20 @@ supplied correctness, security, TypeScript, test, and
 [anti-slop](https://github.com/sirknigget/anti-slop) rules with type information.
 Stylelint checks `src/**/*.css`. Source and colocated unit tests use separate
 rule scopes, and the lint TypeScript project also includes browser tests and
-root configuration files. Cognitive and cyclomatic complexity, file and function
-line counts, argument counts, and union-member counts are deliberately unlimited.
+root configuration files and lint policy modules. All JavaScript and TypeScript,
+including tests and configuration, are limited to **300 physical lines per file**,
+**40 physical lines per function**, **3 declared parameters per function/method**,
+and **30 directly declared members per class, interface, or object type**.
+Line counts include comments and blank lines. Member counts include both fields
+and methods; inherited members are not combined. TypeScript method, call, and
+construct signatures share the parameter limit. Cognitive and cyclomatic
+complexity and union-alternative counts remain unlimited.
+
+Readability rules require braces for control flow, one statement per line,
+separate variable declarations, and blank lines before returns and between
+methods. Prettier retains its 80-column layout. Run ESLint with `--fix` followed
+by `npm run format` to apply spacing fixes. These rules discourage compressing
+statements to evade the size limits.
 The anti-slop dependency is pinned to an immutable Git commit.
 
 GitHub CI checks formatting, ESLint, Oxlint, Stylelint, unit tests, the production
@@ -96,11 +108,11 @@ The deterministic simulation tests cover damage, splitting, impulses and bounces
 
 ## Project
 
-- `src/game/simulation.ts`: renderer-independent gameplay and collision simulation, with small fixed substeps.
-- `src/game/scene.ts`: native pointer/keyboard input, frame loop, and simulation-to-renderer adapter.
+- `src/game/simulation.ts` and `simulation-*.ts`: renderer-independent gameplay facade, grouped world/player/progress state, and focused collision/wave/weapon systems with small fixed substeps.
+- `src/game/scene.ts`, `play-scene.ts`, and `scene-*.ts`: native pointer/keyboard input, frame loop, and simulation-to-renderer adapter.
 - `src/game/world3d.ts`, `model-assets.ts`, `models3d.ts`, `robot3d.ts`, `code-mesh.ts`: Three.js scene, perspective camera, glTF model loading, perforated code geometry, shadows, and GPU resource cleanup.
 - `src/game/debris-physics.ts`, `fracture-geometry.ts`, `death-clipping.ts`: independent Rapier debris, pooled smoke/sparks, compact perforated surfaces, and direct triangle clipping for final disintegration.
-- `src/game/audio.ts`: original Web Audio music and effects; opening theme, seamless menu/game transitions, and four crossfading scores.
+- `src/game/audio.ts` and `audio-*.ts`: Web Audio routing, synthesis, effect scores, and music transport; opening theme, seamless menu/game transitions, and four crossfading scores.
 - `src/main.ts` and `src/style.css`: responsive menus, HUD, dialogs, and accessibility.
 - `public/assets`: original cartoon SVG artwork and a locally bundled opening-screen photograph.
 - `public/assets/models/arcade-models.glb`: editable glTF 2.0 library for the specialist, robots, weapons, city, effects, armor, and debris. [Model editing and validation](docs/models/README.md).
