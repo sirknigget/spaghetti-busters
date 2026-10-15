@@ -38,35 +38,11 @@ file with local contracts and verification advice.
 | `.github/`             | Parallel CI matrix and shared dependency setup                                  | `.github/workflows/ci.yml`                                                                                   |
 | `docs/`                | Dependency policy assessment, duplicate calibration, model editing, screenshots | [Dependency enforcement](docs/dependency-enforcement.md), [Duplicate detection](docs/duplicate-detection.md) |
 
-## Dependency policy
+## Enforced policies
 
-Respect the enforced dependency rules. Modify them only with the user's explicit
-approval. Their authoritative configuration is `.dependency-cruiser.json`,
-`lint/dependencies/runtime.json`, `lint/dependencies/architecture.json`, and
-`knip.json`; the dependency assessment linked above explains the checks.
-
-## Existing code policies
-
-Preserve the enforced policies when adding or reorganizing code:
-
-- Use project-root `#root/...` imports with explicit file extensions. Package and
-  Node built-in imports keep their normal specifiers. Browser-evaluated imports
-  use `/src/...` or `/tests/...`; paths must remain statically discoverable.
-- Limits: 300 physical lines per JS/TS file, 40 per function, 3 parameters, and
-  30 direct class/interface/object-type members. Blank lines and comments count.
-  Cognitive complexity is capped at 8 and cyclomatic complexity at 6.
-- Each folder under `src` and `tests`, including those roots, has at most 10
-  direct files and 10 direct subfolders. All file types count, including these
-  guides; symlinks count as files.
-- Keep braces, separate declarations, one statement per line, and required blank
-  lines after blocks, before returns, and around declaration groups. Apply
-  ESLint spacing fixes before Prettier; do not compress code to evade limits.
-- Runtime numeric literals other than `0`, `1`, and `-1` need named constants or
-  declarative JSON settings. Test fixtures have numeric exemptions.
-- Put literal colors in `src/game/palette.ts`; CSS tokens belong in
-  `src/palette.css`. Keep authored model geometry in GLB and crack paths in SVG.
-- All five duplicate-detection profiles must report zero findings. Do not add
-  accepted-duplicate baselines or weaken checks to accommodate a change.
+Respect the project's statically enforced policies. Modify or bypass them only
+with the user's explicit approval. The [lint tooling guide](lint/AGENTS.md) maps
+their configuration; use those files as the source of truth.
 
 ## Development and validation
 

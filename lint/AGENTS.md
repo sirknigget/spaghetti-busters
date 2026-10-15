@@ -23,16 +23,12 @@ Paths above without a local match refer to repository-root configuration.
 
 ## Working on policies
 
-Preserve the root guide's current thresholds. Do not bypass findings through
-blanket ignores, duplicate baselines, artificial entry points, or relaxed limits.
 Duplicate sensitivity is manually calibrated against genuinely different code;
 the user's false-positive guideline is not a programmatic percentage gate. See
 [the calibration record](../docs/duplicate-detection.md).
 
-The folder plugin scans both complete trees once per invocation, including
-non-code-only folders and Markdown files. Symlinks are counted as files rather
-than traversed. Keep the scan rooted at the project, independent of the first
-file Oxlint happens to visit.
+The folder plugin scans complete trees once per invocation. Its project-root
+discovery is independent of the first file Oxlint happens to visit.
 
 Preserve the distinction between typed import checks, eager runtime folder
 cycles, and runtime architecture reachability that includes dynamic imports.

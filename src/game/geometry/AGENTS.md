@@ -18,9 +18,8 @@ preserved by the death clipper; do not discard historical damage during a cut.
 Maintain front/side material-group boundaries and valid normals when modifying
 buffer construction.
 
-Runtime fracture calculations belong here; authored model vertex arrays belong
-in the project's GLB assets. Algorithm tolerances/settings live in the existing
-JSON configuration and named constants.
+Runtime fracture calculations live here; authored models are in the project's
+GLB assets. Algorithm tolerances/settings are in the local JSON configuration.
 
 Run the colocated fracture/clipping tests for geometry changes. Use the code
 death tests and `tests/rendering/` integration coverage when changing surface

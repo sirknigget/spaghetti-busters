@@ -38,6 +38,4 @@ through `sim.random()` so deterministic fixtures remain reproducible.
 
 Use colocated `*.test.ts` coverage for changed gameplay contracts and
 `tests/unit/simulation-support.ts` for reusable setup. Browser scenarios in
-`tests/gameplay/` cover integration. Run dependency checks after moving contracts
-or introducing helpers so a transitive import cannot pull presentation into the
-headless simulation.
+`tests/gameplay/` cover integration.
