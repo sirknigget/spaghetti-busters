@@ -134,15 +134,7 @@ function referenceArea(
     const missing = holes
       .flatMap((hole) => crossings(hole, y))
       .sort((a, b) => a[0] - b[0]);
-    const union: [number, number][] = [];
-    for (const interval of missing) {
-      const last = union[union.length - 1];
-      if (last && interval[0] <= last[1]) {
-        last[1] = Math.max(last[1], interval[1]);
-      } else {
-        union.push([...interval]);
-      }
-    }
+    const union = unionSpans(missing);
     for (const [from, to] of crossings(mask, y)) {
       const left = Math.max(-100, from);
       const right = Math.min(100, to);
@@ -159,6 +151,20 @@ function referenceArea(
   }
 
   return reference;
+}
+
+function unionSpans(intervals: [number, number][]) {
+  const union: [number, number][] = [];
+  for (const interval of intervals) {
+    const last = union[union.length - 1];
+    if (last && interval[0] <= last[1]) {
+      last[1] = Math.max(last[1], interval[1]);
+    } else {
+      union.push([...interval]);
+    }
+  }
+
+  return union;
 }
 
 function scanlineCrossings() {

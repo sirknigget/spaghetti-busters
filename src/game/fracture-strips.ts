@@ -18,44 +18,55 @@ function unionHoles(holesAt: Interval[], mid: number): Interval[] {
   return union;
 }
 
+interface HoleSubtraction {
+  union: Interval[];
+  mid: number;
+  visible: Interval[];
+  holeIndex: number;
+}
+
+function subtractSolid(solid: Interval, state: HoleSubtraction) {
+  const { union, mid, visible } = state;
+  let left = solid.left;
+  while (
+    state.holeIndex < union.length &&
+    at(union[state.holeIndex]!.right, mid) <= at(left, mid)
+  ) {
+    state.holeIndex++;
+  }
+  let index = state.holeIndex;
+  while (
+    index < union.length &&
+    at(union[index]!.left, mid) < at(solid.right, mid)
+  ) {
+    const hole = union[index]!;
+    if (at(hole.left, mid) > at(left, mid)) {
+      visible.push({ left, right: hole.left });
+    }
+    if (at(hole.right, mid) >= at(solid.right, mid)) {
+      left = solid.right;
+      break;
+    }
+    left = hole.right;
+    index++;
+  }
+  state.holeIndex = index;
+  if (at(left, mid) < at(solid.right, mid)) {
+    visible.push({ left, right: solid.right });
+  }
+}
+
 function subtractHoles(
   solids: Interval[],
   union: Interval[],
   mid: number,
 ): Interval[] {
-  const visible: Interval[] = [];
-  let holeIndex = 0;
+  const state: HoleSubtraction = { union, mid, visible: [], holeIndex: 0 };
   for (const solid of solids) {
-    let left = solid.left;
-    while (
-      holeIndex < union.length &&
-      at(union[holeIndex]!.right, mid) <= at(left, mid)
-    ) {
-      holeIndex++;
-    }
-    let index = holeIndex;
-    while (
-      index < union.length &&
-      at(union[index]!.left, mid) < at(solid.right, mid)
-    ) {
-      const hole = union[index]!;
-      if (at(hole.left, mid) > at(left, mid)) {
-        visible.push({ left, right: hole.left });
-      }
-      if (at(hole.right, mid) >= at(solid.right, mid)) {
-        left = solid.right;
-        break;
-      }
-      left = hole.right;
-      index++;
-    }
-    holeIndex = index;
-    if (at(left, mid) < at(solid.right, mid)) {
-      visible.push({ left, right: solid.right });
-    }
+    subtractSolid(solid, state);
   }
 
-  return visible;
+  return state.visible;
 }
 
 type StripMap = Map<Edge, Map<Edge, Strip>>;

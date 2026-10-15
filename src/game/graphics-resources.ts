@@ -1,5 +1,15 @@
 import * as THREE from "three";
 
+function hasMaterials(
+  object: THREE.Object3D,
+): object is THREE.Mesh | THREE.LineSegments | THREE.Sprite {
+  return (
+    object instanceof THREE.Mesh ||
+    object instanceof THREE.LineSegments ||
+    object instanceof THREE.Sprite
+  );
+}
+
 export function cloneOwnedMaterial(source: THREE.Material): THREE.Material {
   const material = source.clone();
   for (const [key, value] of Object.entries(source)) {
@@ -22,11 +32,7 @@ export function disposeObject(object: THREE.Object3D) {
     if (child instanceof THREE.Mesh || child instanceof THREE.LineSegments) {
       geometries.add(child.geometry);
     }
-    if (!(
-      child instanceof THREE.Mesh ||
-      child instanceof THREE.LineSegments ||
-      child instanceof THREE.Sprite
-    )) {
+    if (!hasMaterials(child)) {
       return;
     }
     const mesh = child;

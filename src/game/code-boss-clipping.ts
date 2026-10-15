@@ -10,6 +10,10 @@ interface ArmorDimensions {
   depth: number;
 }
 
+function armorMaterials(mesh: THREE.Mesh | THREE.LineSegments) {
+  return Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+}
+
 export function clipBossArmor(
   group: THREE.Group,
   visual: FractureVisual,
@@ -72,9 +76,7 @@ function retainedResources(armor: THREE.Object3D) {
     if (mesh.geometry) {
       liveGeometries.add(mesh.geometry);
     }
-    for (const material of Array.isArray(mesh.material)
-      ? mesh.material
-      : [mesh.material]) {
+    for (const material of armorMaterials(mesh)) {
       if (material) {
         liveMaterials.add(material);
       }
@@ -99,9 +101,7 @@ function disposeRemovedArmor(armor: THREE.Object3D, removed: THREE.Object3D[]) {
       if (mesh.geometry && !liveGeometries.has(mesh.geometry)) {
         deadGeometries.add(mesh.geometry);
       }
-      for (const material of Array.isArray(mesh.material)
-        ? mesh.material
-        : [mesh.material]) {
+      for (const material of armorMaterials(mesh)) {
         if (material && !liveMaterials.has(material)) {
           deadMaterials.add(material);
         }

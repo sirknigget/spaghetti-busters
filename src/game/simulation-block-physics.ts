@@ -128,13 +128,17 @@ interface Contact {
   inverseB: number;
 }
 
+function outsideCollisionArea(a: Block, b: Block, extentX: number): boolean {
+  return (
+    b.age < TUNING.collision.minimumAge ||
+    a.x > GAME_WIDTH + extentX ||
+    b.x > GAME_WIDTH + b.width * HALF
+  );
+}
+
 function contact(a: Block, b: Block): Contact | undefined {
   const ae = extents(a);
-  if (
-    b.age < TUNING.collision.minimumAge ||
-    a.x > GAME_WIDTH + ae.x ||
-    b.x > GAME_WIDTH + b.width * HALF
-  ) {
+  if (outsideCollisionArea(a, b, ae.x)) {
     return undefined;
   }
   const be = extents(b);

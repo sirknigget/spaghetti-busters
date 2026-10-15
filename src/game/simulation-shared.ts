@@ -117,6 +117,22 @@ export function quotedTokenEnd(line: string, start: number): number {
   return start + 1;
 }
 
+function highlightWord(line: string, start: number) {
+  let end = start + 1;
+  while (end < line.length && /\w/.test(line[end]!)) {
+    end++;
+  }
+  const token = line.slice(start, end);
+  let color: string = COLORS.text;
+  if (CODE_KEYWORDS.has(token)) {
+    color = COLORS.keyword;
+  } else if (/^\d+$/.test(token)) {
+    color = COLORS.number;
+  }
+
+  return { end, color };
+}
+
 /** Scan once so malformed code strings cannot trigger regex backtracking. */
 export function highlightLine(line: string): string[] {
   const colors: string[] = Array.from(
@@ -136,15 +152,9 @@ export function highlightLine(line: string): string[] {
         color = COLORS.string;
       }
     } else if (/\w/.test(line[start]!)) {
-      while (end < line.length && /\w/.test(line[end]!)) {
-        end++;
-      }
-      const token = line.slice(start, end);
-      if (CODE_KEYWORDS.has(token)) {
-        color = COLORS.keyword;
-      } else if (/^\d+$/.test(token)) {
-        color = COLORS.number;
-      }
+      const word = highlightWord(line, start);
+      end = word.end;
+      color = word.color;
     } else if (/[{}()[\];.,?:=+!<>|]/.test(line[start]!)) {
       color = COLORS.punctuation;
     }

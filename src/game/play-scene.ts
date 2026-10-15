@@ -1,4 +1,4 @@
-import { Simulation, type SpecialWeapon } from "./simulation";
+import { Simulation, type GameEvent, type SpecialWeapon } from "./simulation";
 import type { WorldRenderer } from "./world3d";
 import type { GameController, Callbacks } from "./scene";
 import { INPUT, MUZZLE_EVENTS } from "./scene-config";
@@ -12,6 +12,17 @@ const ROBOT_DESTRUCTION_IMPACT = 6;
 const FRACTURE_IMPACT = 5;
 const EXPLOSION_IMPACT = 8;
 const STUN_IMPACT = 7;
+const EVENT_IMPACTS: Partial<Record<GameEvent, number>> = {
+  hit: MEDIUM_IMPACT,
+  "robot-hit": ROBOT_HIT_IMPACT,
+  "robot-destroy": ROBOT_DESTRUCTION_IMPACT,
+  split: FRACTURE_IMPACT,
+  destroy: FRACTURE_IMPACT,
+  explosion: EXPLOSION_IMPACT,
+  lint: EXPLOSION_IMPACT,
+  generate: MEDIUM_IMPACT,
+  stun: STUN_IMPACT,
+};
 
 export class PlayScene implements GameController {
   sim = new Simulation();
@@ -141,32 +152,15 @@ export class PlayScene implements GameController {
       if (MUZZLE_EVENTS.has(event)) {
         this.muzzle = MUZZLE_FLASH_SECONDS;
       }
-      if (event === "hit") {
-        this.impact = MEDIUM_IMPACT;
-      }
-      if (event === "robot-hit") {
-        this.impact = ROBOT_HIT_IMPACT;
-      }
-      if (event === "robot-destroy") {
-        this.impact = ROBOT_DESTRUCTION_IMPACT;
-      }
-      if (event === "split" || event === "destroy") {
-        this.impact = FRACTURE_IMPACT;
-      }
-      if (event === "explosion" || event === "lint") {
-        this.impact = EXPLOSION_IMPACT;
-      }
-      if (event === "generate") {
-        this.impact = MEDIUM_IMPACT;
+      const impact = EVENT_IMPACTS[event];
+      if (impact !== undefined) {
+        this.impact = impact;
       }
       if (event === "boss" || event === "boss-spawn") {
         this.impact = window.matchMedia("(prefers-reduced-motion: reduce)")
           .matches
           ? 0
           : INPUT.bossImpact;
-      }
-      if (event === "stun") {
-        this.impact = STUN_IMPACT;
       }
       this.callbacks.onEvent(event);
     }

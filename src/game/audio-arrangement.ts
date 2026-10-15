@@ -60,18 +60,13 @@ function playChord(synth: Synth, phrase: PhraseStep): void {
 }
 
 function playLead(synth: Synth, phrase: PhraseStep): void {
-  const { track, bar, beat, title, quiet } = phrase;
+  const { track, bar, beat, title } = phrase;
   const note = track.phrases[bar % track.phrases.length]![beat]!;
   const titleNote =
     !title ||
     beat % ARRANGEMENT.lead.titleBeatModulo === 0 ||
     beat === ARRANGEMENT.lead.titleAccentBeat;
-  const quietEnding =
-    bar === ARRANGEMENT.quiet.endingBar && beat >= ARRANGEMENT.quiet.endingBeat;
-  const quietDownbeat =
-    beat === 0 || beat === ARRANGEMENT.quiet.alternateDownbeat;
-  const quietNote = !quiet || quietDownbeat || quietEnding;
-  if (note > 0 && titleNote && quietNote) {
+  if (note > 0 && titleNote && quietLeadBeat(phrase)) {
     playLeadNote(
       synth,
       phrase,
@@ -82,6 +77,16 @@ function playLead(synth: Synth, phrase: PhraseStep): void {
           : 0),
     );
   }
+}
+
+function quietLeadBeat(phrase: PhraseStep): boolean {
+  const { bar, beat, quiet } = phrase;
+  const quietEnding =
+    bar === ARRANGEMENT.quiet.endingBar && beat >= ARRANGEMENT.quiet.endingBeat;
+  const quietDownbeat =
+    beat === 0 || beat === ARRANGEMENT.quiet.alternateDownbeat;
+
+  return !quiet || quietDownbeat || quietEnding;
 }
 
 function playLeadNote(synth: Synth, phrase: PhraseStep, note: number): void {
@@ -105,6 +110,15 @@ function playLeadNote(synth: Synth, phrase: PhraseStep, note: number): void {
         ? ARRANGEMENT.lead.pan
         : -ARRANGEMENT.lead.pan,
   });
+  playLeadOvertone(synth, phrase, note);
+}
+
+function playLeadOvertone(
+  synth: Synth,
+  phrase: PhraseStep,
+  note: number,
+): void {
+  const { time, sixteenth, deck } = phrase;
   // Bell-like overtones distinguish the nocturnal and glassy compositions.
   if (deck.track === 1 || deck.track === ARRANGEMENT.lead.glassTrack) {
     synth.melodicTone({

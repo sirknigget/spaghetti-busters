@@ -87,8 +87,9 @@ including tests and configuration, are limited to **300 physical lines per file*
 and **30 directly declared members per class, interface, or object type**.
 Line counts include comments and blank lines. Member counts include both fields
 and methods; inherited members are not combined. TypeScript method, call, and
-construct signatures share the parameter limit. Cognitive and cyclomatic
-complexity and union-alternative counts remain unlimited.
+construct signatures share the parameter limit. Oxlint enforces a maximum
+cognitive complexity of **12** and cyclomatic complexity of **8** using anti-slop.
+Union-alternative counts remain unlimited.
 
 Readability rules require braces for control flow, one statement per line,
 separate variable declarations, and blank lines before returns and between

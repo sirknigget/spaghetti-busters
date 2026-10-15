@@ -37,6 +37,20 @@ export function needsCodeRefresh(mesh: THREE.Group, block: Block) {
   return damaged || dispositionChanged || mesh.userData.boss !== block.boss;
 }
 
+function codeEmissive(block: Block, index: number, frozen: boolean): string {
+  if (frozen) {
+    return PALETTE.freeze.codeEmissive;
+  }
+  if (index !== 1) {
+    return PALETTE.common.black;
+  }
+  if (block.boss) {
+    return PALETTE.boss.emissive;
+  }
+
+  return block.angry ? PALETTE.angry.emissive : PALETTE.common.black;
+}
+
 export function lightCode(mesh: THREE.Group, block: Block, frozen: boolean) {
   const solid = mesh.getObjectByName("perforated-extruded-code");
   if (!(solid instanceof THREE.Mesh) || !Array.isArray(solid.material)) {
@@ -46,17 +60,7 @@ export function lightCode(mesh: THREE.Group, block: Block, frozen: boolean) {
     if (!(material instanceof THREE.MeshToonMaterial)) {
       continue;
     }
-    let color: string = PALETTE.common.black;
-    if (block.angry && index === 1) {
-      color = PALETTE.angry.emissive;
-    }
-    if (block.boss && index === 1) {
-      color = PALETTE.boss.emissive;
-    }
-    if (frozen) {
-      color = PALETTE.freeze.codeEmissive;
-    }
-    material.emissive.set(color);
+    material.emissive.set(codeEmissive(block, index, frozen));
     material.emissiveIntensity = frozen ? TUMBLE.frozenGlow : TUMBLE.normalGlow;
   }
 }
