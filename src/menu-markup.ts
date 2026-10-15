@@ -1,4 +1,4 @@
-import { HUD } from "./ui-dom";
+import { HUD } from "#root/src/ui-dom.ts";
 
 const bolt =
   '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m14 2-9 12h6l-1 8 9-13h-6l1-7Z" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/></svg>';

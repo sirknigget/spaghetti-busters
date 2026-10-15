@@ -1,12 +1,12 @@
-import "./style.css";
-import { AudioEngine } from "./game/audio";
-import type { GameController } from "./game/scene";
+import "#root/src/style.css";
+import { AudioEngine } from "#root/src/game/audio/audio.ts";
+import type { GameController } from "#root/src/game/scene/scene.ts";
 
-import { HUD, $, specialTypes } from "./ui-dom";
-import { menuMarkup } from "./menu-markup";
-import { eventMessages } from "./ui-event-messages";
-import { updateHud, showRunResults } from "./ui-hud";
-import { updateSoundControls } from "./ui-sound";
+import { HUD, $, specialTypes } from "#root/src/ui-dom.ts";
+import { menuMarkup } from "#root/src/menu-markup.ts";
+import { eventMessages } from "#root/src/ui-event-messages.ts";
+import { updateHud, showRunResults } from "#root/src/ui-hud.ts";
+import { updateSoundControls } from "#root/src/ui-sound.ts";
 
 let best = 0;
 
@@ -148,7 +148,7 @@ async function start() {
 
   prepareStart();
   try {
-    const { createGame } = await import("./game/scene");
+    const { createGame } = await import("#root/src/game/scene/scene.ts");
 
     controller ??= await createGame("game-canvas", {
       onState: (s) => {

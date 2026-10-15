@@ -1,4 +1,4 @@
-import { $ } from "./ui-dom";
+import { $ } from "#root/src/ui-dom.ts";
 
 export function updateSoundControls(enabled: boolean) {
   $("#opening-audio-status").textContent = enabled

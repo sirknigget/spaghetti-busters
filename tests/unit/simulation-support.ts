@@ -1,4 +1,8 @@
-import { Simulation, type Block, type Cell } from "../../src/game/simulation";
+import {
+  Simulation,
+  type Block,
+  type Cell,
+} from "#root/src/game/simulation/simulation.ts";
 
 export function game() {
   return new Simulation(() => 0.5);

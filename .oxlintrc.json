@@ -9,6 +9,10 @@
     {
       "name": "sonarjs",
       "specifier": "eslint-plugin-sonarjs"
+    },
+    {
+      "name": "project",
+      "specifier": "./lint/project-plugin.js"
     }
   ],
   "options": {
@@ -63,7 +67,25 @@
     "typescript/prefer-return-this-type": "off",
     "typescript/no-redundant-type-constituents": "off",
     "typescript/prefer-optional-chain": "off",
-    "typescript/no-mixed-enums": "off"
+    "typescript/no-mixed-enums": "off",
+    "project/folder-limits": [
+      "error",
+      {
+        "maxFiles": 10,
+        "maxSubfolders": 10
+      }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "regex": "^\\.",
+            "message": "Use a #root/... project-root import instead of a relative import."
+          }
+        ]
+      }
+    ]
   },
   "overrides": [
     {

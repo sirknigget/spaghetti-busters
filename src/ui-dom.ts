@@ -1,4 +1,4 @@
-export { default as HUD } from "./ui-settings.json";
+export { default as HUD } from "#root/src/ui-settings.json";
 
 export const $ = <T extends HTMLElement = HTMLElement>(s: string) =>
   document.querySelector<T>(s)!;

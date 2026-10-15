@@ -92,6 +92,25 @@ construct signatures share the parameter limit. Oxlint enforces a maximum
 cognitive complexity of **8** and cyclomatic complexity of **6** using anti-slop.
 Union-alternative counts remain unlimited.
 
+The custom Oxlint `project/folder-limits` rule checks `src` and `tests`, including
+both roots and every nested folder. Each folder may contain at most **10 direct
+files** and **10 direct subfolders**. Files of every type count, including tests,
+JSON, assets, and hidden files; a child's contents count only against that child.
+The rule scans the complete trees once per lint invocation, including folders
+without JavaScript or TypeScript. Symlinks count as files and are not traversed.
+Diagnostics name the offending folder and appear on the first linted file.
+
+Oxlint’s built-in `no-restricted-imports` rule applies to all linted JavaScript
+and TypeScript, including configuration and lint modules. Local imports use
+`#root/...` with explicit extensions, resolved from the project root by the
+`package.json` imports map. Package and Node built-in imports remain unchanged;
+browser-evaluated test imports use `/src/...` or `/tests/...` URLs. Relative
+imports and re-exports are errors, including dynamic imports, `require`, and
+TypeScript import forms. ESLint’s built-in `no-restricted-syntax` covers
+`require`, import-type expressions, and computed paths that Oxlint does not
+inspect. Computed specifiers are rejected so paths can be checked statically.
+Both linters run in their existing parallel CI jobs.
+
 Readability rules require braces for control flow, one statement per line,
 separate variable declarations, and blank lines after blocks, before returns,
 and between methods. Declaration groups (`const`, `let`, and `var`) must be
@@ -126,11 +145,11 @@ The deterministic simulation tests cover damage, splitting, impulses and bounces
 
 ## Project
 
-- `src/game/simulation.ts` and `simulation-*.ts`: renderer-independent gameplay facade, grouped world/player/progress state, and focused collision/wave/weapon systems with small fixed substeps.
-- `src/game/scene.ts`, `play-scene.ts`, and `scene-*.ts`: native pointer/keyboard input, frame loop, and simulation-to-renderer adapter.
-- `src/game/world3d.ts`, `model-assets.ts`, `models3d.ts`, `robot3d.ts`, `code-mesh.ts`: Three.js scene, perspective camera, glTF model loading, perforated code geometry, shadows, and GPU resource cleanup.
-- `src/game/debris-physics.ts`, `fracture-geometry.ts`, `death-clipping.ts`: independent Rapier debris, pooled smoke/sparks, compact perforated surfaces, and direct triangle clipping for final disintegration.
-- `src/game/audio.ts` and `audio-*.ts`: Web Audio routing, synthesis, effect scores, and music transport; opening theme, seamless menu/game transitions, and four crossfading scores.
+- `src/game/simulation/`: renderer-independent gameplay facade, grouped world/player/progress state, and focused collision/wave/weapon systems with small fixed substeps.
+- `src/game/scene/`: native pointer/keyboard input, frame loop, and simulation-to-renderer adapter.
+- `src/game/rendering/` and `src/game/code/`: Three.js scene, perspective camera, glTF model loading, perforated code geometry, shadows, and GPU resource cleanup.
+- `src/game/debris/` and `src/game/geometry/`: independent Rapier debris, pooled smoke/sparks, compact perforated surfaces, and direct triangle clipping for final disintegration.
+- `src/game/audio/`: Web Audio routing, synthesis, effect scores, and music transport; opening theme, seamless menu/game transitions, and four crossfading scores.
 - `src/main.ts` and `src/style.css`: responsive menus, HUD, dialogs, and accessibility.
 - `public/assets`: original cartoon SVG artwork and a locally bundled opening-screen photograph.
 - `public/assets/models/arcade-models.glb`: editable glTF 2.0 library for the specialist, robots, weapons, city, effects, armor, and debris. [Model editing and validation](docs/models/README.md).
