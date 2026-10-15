@@ -44,6 +44,12 @@ export function spawnBoss(sim: Simulation): Block {
   return boss;
 }
 
+function bossProductionBlocked(sim: Simulation, dt: number): boolean {
+  sim.runtime.bossSpawnTimer -= dt;
+
+  return dt <= 0 || sim.runtime.bossSpawnTimer > 0;
+}
+
 export function updateBoss(sim: Simulation, dt: number) {
   if (sim.runtime.activeBossRoot === undefined || sim.runtime.bossRewarded) {
     return;
@@ -56,8 +62,7 @@ export function updateBoss(sim: Simulation, dt: number) {
 
     return;
   }
-  sim.runtime.bossSpawnTimer -= dt;
-  if (dt <= 0 || sim.runtime.bossSpawnTimer > 0) {
+  if (bossProductionBlocked(sim, dt)) {
     return;
   }
   const minions = sim.world.blocks.filter(

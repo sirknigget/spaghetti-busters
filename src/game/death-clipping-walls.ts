@@ -57,6 +57,14 @@ function wallPolygon(a: Vertex, b: Vertex, outward: THREE.Vector3) {
   return wall;
 }
 
+function seamNormal(context: ClipContext, slope: number) {
+  return new THREE.Vector3(
+    context.options.axis === "x" ? 1 : -slope,
+    context.options.axis === "x" ? -slope : 1,
+    0,
+  ).normalize();
+}
+
 export function appendSeamWalls(
   context: ClipContext,
   band: ClipBand,
@@ -72,11 +80,7 @@ export function appendSeamWalls(
   if (Math.abs(a[context.parallel]! - b[context.parallel]!) < SEAM.epsilon) {
     return;
   }
-  const normal = new THREE.Vector3(
-    context.options.axis === "x" ? 1 : -band.slope,
-    context.options.axis === "x" ? -band.slope : 1,
-    0,
-  ).normalize();
+  const normal = seamNormal(context, band.slope);
   for (let side = 0; side < SEGMENT_VERTICES; side++) {
     const outward = normal.clone().multiplyScalar(side === 0 ? 1 : -1);
     context.outputs[side]!.walls.push(wallPolygon(a, b, outward));

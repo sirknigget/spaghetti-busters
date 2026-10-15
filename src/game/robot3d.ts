@@ -47,18 +47,9 @@ export function animateRobot(
   frozen: boolean,
 ) {
   animateLimbs(group, robot, frozen);
-  const shield = group.getObjectByName("robot-armor-flash");
-  if (
-    !(shield instanceof THREE.Mesh) ||
-    !(shield.material instanceof THREE.MeshStandardMaterial)
-  ) {
+  if (!animateShield(group, robot)) {
     return;
   }
-  shield.material.opacity =
-    robot.hitFlash > 0 ? ROBOT_MOTION.hitShieldOpacity : 0;
-  shield.material.color.set(
-    robot.hitFlash > 0 ? PALETTE.robot.hitShield : PALETTE.robot.shield,
-  );
   const shell = group.userData.shell;
   if (!(shell instanceof THREE.MeshStandardMaterial)) {
     return;
@@ -69,6 +60,23 @@ export function animateRobot(
   shell.emissiveIntensity = SHELL_EMISSIVE_INTENSITY;
   animateThoughts(group, robot);
   updateLabel(group, robot, frozen);
+}
+
+function animateShield(group: THREE.Group, robot: RobotPose) {
+  const shield = group.getObjectByName("robot-armor-flash");
+  if (
+    !(shield instanceof THREE.Mesh) ||
+    !(shield.material instanceof THREE.MeshStandardMaterial)
+  ) {
+    return false;
+  }
+  shield.material.opacity =
+    robot.hitFlash > 0 ? ROBOT_MOTION.hitShieldOpacity : 0;
+  shield.material.color.set(
+    robot.hitFlash > 0 ? PALETTE.robot.hitShield : PALETTE.robot.shield,
+  );
+
+  return true;
 }
 
 function attachBadge(group: THREE.Group, brand: Brand) {
@@ -102,23 +110,21 @@ function findShell(group: THREE.Group) {
 
 function animateLimbs(group: THREE.Group, robot: RobotPose, frozen: boolean) {
   const running = robot.state !== "thinking";
+  const striding = running && !frozen;
   const phase = robot.age * ROBOT_MOTION.strideFrequency;
   for (const side of [-1, 1]) {
-    group.getObjectByName(`robot-leg-${side}`)!.rotation.x =
-      running && !frozen
-        ? Math.sin(phase + (side * Math.PI) / ROBOT_MOTION.legsPerStride) *
-          ROBOT_MOTION.legSwing
-        : 0;
-    group.getObjectByName(`robot-leg-${side}`)!.rotation.z =
-      running && !frozen
-        ? Math.sin(phase + (side * Math.PI) / ROBOT_MOTION.legsPerStride) *
-          ROBOT_MOTION.legSway
-        : 0;
-    group.getObjectByName(`robot-arm-${side}`)!.rotation.x =
-      running && !frozen
-        ? -Math.sin(phase + (side * Math.PI) / ROBOT_MOTION.legsPerStride) *
-          ROBOT_MOTION.armSwing
-        : ROBOT_MOTION.restingArmAngle;
+    group.getObjectByName(`robot-leg-${side}`)!.rotation.x = striding
+      ? Math.sin(phase + (side * Math.PI) / ROBOT_MOTION.legsPerStride) *
+        ROBOT_MOTION.legSwing
+      : 0;
+    group.getObjectByName(`robot-leg-${side}`)!.rotation.z = striding
+      ? Math.sin(phase + (side * Math.PI) / ROBOT_MOTION.legsPerStride) *
+        ROBOT_MOTION.legSway
+      : 0;
+    group.getObjectByName(`robot-arm-${side}`)!.rotation.x = striding
+      ? -Math.sin(phase + (side * Math.PI) / ROBOT_MOTION.legsPerStride) *
+        ROBOT_MOTION.armSwing
+      : ROBOT_MOTION.restingArmAngle;
   }
   animateBody(group, robot, frozen);
 }

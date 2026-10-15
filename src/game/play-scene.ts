@@ -1,4 +1,4 @@
-import { Simulation, type SpecialWeapon } from "./simulation";
+import { Simulation, type GameEvent, type SpecialWeapon } from "./simulation";
 import type { WorldRenderer } from "./world3d";
 import type { GameController, Callbacks } from "./scene";
 import { INPUT, MUZZLE_EVENTS } from "./scene-config";
@@ -12,6 +12,27 @@ const ROBOT_DESTRUCTION_IMPACT = 6;
 const FRACTURE_IMPACT = 5;
 const EXPLOSION_IMPACT = 8;
 const STUN_IMPACT = 7;
+const EVENT_IMPACTS: Partial<Record<GameEvent, number>> = {
+  hit: MEDIUM_IMPACT,
+  "robot-hit": ROBOT_HIT_IMPACT,
+  "robot-destroy": ROBOT_DESTRUCTION_IMPACT,
+  split: FRACTURE_IMPACT,
+  destroy: FRACTURE_IMPACT,
+  explosion: EXPLOSION_IMPACT,
+  lint: EXPLOSION_IMPACT,
+  generate: MEDIUM_IMPACT,
+  stun: STUN_IMPACT,
+};
+
+function eventImpact(event: GameEvent, previous: number): number {
+  if (event === "boss" || event === "boss-spawn") {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? 0
+      : INPUT.bossImpact;
+  }
+
+  return EVENT_IMPACTS[event] ?? previous;
+}
 
 export class PlayScene implements GameController {
   sim = new Simulation();
@@ -116,6 +137,16 @@ export class PlayScene implements GameController {
   }
 
   private updateInput(dt: number) {
+    this.updateAim(dt);
+    if (this.holding || this.keys.has("Space")) {
+      this.sim.fire();
+    }
+    if (this.holdingSpecial) {
+      this.sim.fireSpecial();
+    }
+  }
+
+  private updateAim(dt: number) {
     if (this.keys.has("ArrowUp") || this.keys.has("KeyW")) {
       this.sim.player.aimY = Math.max(
         INPUT.keyboardMinY,
@@ -128,12 +159,6 @@ export class PlayScene implements GameController {
         this.sim.player.aimY + dt * INPUT.keyboardSpeed,
       );
     }
-    if (this.holding || this.keys.has("Space")) {
-      this.sim.fire();
-    }
-    if (this.holdingSpecial) {
-      this.sim.fireSpecial();
-    }
   }
 
   private consumeEvents() {
@@ -141,33 +166,7 @@ export class PlayScene implements GameController {
       if (MUZZLE_EVENTS.has(event)) {
         this.muzzle = MUZZLE_FLASH_SECONDS;
       }
-      if (event === "hit") {
-        this.impact = MEDIUM_IMPACT;
-      }
-      if (event === "robot-hit") {
-        this.impact = ROBOT_HIT_IMPACT;
-      }
-      if (event === "robot-destroy") {
-        this.impact = ROBOT_DESTRUCTION_IMPACT;
-      }
-      if (event === "split" || event === "destroy") {
-        this.impact = FRACTURE_IMPACT;
-      }
-      if (event === "explosion" || event === "lint") {
-        this.impact = EXPLOSION_IMPACT;
-      }
-      if (event === "generate") {
-        this.impact = MEDIUM_IMPACT;
-      }
-      if (event === "boss" || event === "boss-spawn") {
-        this.impact = window.matchMedia("(prefers-reduced-motion: reduce)")
-          .matches
-          ? 0
-          : INPUT.bossImpact;
-      }
-      if (event === "stun") {
-        this.impact = STUN_IMPACT;
-      }
+      this.impact = eventImpact(event, this.impact);
       this.callbacks.onEvent(event);
     }
   }

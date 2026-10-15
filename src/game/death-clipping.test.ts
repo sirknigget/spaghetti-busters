@@ -38,26 +38,30 @@ it.each(["x", "y"] as const)(
     });
     expect(volume(halves[0]) + volume(halves[1])).toBeCloseTo(volume(solid), 0);
     for (const half of halves) {
-      const p = half.getAttribute("position");
-      const n = half.getAttribute("normal");
-      let seamWalls = 0;
-      for (let i = half.groups[0]!.count; i < p.count; i++) {
-        if (
-          Math.abs(n.getZ(i)) < 0.01 &&
-          Math.abs(axis === "x" ? p.getX(i) : p.getY(i)) < 7
-        ) {
-          seamWalls++;
-        }
-      }
-      expect(seamWalls).toBeGreaterThan(12);
-      for (let i = 0; i < p.count; i++) {
-        expect(Number.isFinite(p.getX(i) + p.getY(i) + p.getZ(i))).toBe(true);
-      }
+      expectClosedSeam(half, axis);
       half.dispose();
     }
     solid.dispose();
   },
 );
+
+function expectClosedSeam(half: THREE.BufferGeometry, axis: "x" | "y") {
+  const p = half.getAttribute("position");
+  const n = half.getAttribute("normal");
+  let seamWalls = 0;
+  for (let i = half.groups[0]!.count; i < p.count; i++) {
+    if (
+      Math.abs(n.getZ(i)) < 0.01 &&
+      Math.abs(axis === "x" ? p.getX(i) : p.getY(i)) < 7
+    ) {
+      seamWalls++;
+    }
+  }
+  expect(seamWalls).toBeGreaterThan(12);
+  for (let i = 0; i < p.count; i++) {
+    expect(Number.isFinite(p.getX(i) + p.getY(i) + p.getZ(i))).toBe(true);
+  }
+}
 
 function solidSlab() {
   return perforatedGeometry(

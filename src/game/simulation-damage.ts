@@ -41,26 +41,33 @@ function scoreDamage(sim: Simulation, removed: number) {
   sim.world.events.push("hit");
 }
 
-function finishDamage(sim: Simulation, hit: DamageContext) {
-  const { block, x, y } = hit;
-  const remaining = block.cells.filter((cell) => cell.alive);
+function shouldDestroyBlock(block: Block, remaining: number): boolean {
   const deathCells = block.boss
     ? TUNING.damage.bossDeathCells
     : TUNING.damage.deathCells;
+
+  return remaining < deathCells || isSpentFragment(block, remaining);
+}
+
+function shouldSplitBlock(sim: Simulation, block: Block, remaining: number) {
   const splitHits = block.boss
     ? TUNING.damage.bossBaseSplitHits +
       block.toughness * TUNING.damage.bossSplitHitsPerArmor
     : TUNING.damage.baseSplitHits + block.toughness;
-  if (
-    remaining.length < deathCells ||
-    isSpentFragment(block, remaining.length)
-  ) {
-    destroyBlock(sim, hit);
-  } else if (
+
+  return (
     block.hits >= splitHits &&
-    remaining.length > TUNING.damage.splitMinCells &&
+    remaining > TUNING.damage.splitMinCells &&
     sim.world.blocks.length < TUNING.bounds.blockCap
-  ) {
+  );
+}
+
+function finishDamage(sim: Simulation, hit: DamageContext) {
+  const { block, x, y } = hit;
+  const remaining = block.cells.filter((cell) => cell.alive);
+  if (shouldDestroyBlock(block, remaining.length)) {
+    destroyBlock(sim, hit);
+  } else if (shouldSplitBlock(sim, block, remaining.length)) {
     split(sim, { block, cells: remaining, hitX: x, hitY: y });
   }
 }

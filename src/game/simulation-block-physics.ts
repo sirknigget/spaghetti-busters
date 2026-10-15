@@ -128,13 +128,26 @@ interface Contact {
   inverseB: number;
 }
 
+function outsideCollisionArea(a: Block, b: Block, extentX: number): boolean {
+  return (
+    b.age < TUNING.collision.minimumAge ||
+    a.x > GAME_WIDTH + extentX ||
+    b.x > GAME_WIDTH + b.width * HALF
+  );
+}
+
+function collisionNormal(a: Block, b: Block, horizontal: boolean) {
+  const horizontalDirection = b.x >= a.x ? 1 : -1;
+  const verticalDirection = b.y >= a.y ? 1 : -1;
+  const nx = horizontal ? horizontalDirection : 0;
+  const ny = nx === 0 ? verticalDirection : 0;
+
+  return { nx, ny };
+}
+
 function contact(a: Block, b: Block): Contact | undefined {
   const ae = extents(a);
-  if (
-    b.age < TUNING.collision.minimumAge ||
-    a.x > GAME_WIDTH + ae.x ||
-    b.x > GAME_WIDTH + b.width * HALF
-  ) {
+  if (outsideCollisionArea(a, b, ae.x)) {
     return undefined;
   }
   const be = extents(b);
@@ -143,14 +156,9 @@ function contact(a: Block, b: Block): Contact | undefined {
   if (overlapX <= 0 || overlapY <= 0) {
     return undefined;
   }
-  const horizontalDirection = b.x >= a.x ? 1 : -1;
-  const verticalDirection = b.y >= a.y ? 1 : -1;
-  const nx = overlapX < overlapY ? horizontalDirection : 0;
-  const ny = nx === 0 ? verticalDirection : 0;
 
   return {
-    nx,
-    ny,
+    ...collisionNormal(a, b, overlapX < overlapY),
     overlap: Math.min(overlapX, overlapY),
     inverseA: 1 / Math.max(TUNING.collision.minimumMass, a.cells.length),
     inverseB: 1 / Math.max(TUNING.collision.minimumMass, b.cells.length),

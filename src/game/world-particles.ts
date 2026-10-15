@@ -20,11 +20,7 @@ export class WorldParticles {
     const livingParticles = new Set(particles);
     for (const [particle, mesh] of this.particleMeshes) {
       if (!livingParticles.has(particle)) {
-        mesh.geometry.dispose();
-        if (!Array.isArray(mesh.material)) {
-          mesh.material.dispose();
-        }
-        mesh.removeFromParent();
+        disposeParticle(mesh);
         this.particleMeshes.delete(particle);
       }
     }
@@ -69,11 +65,7 @@ export class WorldParticles {
 
   reset() {
     for (const mesh of this.particleMeshes.values()) {
-      mesh.geometry.dispose();
-      if (!Array.isArray(mesh.material)) {
-        mesh.material.dispose();
-      }
-      mesh.removeFromParent();
+      disposeParticle(mesh);
     }
     this.particleMeshes.clear();
   }
@@ -85,6 +77,14 @@ export class WorldParticles {
     }
     this.letterTextures.clear();
   }
+}
+
+function disposeParticle(mesh: THREE.Mesh) {
+  mesh.geometry.dispose();
+  if (!Array.isArray(mesh.material)) {
+    mesh.material.dispose();
+  }
+  mesh.removeFromParent();
 }
 
 function letterTexture(particle: Particle) {

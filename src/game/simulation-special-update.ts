@@ -31,6 +31,10 @@ function specialHitsRobot(
   return true;
 }
 
+function grenadeFuseExpired(special: SpecialProjectile): boolean {
+  return special.type === "grenade" && (special.fuse ?? 0) <= 0;
+}
+
 export function updateSpecial(
   sim: Simulation,
   special: SpecialProjectile,
@@ -50,7 +54,7 @@ export function updateSpecial(
   const collision = sim.world.blocks.some((block) =>
     specialHitsBlock({ block, special, oldX, oldY }),
   );
-  if (collision || (special.type === "grenade" && (special.fuse ?? 0) <= 0)) {
+  if (collision || grenadeFuseExpired(special)) {
     explode(sim, {
       x: special.x,
       y: special.y,

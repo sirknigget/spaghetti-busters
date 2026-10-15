@@ -1,5 +1,17 @@
 import type { PlayScene } from "./play-scene";
 import { INPUT } from "./scene-config";
+import type { SpecialWeapon } from "./simulation";
+
+const SPECIAL_KEYS = new Map<string, SpecialWeapon>([
+  ["Digit1", "homing"],
+  ["Numpad1", "homing"],
+  ["Digit2", "grenade"],
+  ["Numpad2", "grenade"],
+  ["Digit3", "review"],
+  ["Numpad3", "review"],
+  ["Digit4", "lint"],
+  ["Numpad4", "lint"],
+]);
 
 export function point(scene: PlayScene, event: PointerEvent) {
   const canvas = scene.world.renderer.domElement;
@@ -64,17 +76,9 @@ export function bindKeyboard(scene: PlayScene): void {
       event.preventDefault();
       scene.keys.add(event.code);
     }
-    if (event.code === "Digit1" || event.code === "Numpad1") {
-      scene.selectSpecial("homing");
-    }
-    if (event.code === "Digit2" || event.code === "Numpad2") {
-      scene.selectSpecial("grenade");
-    }
-    if (event.code === "Digit3" || event.code === "Numpad3") {
-      scene.selectSpecial("review");
-    }
-    if (event.code === "Digit4" || event.code === "Numpad4") {
-      scene.selectSpecial("lint");
+    const special = SPECIAL_KEYS.get(event.code);
+    if (special) {
+      scene.selectSpecial(special);
     }
   });
 }

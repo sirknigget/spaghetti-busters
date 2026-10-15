@@ -47,7 +47,7 @@ export class AudioEngine {
     if (newRun) {
       this.stopSounds();
       this.score?.reset();
-      if (this.started && !this.paused && this.enabled) {
+      if (this.active) {
         this.score?.startMusic();
       }
     }
@@ -72,15 +72,7 @@ export class AudioEngine {
 
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
-    if (this.graph) {
-      const { context, master } = this.graph;
-      master.gain.cancelScheduledValues(context.currentTime);
-      master.gain.setTargetAtTime(
-        enabled && !this.paused ? MIX.masterVolume : 0,
-        context.currentTime,
-        MIX.gainRamp,
-      );
-    }
+    this.syncVolume();
     if (!enabled) {
       this.stopSounds();
     } else if (this.started && !this.paused) {
@@ -118,7 +110,7 @@ export class AudioEngine {
   }
 
   play(event: string): void {
-    if (!this.synth || !this.enabled || this.paused || !this.started) {
+    if (!this.synth || !this.active) {
       return;
     }
     const time = this.synth.graph.context.currentTime;
@@ -128,6 +120,23 @@ export class AudioEngine {
     }
     this.lastEffects.set(event, time);
     playEffect(event, this.synth);
+  }
+
+  private get active(): boolean {
+    return this.started && !this.paused && this.enabled;
+  }
+
+  private syncVolume(): void {
+    if (!this.graph) {
+      return;
+    }
+    const { context, master } = this.graph;
+    master.gain.cancelScheduledValues(context.currentTime);
+    master.gain.setTargetAtTime(
+      this.enabled && !this.paused ? MIX.masterVolume : 0,
+      context.currentTime,
+      MIX.gainRamp,
+    );
   }
 
   private initialize(): boolean {

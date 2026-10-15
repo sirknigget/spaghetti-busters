@@ -1,5 +1,15 @@
 import * as THREE from "three";
 
+function hasMaterials(
+  object: THREE.Object3D,
+): object is THREE.Mesh | THREE.LineSegments | THREE.Sprite {
+  return (
+    object instanceof THREE.Mesh ||
+    object instanceof THREE.LineSegments ||
+    object instanceof THREE.Sprite
+  );
+}
+
 export function cloneOwnedMaterial(source: THREE.Material): THREE.Material {
   const material = source.clone();
   for (const [key, value] of Object.entries(source)) {
@@ -22,20 +32,13 @@ export function disposeObject(object: THREE.Object3D) {
     if (child instanceof THREE.Mesh || child instanceof THREE.LineSegments) {
       geometries.add(child.geometry);
     }
-    if (!(
-      child instanceof THREE.Mesh ||
-      child instanceof THREE.LineSegments ||
-      child instanceof THREE.Sprite
-    )) {
+    if (!hasMaterials(child)) {
       return;
     }
     const mesh = child;
     const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const material of list) {
-      materials.add(material);
-      for (const texture of materialTextures(material)) {
-        textures.add(texture);
-      }
+      collectMaterialResources(material, materials, textures);
     }
   });
   for (const g of geometries) {
@@ -48,6 +51,17 @@ export function disposeObject(object: THREE.Object3D) {
     t.dispose();
   }
   object.removeFromParent();
+}
+
+function collectMaterialResources(
+  material: THREE.Material,
+  materials: Set<THREE.Material>,
+  textures: Set<THREE.Texture>,
+) {
+  materials.add(material);
+  for (const texture of materialTextures(material)) {
+    textures.add(texture);
+  }
 }
 
 function materialTextures(material: THREE.Material): THREE.Texture[] {

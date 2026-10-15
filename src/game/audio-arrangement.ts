@@ -41,47 +41,51 @@ function playChord(synth: Synth, phrase: PhraseStep): void {
   const padVolume = quiet
     ? ARRANGEMENT.chord.quietVolume
     : ARRANGEMENT.chord.volume;
-  if (beat === 0) {
-    for (const [i, note] of chord.entries()) {
-      synth.pad({
-        note,
-        time:
-          time +
-          i *
-            (title
-              ? ARRANGEMENT.chord.titleSpacing
-              : ARRANGEMENT.chord.spacing),
-        duration: sixteenth * ARRANGEMENT.chord.duration,
-        volume: title ? ARRANGEMENT.chord.titleVolume : padVolume,
-        bus: deck.bus,
-      });
-    }
+  if (beat !== 0) {
+    return;
+  }
+  for (const [i, note] of chord.entries()) {
+    synth.pad({
+      note,
+      time:
+        time +
+        i *
+          (title ? ARRANGEMENT.chord.titleSpacing : ARRANGEMENT.chord.spacing),
+      duration: sixteenth * ARRANGEMENT.chord.duration,
+      volume: title ? ARRANGEMENT.chord.titleVolume : padVolume,
+      bus: deck.bus,
+    });
   }
 }
 
 function playLead(synth: Synth, phrase: PhraseStep): void {
-  const { track, bar, beat, title, quiet } = phrase;
+  const { track, bar, beat, title } = phrase;
   const note = track.phrases[bar % track.phrases.length]![beat]!;
   const titleNote =
     !title ||
     beat % ARRANGEMENT.lead.titleBeatModulo === 0 ||
     beat === ARRANGEMENT.lead.titleAccentBeat;
+  if (note > 0 && titleNote && quietLeadBeat(phrase)) {
+    playLeadNote(synth, phrase, leadPitch(note, phrase));
+  }
+}
+
+function leadPitch(note: number, phrase: PhraseStep): number {
+  const octave =
+    phrase.bar >= ARRANGEMENT.lead.octaveStartBar &&
+    phrase.beat >= ARRANGEMENT.lead.octaveStartBeat;
+
+  return note + (octave ? ARRANGEMENT.octave : 0);
+}
+
+function quietLeadBeat(phrase: PhraseStep): boolean {
+  const { bar, beat, quiet } = phrase;
   const quietEnding =
     bar === ARRANGEMENT.quiet.endingBar && beat >= ARRANGEMENT.quiet.endingBeat;
   const quietDownbeat =
     beat === 0 || beat === ARRANGEMENT.quiet.alternateDownbeat;
-  const quietNote = !quiet || quietDownbeat || quietEnding;
-  if (note > 0 && titleNote && quietNote) {
-    playLeadNote(
-      synth,
-      phrase,
-      note +
-        (bar >= ARRANGEMENT.lead.octaveStartBar &&
-        beat >= ARRANGEMENT.lead.octaveStartBeat
-          ? ARRANGEMENT.octave
-          : 0),
-    );
-  }
+
+  return !quiet || quietDownbeat || quietEnding;
 }
 
 function playLeadNote(synth: Synth, phrase: PhraseStep, note: number): void {
@@ -89,22 +93,36 @@ function playLeadNote(synth: Synth, phrase: PhraseStep, note: number): void {
   const leadDuration = quiet
     ? ARRANGEMENT.lead.quietDuration
     : ARRANGEMENT.lead.duration;
-  const leadVolume = quiet
-    ? ARRANGEMENT.lead.quietVolume
-    : ARRANGEMENT.lead.volume;
   synth.melodicTone({
     note,
     time,
     duration:
       sixteenth * (title ? ARRANGEMENT.lead.titleDuration : leadDuration),
     type: title ? "sine" : track.lead,
-    volume: title ? ARRANGEMENT.lead.titleVolume : leadVolume,
+    volume: leadVolume(phrase),
     bus: deck.bus,
     pan:
       bar % ARRANGEMENT.stereoPeriod
         ? ARRANGEMENT.lead.pan
         : -ARRANGEMENT.lead.pan,
   });
+  playLeadOvertone(synth, phrase, note);
+}
+
+function leadVolume(phrase: PhraseStep): number {
+  if (phrase.title) {
+    return ARRANGEMENT.lead.titleVolume;
+  }
+
+  return phrase.quiet ? ARRANGEMENT.lead.quietVolume : ARRANGEMENT.lead.volume;
+}
+
+function playLeadOvertone(
+  synth: Synth,
+  phrase: PhraseStep,
+  note: number,
+): void {
+  const { time, sixteenth, deck } = phrase;
   // Bell-like overtones distinguish the nocturnal and glassy compositions.
   if (deck.track === 1 || deck.track === ARRANGEMENT.lead.glassTrack) {
     synth.melodicTone({
@@ -120,8 +138,7 @@ function playLeadNote(synth: Synth, phrase: PhraseStep, note: number): void {
 }
 
 function playArpeggio(synth: Synth, phrase: PhraseStep): void {
-  const { track, beat, bar, quiet, title, chord, time, sixteenth, deck } =
-    phrase;
+  const { track, beat, bar, quiet, title } = phrase;
   const arpeggio =
     track.arpeggio[
       (beat +
@@ -135,20 +152,29 @@ function playArpeggio(synth: Synth, phrase: PhraseStep): void {
     arpeggio >= 0 &&
     (!title || beat % ARRANGEMENT.arpeggio.titleBeatModulo === 0)
   ) {
-    synth.melodicTone({
-      note: chord[arpeggio]! + ARRANGEMENT.octave,
-      time,
-      duration:
-        sixteenth *
-        (title
-          ? ARRANGEMENT.arpeggio.titleDuration
-          : ARRANGEMENT.arpeggio.duration),
-      type: "triangle",
-      volume: title
-        ? ARRANGEMENT.arpeggio.titleVolume
-        : ARRANGEMENT.arpeggio.volume,
-      bus: deck.bus,
-      pan: ARRANGEMENT.arpeggio.pan,
-    });
+    playArpeggioNote(synth, phrase, arpeggio);
   }
+}
+
+function playArpeggioNote(
+  synth: Synth,
+  phrase: PhraseStep,
+  arpeggio: number,
+): void {
+  const { title, chord, time, sixteenth, deck } = phrase;
+  synth.melodicTone({
+    note: chord[arpeggio]! + ARRANGEMENT.octave,
+    time,
+    duration:
+      sixteenth *
+      (title
+        ? ARRANGEMENT.arpeggio.titleDuration
+        : ARRANGEMENT.arpeggio.duration),
+    type: "triangle",
+    volume: title
+      ? ARRANGEMENT.arpeggio.titleVolume
+      : ARRANGEMENT.arpeggio.volume,
+    bus: deck.bus,
+    pan: ARRANGEMENT.arpeggio.pan,
+  });
 }

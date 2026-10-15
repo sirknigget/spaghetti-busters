@@ -35,6 +35,36 @@ interface SegmentRectangleOptions {
   halfWidth: number;
   halfHeight: number;
 }
+
+interface ClipInterval {
+  min: number;
+  max: number;
+}
+
+function clipAxis(
+  interval: ClipInterval,
+  axis: { start: number; delta: number; half: number },
+) {
+  const { start, delta, half } = axis;
+  if (Math.abs(delta) < TUNING.collision.parallelEpsilon) {
+    if (Math.abs(start) > half) {
+      return false;
+    }
+
+    return true;
+  }
+  const t1 = (-half - start) / delta;
+  const t2 = (half - start) / delta;
+  interval.min = Math.max(interval.min, Math.min(t1, t2));
+  interval.max = Math.min(interval.max, Math.max(t1, t2));
+
+  if (interval.min > interval.max) {
+    return false;
+  }
+
+  return true;
+}
+
 export function segmentRectangle({
   ax,
   ay,
@@ -43,28 +73,12 @@ export function segmentRectangle({
   halfWidth,
   halfHeight,
 }: SegmentRectangleOptions) {
-  let min = 0;
-  let max = 1;
-  for (const [start, delta, half] of [
-    [ax, bx - ax, halfWidth],
-    [ay, by - ay, halfHeight],
-  ]) {
-    if (Math.abs(delta!) < TUNING.collision.parallelEpsilon) {
-      if (Math.abs(start!) > half!) {
-        return false;
-      }
-    } else {
-      const t1 = (-half! - start!) / delta!;
-      const t2 = (half! - start!) / delta!;
-      min = Math.max(min, Math.min(t1, t2));
-      max = Math.min(max, Math.max(t1, t2));
-      if (min > max) {
-        return false;
-      }
-    }
-  }
+  const interval = { min: 0, max: 1 };
 
-  return true;
+  return [
+    { start: ax, delta: bx - ax, half: halfWidth },
+    { start: ay, delta: by - ay, half: halfHeight },
+  ].every((axis) => clipAxis(interval, axis));
 }
 
 export function extents(block: Block) {

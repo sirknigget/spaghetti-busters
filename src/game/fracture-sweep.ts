@@ -74,25 +74,37 @@ interface BandRange {
   low: number;
   high: number;
 }
+interface CrossingBand extends BandRange {
+  crossingCuts: number[];
+}
 
 function appendCrossings(
   active: ActiveEdge[],
   band: BandRange,
   crossingCuts: number[],
 ) {
-  const { low, high } = band;
+  const crossingBand = { ...band, crossingCuts };
   for (let i = 0; i < active.length; i++) {
-    for (let j = i + 1; j < active.length; j++) {
-      const a = active[i]!;
-      const b = active[j]!;
-      if (Math.min(b.l, b.h) > Math.max(a.l, a.h) + FRACTURE.gapEpsilon) {
-        break;
-      }
-      const d0 = a.l - b.l;
-      const d1 = a.h - b.h;
-      if (d0 * d1 < -FRACTURE.crossingEpsilon) {
-        crossingCuts.push(low + ((high - low) * d0) / (d0 - d1));
-      }
+    appendEdgeCrossings(active, i, crossingBand);
+  }
+}
+
+function appendEdgeCrossings(
+  active: ActiveEdge[],
+  index: number,
+  band: CrossingBand,
+) {
+  const { low, high, crossingCuts } = band;
+  const a = active[index]!;
+  for (let j = index + 1; j < active.length; j++) {
+    const b = active[j]!;
+    if (Math.min(b.l, b.h) > Math.max(a.l, a.h) + FRACTURE.gapEpsilon) {
+      break;
+    }
+    const d0 = a.l - b.l;
+    const d1 = a.h - b.h;
+    if (d0 * d1 < -FRACTURE.crossingEpsilon) {
+      crossingCuts.push(low + ((high - low) * d0) / (d0 - d1));
     }
   }
 }

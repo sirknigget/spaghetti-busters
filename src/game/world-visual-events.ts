@@ -11,6 +11,7 @@ type VisualEvent = Simulation["world"]["visualEvents"][number];
 type CodeDeath = Extract<VisualEvent, { type: "code-death" }>;
 type RobotDeath = Extract<VisualEvent, { type: "robot-death" }>;
 type Split = Extract<VisualEvent, { type: "split" }>;
+type Impact = Extract<VisualEvent, { type: "impact" }>;
 interface EventTargets {
   code: WorldCode;
   robots: Map<number, THREE.Group>;
@@ -36,20 +37,28 @@ export class WorldVisualEvents {
         .map((event) => event.block.id),
     );
     for (const event of events) {
-      if (event.type === "impact") {
-        this.debris.impact(
-          event.target === "code" && dying.has(event.blockId!)
-            ? { ...event, removed: [] }
-            : event,
-        );
-      } else if (event.type === "code-death") {
-        this.codeDeath(event);
-      } else if (event.type === "robot-death") {
-        this.robotDeath(event);
-      } else if (event.type === "split") {
-        this.split(event);
-      }
+      this.processEvent(event, dying);
     }
+  }
+
+  private processEvent(event: VisualEvent, dying: Set<number>) {
+    if (event.type === "impact") {
+      this.impact(event, dying);
+    } else if (event.type === "code-death") {
+      this.codeDeath(event);
+    } else if (event.type === "robot-death") {
+      this.robotDeath(event);
+    } else if (event.type === "split") {
+      this.split(event);
+    }
+  }
+
+  private impact(event: Impact, dying: Set<number>) {
+    this.debris.impact(
+      event.target === "code" && dying.has(event.blockId!)
+        ? { ...event, removed: [] }
+        : event,
+    );
   }
 
   private codeDeath(event: CodeDeath) {
