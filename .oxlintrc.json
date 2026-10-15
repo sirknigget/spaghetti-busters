@@ -25,7 +25,7 @@
     "**/*.d.ts"
   ],
   "rules": {
-    "anti-slop/cognitive-complexity": ["error", 12],
+    "anti-slop/cognitive-complexity": ["error", 10],
     "anti-slop/cyclomatic-complexity": ["error", { "threshold": 8 }],
     "anti-slop/max-lines": "off",
     "anti-slop/max-lines-per-function": "off",
