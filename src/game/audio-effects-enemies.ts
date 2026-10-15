@@ -1,16 +1,16 @@
+import SCORE from "./scores/audio-effects-enemies.json";
 import type { AudioGraph } from "./audio-graph";
 import { Synth, frequency } from "./audio-synth";
 
-/* oxlint-disable no-magic-numbers -- Literal pitches, envelopes, and timings are authored sound-effect scores. */
 export function robot(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
-  for (const [i, note] of [52, 64, 59, 76].entries()) {
+  for (const [i, note] of SCORE.robot.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
-      time: time + [0, 0.07, 0.21, 0.34][i]!,
-      duration: 0.13,
+      time: time + SCORE.robot.delays[i]!,
+      duration: SCORE.robot.tone.duration,
       type: "square",
-      volume: 0.055,
+      volume: SCORE.robot.tone.volume,
       destination: bus,
     });
   }
@@ -18,21 +18,21 @@ export function robot(synth: Synth, graph: AudioGraph, time: number): void {
 
 export function generate(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
-  for (const [i, note] of [48, 55, 62, 70, 79, 86].entries()) {
+  for (const [i, note] of SCORE.generate.notes.entries()) {
     synth.tone({
       frequency: frequency(note),
-      time: time + i * i * 0.014,
-      duration: 0.16,
+      time: time + i * i * SCORE.generate.tone.spacing,
+      duration: SCORE.generate.tone.duration,
       type: "triangle",
-      volume: 0.075,
+      volume: SCORE.generate.tone.volume,
       destination: bus,
     });
   }
   synth.noise({
-    time: time + 0.3,
-    duration: 0.17,
-    volume: 0.09,
-    cutoff: 2300,
+    time: time + SCORE.generate.noise.delay,
+    duration: SCORE.generate.noise.duration,
+    volume: SCORE.generate.noise.volume,
+    cutoff: SCORE.generate.noise.cutoff,
     destination: bus,
     highpass: true,
   });
@@ -41,41 +41,45 @@ export function generate(synth: Synth, graph: AudioGraph, time: number): void {
 export function exception(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
   synth.tone({
-    frequency: 970 + Math.random() * 220,
+    frequency:
+      SCORE.exception.tone.baseFrequency +
+      Math.random() * SCORE.exception.tone.frequencyRange,
     time: time,
-    duration: 0.13,
+    duration: SCORE.exception.tone.duration,
     type: "square",
-    volume: 0.045,
+    volume: SCORE.exception.tone.volume,
     destination: bus,
-    endFrequency: 340,
+    endFrequency: SCORE.exception.tone.endFrequency,
   });
   synth.tone({
-    frequency: 470,
-    time: time + 0.055,
-    duration: 0.09,
+    frequency: SCORE.exception.accent.frequency,
+    time: time + SCORE.exception.accent.delay,
+    duration: SCORE.exception.accent.duration,
     type: "triangle",
-    volume: 0.09,
+    volume: SCORE.exception.accent.volume,
     destination: bus,
-    endFrequency: 690,
+    endFrequency: SCORE.exception.accent.endFrequency,
   });
 }
 
 export function absorb(synth: Synth, graph: AudioGraph, time: number): void {
   const bus = graph.effects;
   synth.tone({
-    frequency: 170 + Math.random() * 55,
+    frequency:
+      SCORE.absorb.tone.baseFrequency +
+      Math.random() * SCORE.absorb.tone.frequencyRange,
     time: time,
-    duration: 0.09,
+    duration: SCORE.absorb.tone.duration,
     type: "sine",
-    volume: 0.09,
+    volume: SCORE.absorb.tone.volume,
     destination: bus,
-    endFrequency: 80,
+    endFrequency: SCORE.absorb.tone.endFrequency,
   });
   synth.noise({
     time: time,
-    duration: 0.045,
-    volume: 0.045,
-    cutoff: 2800,
+    duration: SCORE.absorb.noise.duration,
+    volume: SCORE.absorb.noise.volume,
+    cutoff: SCORE.absorb.noise.cutoff,
     destination: bus,
     highpass: true,
   });
@@ -89,22 +93,20 @@ export function robotDestroy(
   const bus = graph.effects;
   synth.noise({
     time: time,
-    duration: 0.48,
-    volume: 0.2,
-    cutoff: 1100,
+    duration: SCORE.robotDestroy.noise.duration,
+    volume: SCORE.robotDestroy.noise.volume,
+    cutoff: SCORE.robotDestroy.noise.cutoff,
     destination: bus,
   });
-  for (const [i, hz] of [210, 150, 92, 55].entries()) {
+  for (const [i, hz] of SCORE.robotDestroy.frequencies.entries()) {
     synth.tone({
       frequency: hz,
-      time: time + i * 0.065,
-      duration: 0.25,
+      time: time + i * SCORE.robotDestroy.tone.spacing,
+      duration: SCORE.robotDestroy.tone.duration,
       type: "triangle",
-      volume: 0.12,
+      volume: SCORE.robotDestroy.tone.volume,
       destination: bus,
-      endFrequency: hz * 0.45,
+      endFrequency: hz * SCORE.robotDestroy.tone.endFrequencyRatio,
     });
   }
 }
-
-/* oxlint-enable no-magic-numbers */

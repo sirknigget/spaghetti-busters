@@ -1,9 +1,12 @@
+import { PALETTE } from "./palette";
 import type { Simulation } from "./simulation";
 import { damage } from "./simulation-damage";
 import { burst } from "./simulation-particles";
 import { damageRobot } from "./simulation-robots";
 import { clamp, EXPLOSION_IMPULSE_FACTOR } from "./simulation-shared";
 import { TUNING } from "./simulation-tuning";
+
+const EXPLOSION_LIFETIME_SECONDS = 0.42;
 
 export interface ExplodeOptions {
   x: number;
@@ -15,12 +18,18 @@ export function explode(
   sim: Simulation,
   { x, y, radius, power }: ExplodeOptions,
 ) {
-  sim.world.explosions.push({ x, y, radius, life: 0.42, maxLife: 0.42 });
+  sim.world.explosions.push({
+    x,
+    y,
+    radius,
+    life: EXPLOSION_LIFETIME_SECONDS,
+    maxLife: EXPLOSION_LIFETIME_SECONDS,
+  });
   sim.world.events.push("explosion");
   burst(sim, {
     x: x,
     y: y,
-    color: "#8cf5cd",
+    color: PALETTE.particles.explosion,
     count: TUNING.particles.explosionBurstCount,
   });
   for (const hazard of sim.world.hazards) {

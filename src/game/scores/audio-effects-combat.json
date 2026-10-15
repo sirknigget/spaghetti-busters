@@ -1,0 +1,114 @@
+{
+  "missile": {
+    "noise": {
+      "duration": 0.26,
+      "volume": 0.1,
+      "cutoff": 2100
+    },
+    "tone": {
+      "frequency": 160,
+      "duration": 0.26,
+      "volume": 0.07,
+      "endFrequency": 1100
+    }
+  },
+  "grenade": {
+    "tone": {
+      "frequency": 380,
+      "duration": 0.18,
+      "volume": 0.2,
+      "endFrequency": 105
+    },
+    "noise": {
+      "duration": 0.055,
+      "volume": 0.08,
+      "cutoff": 900
+    }
+  },
+  "shot": {
+    "tone": {
+      "frequency": 720,
+      "duration": 0.085,
+      "volume": 0.1,
+      "endFrequency": 135
+    },
+    "noise": {
+      "duration": 0.035,
+      "volume": 0.045,
+      "cutoff": 1800
+    }
+  },
+  "hit": {
+    "tone": {
+      "baseFrequency": 210,
+      "frequencyRange": 130,
+      "duration": 0.06,
+      "volume": 0.16,
+      "endFrequency": 70
+    },
+    "noise": {
+      "duration": 0.06,
+      "volume": 0.07,
+      "cutoff": 1100
+    }
+  },
+  "split": {
+    "noise": {
+      "duration": 0.19,
+      "volume": 0.2,
+      "cutoff": 1300
+    },
+    "tone": {
+      "frequency": 230,
+      "duration": 0.19,
+      "volume": 0.08,
+      "endFrequency": 45
+    },
+    "accent": {
+      "frequency": 570,
+      "delay": 0.025,
+      "duration": 0.1,
+      "volume": 0.04,
+      "endFrequency": 165
+    }
+  },
+  "destroy": {
+    "noise": {
+      "duration": 0.28,
+      "volume": 0.2,
+      "cutoff": 850
+    },
+    "tone": {
+      "frequency": 110,
+      "duration": 0.25,
+      "volume": 0.28,
+      "endFrequency": 32
+    },
+    "notes": [76, 81, 88],
+    "accent": {
+      "spacing": 0.045,
+      "duration": 0.095,
+      "volume": 0.035
+    }
+  },
+  "explosion": {
+    "noise": {
+      "duration": 0.52,
+      "volume": 0.3,
+      "cutoff": 1500
+    },
+    "tone": {
+      "frequency": 150,
+      "duration": 0.45,
+      "volume": 0.25,
+      "endFrequency": 35
+    },
+    "accent": {
+      "frequency": 540,
+      "delay": 0.035,
+      "duration": 0.22,
+      "volume": 0.035,
+      "endFrequency": 95
+    }
+  }
+}

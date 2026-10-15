@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import type { Simulation } from "./simulation";
 import { triggerMagic } from "./simulation-bonuses";
 import { split } from "./simulation-fragments";
@@ -5,6 +6,8 @@ import { burst, snapshot, visual } from "./simulation-particles";
 import { clamp, HALF, isSpentFragment } from "./simulation-shared";
 import { TUNING } from "./simulation-tuning";
 import type { Block, Bullet } from "./simulation-types";
+
+const COMBO_LIFETIME_SECONDS = 2.4;
 
 function damageContext(options: DamageOptions): DamageContext {
   const { block, blastRadius } = options;
@@ -27,7 +30,7 @@ function damageContext(options: DamageOptions): DamageContext {
 
 function scoreDamage(sim: Simulation, removed: number) {
   sim.progress.combo = Math.min(TUNING.damage.comboCap, sim.progress.combo + 1);
-  sim.runtime.comboTimer = 2.4;
+  sim.runtime.comboTimer = COMBO_LIFETIME_SECONDS;
   sim.progress.score +=
     removed *
     (TUNING.damage.pointsPerGlyph +
@@ -110,7 +113,7 @@ export function destroyBlock(sim: Simulation, hit: DamageContext) {
   burst(sim, {
     x: block.x,
     y: block.y,
-    color: "#79e7ff",
+    color: PALETTE.particles.codeDeath,
     count: TUNING.particles.destroyBurstCount,
   });
   sim.world.events.push("destroy");

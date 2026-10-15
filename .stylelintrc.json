@@ -182,6 +182,34 @@
         "ignoreAtRules": []
       }
     ],
-    "at-rule-descriptor-no-unknown": true
-  }
+    "at-rule-descriptor-no-unknown": true,
+    "color-no-hex": true,
+    "color-named": "never",
+    "function-disallowed-list": [
+      "rgb",
+      "rgba",
+      "hsl",
+      "hsla",
+      "hwb",
+      "lab",
+      "lch",
+      "oklab",
+      "oklch",
+      "color",
+      "color-mix",
+      "device-cmyk",
+      "light-dark",
+      "contrast-color"
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/palette.css"],
+      "rules": {
+        "color-no-hex": null,
+        "color-named": null,
+        "function-disallowed-list": null
+      }
+    }
+  ]
 }

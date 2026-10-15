@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { instantiateModel } from "./model-assets";
 import { createCannon, createSpecialist } from "./models3d";
@@ -12,7 +13,7 @@ export class WorldPlayer {
   private readonly stun = instantiateModel("stun-rings");
   private readonly stunLabel = createStunLabel();
   private readonly muzzleLight = new THREE.PointLight(
-    "#ffdc85",
+    PALETTE.environment.muzzle,
     0,
     LIGHT.muzzleRange,
     LIGHT.decay,
@@ -89,9 +90,9 @@ export class WorldPlayer {
     const canvas = this.stunLabel.material.map!.image as HTMLCanvasElement;
     const c = canvas.getContext("2d")!;
     c.clearRect(0, 0, LABEL.width, LABEL.height);
-    c.fillStyle = "#56286e";
+    c.fillStyle = PALETTE.stun.background;
     c.fillRect(0, 0, LABEL.width, LABEL.height);
-    c.fillStyle = "#ffe0ff";
+    c.fillStyle = PALETTE.stun.text;
     c.font = "bold 25px monospace";
     c.textAlign = "center";
     c.textBaseline = "middle";
@@ -110,8 +111,8 @@ export class WorldPlayer {
 
 function createStunLabel() {
   const labelCanvas = document.createElement("canvas");
-  labelCanvas.width = 256;
-  labelCanvas.height = 64;
+  labelCanvas.width = LABEL.width;
+  labelCanvas.height = LABEL.height;
   const labelTexture = new THREE.CanvasTexture(labelCanvas);
   labelTexture.colorSpace = THREE.SRGBColorSpace;
   const label = new THREE.Sprite(

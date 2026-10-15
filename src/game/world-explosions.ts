@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import type { Simulation } from "./simulation";
 import { loadGeometry } from "./model-assets";
@@ -6,7 +7,7 @@ import { EXPLOSION, HEIGHT, LIGHT } from "./world-settings";
 export class WorldExplosions {
   private readonly explosionMeshes: THREE.Mesh[] = [];
   private readonly explosionLight = new THREE.PointLight(
-    "#ffc777",
+    PALETTE.environment.explosionLight,
     0,
     LIGHT.explosionRange,
     LIGHT.decay,
@@ -21,7 +22,7 @@ export class WorldExplosions {
       const mesh = new THREE.Mesh(
         loadGeometry("explosion-ring"),
         new THREE.MeshBasicMaterial({
-          color: "#ffe8a4",
+          color: PALETTE.environment.explosionRing,
           transparent: true,
           depthWrite: false,
         }),

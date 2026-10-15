@@ -1,7 +1,10 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { instantiateModel, loadGeometry } from "./model-assets";
 import type { Simulation } from "./simulation";
 import { HALF, HEIGHT, PULSE } from "./world-settings";
+
+const PULSE_OPACITY = 0.6;
 
 export class WorldPulses {
   private readonly reviewEffect = instantiateModel("review-effect");
@@ -9,9 +12,9 @@ export class WorldPulses {
   private readonly reviewBeam = new THREE.Mesh(
     loadGeometry("review-beam"),
     new THREE.MeshBasicMaterial({
-      color: "#c0f3ff",
+      color: PALETTE.freeze.beam,
       transparent: true,
-      opacity: 0.6,
+      opacity: PULSE_OPACITY,
       depthWrite: false,
     }),
   );

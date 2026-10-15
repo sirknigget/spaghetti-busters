@@ -6,6 +6,8 @@ import { TUNING } from "./simulation-tuning";
 import type { Block } from "./simulation-types";
 import { GAME_WIDTH } from "./simulation-types";
 
+const BOUNCE_SPIN_FACTOR = -0.7;
+
 export function advanceAnger(sim: Simulation, block: Block, dt: number) {
   block.age += dt;
   if (block.angry) {
@@ -52,7 +54,7 @@ export function moveBlock(sim: Simulation, block: Block, dt: number) {
       TUNING.motion.minAngle,
       TUNING.motion.maxAngle,
     );
-    block.angularVelocity *= -0.7;
+    block.angularVelocity *= BOUNCE_SPIN_FACTOR;
   }
 }
 
@@ -63,14 +65,14 @@ export function checkBlockBoundary(sim: Simulation, block: Block) {
     block.vy =
       Math.abs(block.vy) * TUNING.motion.bounceRestitution +
       TUNING.motion.bounceKick;
-    block.angularVelocity *= -0.7;
+    block.angularVelocity *= BOUNCE_SPIN_FACTOR;
   }
   if (block.y + extent.y > TUNING.motion.bottomBoundary) {
     block.y = TUNING.motion.bottomBoundary - extent.y;
     block.vy =
       -Math.abs(block.vy) * TUNING.motion.bounceRestitution -
       TUNING.motion.bounceKick;
-    block.angularVelocity *= -0.7;
+    block.angularVelocity *= BOUNCE_SPIN_FACTOR;
   }
   // Spawned blocks enter naturally; only objects already moving right bounce here.
   if (

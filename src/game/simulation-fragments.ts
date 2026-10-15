@@ -4,6 +4,9 @@ import { HALF } from "./simulation-shared";
 import { TUNING } from "./simulation-tuning";
 import type { Block, Cell } from "./simulation-types";
 
+const FRACTURE_REWARD = 50;
+const FRAGMENT_THROW_DELAY_SECONDS = 3;
+
 export function split(sim: Simulation, options: SplitOptions) {
   const { block, cells } = options;
   const horizontal =
@@ -27,7 +30,7 @@ export function split(sim: Simulation, options: SplitOptions) {
     return snapshot(child);
   });
   visual(sim, { type: "split", parent, children, seed });
-  sim.progress.score += 50;
+  sim.progress.score += FRACTURE_REWARD;
   sim.world.events.push("split");
 }
 
@@ -54,7 +57,7 @@ function fragmentIdentity(block: Block) {
     toughness: block.toughness,
     angry: false,
     exception: block.exception,
-    throwTimer: 3,
+    throwTimer: FRAGMENT_THROW_DELAY_SECONDS,
     boss: block.boss,
     bossRoot: block.bossRoot,
     bossMinion: block.bossMinion,

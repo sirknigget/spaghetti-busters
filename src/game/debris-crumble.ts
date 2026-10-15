@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { debrisRandom } from "./debris-random";
 import { CRUMBLE, HALF, FLOOR } from "./debris-settings";
@@ -38,7 +39,9 @@ function crumbleFleck(i: number, source: CrumbleSource): Fleck {
     ...crumbleTrajectory(position, random, energy),
     ...crumbleSpin(random),
     scale: new THREE.Vector3(size, size * CRUMBLE.heightScale, size * HALF),
-    color: new THREE.Color(random() < HALF ? "#345965" : "#9bc1b4"),
+    color: new THREE.Color(
+      random() < HALF ? PALETTE.debris.dark : PALETTE.debris.light,
+    ),
     age: 0,
     life:
       kind === "smoke"

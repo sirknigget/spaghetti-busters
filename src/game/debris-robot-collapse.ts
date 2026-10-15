@@ -5,6 +5,8 @@ import { ROBOT } from "./debris-impact-settings";
 import { VIEWPORT } from "./debris-settings";
 import type { DebrisEmitter } from "./debris-types";
 
+const ROBOT_COLLAPSE_RADIUS = 80;
+
 export interface RobotMotion {
   x: number;
   y: number;
@@ -51,7 +53,7 @@ export function collapseRobot(
     y: robot.y,
     vx: robot.vx ?? 0,
     vy: robot.vy ?? 0,
-    radius: 80,
+    radius: ROBOT_COLLAPSE_RADIUS,
     seed: seed + ROBOT.impactSeedOffset,
     target: "robot",
   });

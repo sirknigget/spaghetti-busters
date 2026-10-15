@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import type { Simulation } from "./simulation";
 import { collectPickup } from "./simulation-bonuses";
 import type { Segment } from "./simulation-collision";
@@ -9,6 +10,8 @@ import { damageRobot, interceptRobot, robotContact } from "./simulation-robots";
 import { HALF } from "./simulation-shared";
 import { TUNING } from "./simulation-tuning";
 import type { Block, Bullet } from "./simulation-types";
+
+const HAZARD_DESTRUCTION_REWARD = 60;
 
 export function updateBullet(sim: Simulation, bullet: Bullet, dt: number) {
   bullet.life -= dt;
@@ -117,11 +120,11 @@ export function bulletHitsHazard(sim: Simulation, travel: Segment) {
     return false;
   }
   hazard.life = 0;
-  sim.progress.score += 60;
+  sim.progress.score += HAZARD_DESTRUCTION_REWARD;
   burst(sim, {
     x: hazard.x,
     y: hazard.y,
-    color: "#ff8fbd",
+    color: PALETTE.particles.bullet,
     count: TUNING.particles.hazardBurstCount,
   });
   sim.world.events.push("hit");

@@ -101,7 +101,7 @@ export class MusicTransport {
       return false;
     }
     const track = MUSIC_TRACKS[deck.track]!;
-    const sixteenth = 60 / track.bpm / MIX.sixteenthsPerBeat;
+    const sixteenth = MIX.secondsPerMinute / track.bpm / MIX.sixteenthsPerBeat;
     const age = this.transport - deck.start;
     deck.bus.gain.setTargetAtTime(
       this.deckFade(deck, age),

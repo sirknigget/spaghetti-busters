@@ -76,17 +76,6 @@
             "allow": ["arrowFunctions", "constructors", "privateConstructors"]
           }
         ],
-        "no-magic-numbers": [
-          "error",
-          {
-            "ignore": [0, 1, -1, 24, 60],
-            "ignoreDefaultValues": true,
-            "ignoreClassFieldInitialValues": true,
-            "ignoreEnums": true,
-            "ignoreNumericLiteralTypes": true,
-            "ignoreReadonlyClassProperties": true
-          }
-        ],
         "no-dupe-class-members": "error",
         "default-param-last": "error",
         "no-unused-expressions": [

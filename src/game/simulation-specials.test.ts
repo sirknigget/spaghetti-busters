@@ -174,9 +174,7 @@ it("lands grenade blasts at the aimed point when no enemy intercepts the arc", (
 
 function placeBlastTargets(
   sim: Simulation,
-  blast:
-    | { readonly radius: 180; readonly power: 4 }
-    | { readonly radius: 300; readonly power: 5 },
+  blast: (typeof SPECIAL_BLASTS)[keyof typeof SPECIAL_BLASTS],
 ) {
   const a = sim.spawnBlock({
     x: 700,

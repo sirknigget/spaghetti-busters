@@ -5,6 +5,10 @@ import { clamp } from "./simulation-shared";
 import { TUNING } from "./simulation-tuning";
 import { type Robot, type RobotBrand } from "./simulation-types";
 
+const ROBOT_HEALTH = 15;
+const ROBOT_HIT_FLASH_SECONDS = 0.2;
+const ROBOT_IMPACT_RADIUS = 19;
+
 export function spawnRobot(
   sim: Simulation,
   options: {
@@ -34,8 +38,8 @@ export function spawnRobot(
     age: 0,
     stateTime: 0,
     hitFlash: 0,
-    health: 15,
-    maxHealth: 15,
+    health: ROBOT_HEALTH,
+    maxHealth: ROBOT_HEALTH,
   };
   sim.world.robots.push(robot);
   sim.world.events.push("robot");
@@ -59,7 +63,7 @@ export function damageRobot(
     return;
   }
   robot.health = Math.max(0, robot.health - power);
-  robot.hitFlash = 0.2;
+  robot.hitFlash = ROBOT_HIT_FLASH_SECONDS;
   visual(sim, {
     type: "impact",
     target: "robot",
@@ -68,7 +72,7 @@ export function damageRobot(
     y,
     vx,
     vy,
-    radius: 19,
+    radius: ROBOT_IMPACT_RADIUS,
     seed: ++sim.runtime.visualSeed,
   });
   sim.world.events.push("robot-hit");

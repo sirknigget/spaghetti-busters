@@ -3,6 +3,9 @@ import type { Simulation, Particle } from "./simulation";
 import { loadGeometry } from "./model-assets";
 import { HALF, HEIGHT, PARTICLE } from "./world-settings";
 
+const LETTER_TEXTURE_HEIGHT = 40;
+const LETTER_TEXTURE_WIDTH = 32;
+
 export class WorldParticles {
   private readonly particleMeshes = new Map<Particle, THREE.Mesh>();
   private readonly letterTextures = new Map<string, THREE.CanvasTexture>();
@@ -86,8 +89,8 @@ export class WorldParticles {
 
 function letterTexture(particle: Particle) {
   const canvas = document.createElement("canvas");
-  canvas.width = 32;
-  canvas.height = 40;
+  canvas.width = LETTER_TEXTURE_WIDTH;
+  canvas.height = LETTER_TEXTURE_HEIGHT;
   const c = canvas.getContext("2d")!;
   c.font = "bold 27px monospace";
   c.fillStyle = particle.color;

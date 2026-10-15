@@ -1,16 +1,20 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import { loadGeometry } from "./model-assets";
 import { MAX_FLECKS, HALF, DRAW } from "./debris-settings";
 import { disposeObject } from "./graphics-resources";
 import { type Fleck } from "./debris-types";
 
+const FLECK_ROUGHNESS = 0.86;
+const FLECK_METALNESS = 0.12;
+
 export function createShards() {
   const mesh = new THREE.InstancedMesh(
     loadGeometry("solid-impact-shard"),
     new THREE.MeshStandardMaterial({
-      color: "#ffffff",
-      roughness: 0.86,
-      metalness: 0.12,
+      color: PALETTE.common.white,
+      roughness: FLECK_ROUGHNESS,
+      metalness: FLECK_METALNESS,
     }),
     MAX_FLECKS,
   );
@@ -25,7 +29,7 @@ export function createSparks() {
   const mesh = new THREE.InstancedMesh(
     loadGeometry("spark-fleck"),
     new THREE.MeshBasicMaterial({
-      color: "#ffffff",
+      color: PALETTE.common.white,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     }),
@@ -43,10 +47,19 @@ export function createSmoke(smokeAlpha: THREE.InstancedBufferAttribute) {
     transparent: true,
     depthWrite: false,
     vertexColors: false,
+    uniforms: {
+      smokeTint: {
+        value: new THREE.Color(
+          PALETTE.smoke.red,
+          PALETTE.smoke.green,
+          PALETTE.smoke.blue,
+        ),
+      },
+    },
     vertexShader:
       "attribute float instanceAlpha; varying vec2 vUv; varying float vAlpha; void main(){vUv=uv;vAlpha=instanceAlpha;gl_Position=projectionMatrix*modelViewMatrix*instanceMatrix*vec4(position,1.);}",
     fragmentShader:
-      "varying vec2 vUv; varying float vAlpha; void main(){float r=length(vUv-.5)*2.;float a=exp(-r*r*4.)*(1.-smoothstep(.55,1.,r))*vAlpha;gl_FragColor=vec4(.32,.39,.40,a);}",
+      "uniform vec3 smokeTint; varying vec2 vUv; varying float vAlpha; void main(){float r=length(vUv-.5)*2.;float a=exp(-r*r*4.)*(1.-smoothstep(.55,1.,r))*vAlpha;gl_FragColor=vec4(smokeTint,a);}",
   });
 
   const mesh = new THREE.InstancedMesh(

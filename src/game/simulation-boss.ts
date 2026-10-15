@@ -4,6 +4,13 @@ import { clamp, HALF } from "./simulation-shared";
 import { TUNING } from "./simulation-tuning";
 import { type Block } from "./simulation-types";
 
+const BOSS_START_X = 1300;
+const BOSS_START_Y = 370;
+const BOSS_INITIAL_VERTICAL_SPEED = 8;
+const BOSS_INITIAL_ANGLE = -0.015;
+const BOSS_INITIAL_SPIN = 0.008;
+const BOSS_INITIAL_SPAWN_DELAY_SECONDS = 4;
+
 export function spawnBoss(sim: Simulation): Block {
   const existing = sim.world.blocks.find(
     (block) => block.boss && block.bossRoot === sim.runtime.activeBossRoot,
@@ -13,22 +20,22 @@ export function spawnBoss(sim: Simulation): Block {
   }
   const boss = sim.spawnBlock({
     boss: true,
-    x: 1300,
-    y: 370,
+    x: BOSS_START_X,
+    y: BOSS_START_Y,
     vx: -bossDriftSpeed(sim),
-    vy: 8,
-    angle: -0.015,
+    vy: BOSS_INITIAL_VERTICAL_SPEED,
+    angle: BOSS_INITIAL_ANGLE,
     code: [...BOSS_CODE],
   });
   boss.title = "FactoryFactoryFactory";
-  boss.angularVelocity = 0.008;
+  boss.angularVelocity = BOSS_INITIAL_SPIN;
   sim.runtime.pendingBlocks = 0;
   sim.runtime.activeBossRoot = boss.id;
   sim.runtime.bossMaxHealth = boss.cells.reduce(
     (health, cell) => health + cell.maxHealth,
     0,
   );
-  sim.runtime.bossSpawnTimer = 4;
+  sim.runtime.bossSpawnTimer = BOSS_INITIAL_SPAWN_DELAY_SECONDS;
   sim.runtime.bossRewarded = false;
   sim.world.robots = [];
   sim.world.hazards = [];

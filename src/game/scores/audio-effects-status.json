@@ -1,0 +1,58 @@
+{
+  "review": {
+    "notes": [86, 81, 74, 67],
+    "tone": {
+      "spacing": 0.085,
+      "duration": 0.6,
+      "volume": 0.085
+    },
+    "accent": {
+      "spacing": 0.085,
+      "duration": 0.43,
+      "volume": 0.025,
+      "harmonyInterval": 7
+    }
+  },
+  "lint": {
+    "noise": {
+      "duration": 0.34,
+      "volume": 0.13,
+      "cutoff": 3600
+    },
+    "notes": [57, 69, 76, 81, 88],
+    "tone": {
+      "spacing": 0.045,
+      "duration": 0.25,
+      "volume": 0.09
+    }
+  },
+  "hazard": {
+    "notes": [83, 77],
+    "tone": {
+      "spacing": 0.09,
+      "duration": 0.085,
+      "volume": 0.1
+    }
+  },
+  "stun": {
+    "notes": [94, 87, 82, 75, 70],
+    "tone": {
+      "spacing": 0.045,
+      "duration": 0.11,
+      "volume": 0.075
+    },
+    "noise": {
+      "duration": 0.28,
+      "volume": 0.08,
+      "cutoff": 4000
+    }
+  },
+  "recover": {
+    "notes": [67, 74, 79, 86],
+    "tone": {
+      "spacing": 0.05,
+      "duration": 0.13,
+      "volume": 0.15
+    }
+  }
+}

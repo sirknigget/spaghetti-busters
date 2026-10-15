@@ -1,0 +1,31 @@
+{
+  "TIMEOUT_METRICS": {
+    "fontSize": 20,
+    "charWidth": 12,
+    "widthPadding": 36,
+    "height": 54,
+    "depth": 30
+  },
+  "PRIMARY_AMMO": {
+    "double": 30,
+    "triple": 24,
+    "quad": 16,
+    "quint": 12
+  },
+  "SPECIAL_AMMO_CAPS": {
+    "homing": 6,
+    "grenade": 5,
+    "review": 4,
+    "lint": 3
+  },
+  "SPECIAL_BLASTS": {
+    "homing": {
+      "radius": 180,
+      "power": 4
+    },
+    "grenade": {
+      "radius": 300,
+      "power": 5
+    }
+  }
+}

@@ -3,6 +3,8 @@ import { FULL_TURN_RADIANS } from "./simulation-shared";
 import { TUNING } from "./simulation-tuning";
 import { type Block, type VisualEvent } from "./simulation-types";
 
+const BURST_BASE_SPEED = 60;
+
 interface BurstOptions {
   x: number;
   y: number;
@@ -12,7 +14,8 @@ interface BurstOptions {
 export function burst(sim: Simulation, { x, y, color, count }: BurstOptions) {
   for (let i = 0; i < count; i++) {
     const angle = sim.random() * FULL_TURN_RADIANS;
-    const speed = 60 + sim.random() * TUNING.particles.burstSpeedRange;
+    const speed =
+      BURST_BASE_SPEED + sim.random() * TUNING.particles.burstSpeedRange;
     const life =
       TUNING.particles.burstBaseLife +
       sim.random() * TUNING.particles.burstLifeRange;

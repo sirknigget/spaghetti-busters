@@ -3,6 +3,9 @@ import { WEAPON_SPREADS, clamp } from "./simulation-shared";
 import { TUNING } from "./simulation-tuning";
 import { type SpecialWeapon, SPECIAL_AMMO_CAPS } from "./simulation-types";
 
+const BULLET_LIFETIME_SECONDS = 1.5;
+const SHOT_COOLDOWN_SECONDS = 0.135;
+
 export function fire(sim: Simulation): boolean {
   if (
     sim.progress.status !== "playing" ||
@@ -26,18 +29,18 @@ export function fire(sim: Simulation): boolean {
     const direction = angle + spread;
     sim.world.bullets.push({
       id: sim.runtime.nextId++,
-      x: 172,
+      x: TUNING.weapon.muzzleX,
       y: sim.player.playerY,
       vx: Math.cos(direction) * TUNING.weapon.bulletSpeed,
       vy: Math.sin(direction) * TUNING.weapon.bulletSpeed,
-      life: 1.5,
+      life: BULLET_LIFETIME_SECONDS,
       weapon: sim.player.weapon,
     });
   }
   if (sim.player.weapon !== "single") {
     sim.player.ammo--;
   }
-  sim.runtime.cooldown = 0.135;
+  sim.runtime.cooldown = SHOT_COOLDOWN_SECONDS;
   sim.progress.shotsFired++;
   sim.world.events.push("shot");
 

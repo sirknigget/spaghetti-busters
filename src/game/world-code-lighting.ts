@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette";
 import * as THREE from "three";
 import type { Block } from "./simulation";
 import { HEIGHT, TUMBLE } from "./world-settings";
@@ -45,15 +46,15 @@ export function lightCode(mesh: THREE.Group, block: Block, frozen: boolean) {
     if (!(material instanceof THREE.MeshToonMaterial)) {
       continue;
     }
-    let color = "#000000";
+    let color: string = PALETTE.common.black;
     if (block.angry && index === 1) {
-      color = "#6a0f22";
+      color = PALETTE.angry.emissive;
     }
     if (block.boss && index === 1) {
-      color = "#7c2314";
+      color = PALETTE.boss.emissive;
     }
     if (frozen) {
-      color = "#286b97";
+      color = PALETTE.freeze.codeEmissive;
     }
     material.emissive.set(color);
     material.emissiveIntensity = frozen ? TUMBLE.frozenGlow : TUMBLE.normalGlow;
