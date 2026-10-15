@@ -21,18 +21,18 @@ Open **http://localhost:3000**. The server binds to all interfaces on port 3000.
 
 ## Controls
 
-| Action | Control |
-| --- | --- |
-| Move and aim | Mouse / drag on a touchscreen |
-| Primary fire | Left click, hold, or Space |
-| Select homing backspace missiles | 1 or the Backspace slot |
-| Select recycle-bin grenades | 2 or the Recycle Bin slot |
-| Select code review freeze gun | 3 or the Code Review slot |
-| Select lint bomb | 4 or the Lint Bomb slot |
-| Launch selected special | Right click / hold, or the touch FIRE button |
-| Move vertically | Arrow Up/Down or W/S |
-| Pause / resume | P, Escape, or the pause button |
-| Sound | Speaker button |
+| Action                           | Control                                      |
+| -------------------------------- | -------------------------------------------- |
+| Move and aim                     | Mouse / drag on a touchscreen                |
+| Primary fire                     | Left click, hold, or Space                   |
+| Select homing backspace missiles | 1 or the Backspace slot                      |
+| Select recycle-bin grenades      | 2 or the Recycle Bin slot                    |
+| Select code review freeze gun    | 3 or the Code Review slot                    |
+| Select lint bomb                 | 4 or the Lint Bomb slot                      |
+| Launch selected special          | Right click / hold, or the touch FIRE button |
+| Move vertically                  | Arrow Up/Down or W/S                         |
+| Pause / resume                   | P, Escape, or the pause button               |
+| Sound                            | Speaker button                               |
 
 Landscape orientation gives touch devices the biggest battlefield.
 
@@ -59,12 +59,18 @@ A single **Click to play** prelude unlocks browser audio; the opening screen the
 ## Build and verify
 
 ```sh
+npm run format:check
 npm run build
 npm run preview
 npm test
 npx playwright install --with-deps chromium
 npm run test:e2e
 ```
+
+Run `npm run format` to apply Prettier to the project. Formatting uses Prettier's
+standard defaults with LF line endings; generated output, the npm lockfile, and
+vendored brand artwork are excluded. GitHub CI checks formatting, unit tests,
+the production build, and browser tests on pull requests and pushes to `main`.
 
 `preview` serves the production build on port 3000; stop the development server first. Browser tests reuse a running development server or start one automatically. They run one browser at a time to keep software WebGL rendering responsive in CI. On headless Linux without a GPU, Mesa/EGL libraries (`libegl1`, `libegl-mesa0`, and `mesa-vulkan-drivers`) provide the real WebGL 2 context used by the tests.
 
