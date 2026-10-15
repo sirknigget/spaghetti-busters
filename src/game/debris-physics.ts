@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
+import type { Block } from './simulation';
+import { createCodeMesh, createDeathFragments, disposeObject } from './code-mesh';
 
 export interface DebrisImpact {
   x:number;y:number;vx:number;vy:number;radius:number;seed:number;target:'code'|'robot';
   removed?:{x:number;y:number;char:string;color:string}[];
 }
-interface RigidDebris {body:RAPIER.RigidBody;mesh:THREE.Group;age:number;life:number;kind:'letter'|'shard'|'robot';}
+interface RigidDebris {body:RAPIER.RigidBody;mesh:THREE.Group;age:number;life:number;kind:'letter'|'shard'|'robot'|'code';lastVelocity:THREE.Vector3;crumbled:boolean;seed:number;}
 interface Fleck {position:THREE.Vector3;velocity:THREE.Vector3;rotation:THREE.Quaternion;spin:THREE.Vector3;scale:THREE.Vector3;color:THREE.Color;age:number;life:number;phase:number;kind:'shard'|'spark'|'smoke';bounces:number;}
 const FLOOR=42,MAX_BODIES=92,MAX_FLECKS=640;
 /** Local seeded entropy never consumes gameplay randomness. */
@@ -24,6 +26,7 @@ export class DebrisPhysics {
   private readonly transform=new THREE.Object3D();
   private totalImpacts=0;
   private totalRobotDeaths=0;
+  private totalCodeDeaths=0;
   private disposed=false;
 
   static async create(scene:THREE.Scene) {await RAPIER.init();return new DebrisPhysics(scene);}
@@ -69,14 +72,74 @@ export class DebrisPhysics {
     this.renderParticles();
   }
 
-  private addLetter(letter:{x:number;y:number;char:string;color:string},hit:DebrisImpact,random:()=>number) {
+  private addLetter(letter:{x:number;y:number;char:string;color:string},hit:DebrisImpact,random:()=>number,position?:THREE.Vector3,rotation?:THREE.Quaternion) {
     const canvas=document.createElement('canvas');canvas.width=48;canvas.height=56;const c=canvas.getContext('2d')!;
     c.font='bold 42px monospace';c.textAlign='center';c.textBaseline='middle';c.fillStyle=letter.color;c.fillText(letter.char,24,28);
     const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
     const group=new THREE.Group();group.name='fallen-code-letter';
     const face=new THREE.Mesh(new THREE.PlaneGeometry(12,14),new THREE.MeshStandardMaterial({map:texture,transparent:true,side:THREE.DoubleSide,roughness:.7,alphaTest:.12}));face.castShadow=true;group.add(face);
-    group.position.set(letter.x,720-letter.y,33+random()*5);
+    group.position.copy(position??new THREE.Vector3(letter.x,720-letter.y,33+random()*5));
+    if(rotation)group.quaternion.copy(rotation);
     this.addRigid(group,new THREE.Vector3(4.6,6,.9),new THREE.Vector3((random()-.5)*135+hit.vx*.16,30+random()*110-hit.vy*.1,20+random()*45),random,'letter',8+random()*3);
+  }
+
+  /** Collapse the very same perforated sheet; this never creates gameplay blocks. */
+  dismantleCode(mesh:THREE.Group,block:Block,seed:number,hit:DebrisImpact) {
+    if(this.disposed)return;
+    this.totalCodeDeaths++;
+    const random=debrisRandom(seed),live=block.cells.filter(cell=>cell.alive&&cell.char.trim());
+    const peeled=new Set<Block['cells'][number]>();
+    // Stratified entropy scatters loose glyphs across the entire sheet, not its first row.
+    const count=Math.min(14,live.length);
+    for(let i=0;i<count;i++)peeled.add(live[Math.min(live.length-1,Math.floor((i+random())*live.length/count))]!);
+    // A heavily perforated sheet is already the exact visible surface. Reuse its triangles;
+    // resweeping hundreds of old holes here would stall the final-hit frame.
+    const reuseSurface=block.cells.filter(cell=>!cell.alive).length>64;
+    const shell=reuseSurface?mesh:createCodeMesh({...block,cells:block.cells.map(cell=>peeled.has(cell)?{...cell,alive:false}:cell)},mesh);
+    mesh.updateWorldMatrix(true,false);
+    mesh.matrixWorld.decompose(shell.position,shell.quaternion,shell.scale);
+    const oldReactor=mesh.getObjectByName('factory-boss-reactor'),reactor=shell.getObjectByName('factory-boss-reactor');
+    if(oldReactor&&reactor)reactor.quaternion.copy(oldReactor.quaternion);
+    shell.updateMatrixWorld(true);
+    const pieces=createDeathFragments(shell,seed),origin=shell.position.clone();
+    for(const piece of pieces) {
+      // The fragment starts in its original assembled pose; Rapier supplies every later pose.
+      const geometry=(piece.getObjectByName('perforated-extruded-code') as THREE.Mesh).geometry;
+      geometry.computeBoundingBox();const size=geometry.boundingBox!.getSize(new THREE.Vector3());
+      const hull=this.codeHull(geometry);
+      piece.applyMatrix4(shell.matrixWorld);
+      const outward=piece.position.clone().sub(origin);
+      const distance=Math.max(35,outward.length());
+      const kick=35+random()*65;
+      const velocity=new THREE.Vector3(block.vx*.45+outward.x/distance*kick+hit.vx*.055,
+        -block.vy*.35+outward.y/distance*kick+45+random()*75-hit.vy*.035,
+        (random()-.4)*90);
+      this.addRigid(piece,size.multiplyScalar(.5).max(new THREE.Vector3(1,1,1)),velocity,random,'code',9+random()*3,hull);
+    }
+    for(const cell of peeled) {
+      const position=shell.localToWorld(new THREE.Vector3(cell.x,-cell.y,(shell.userData.solidDepth as number)/2+3));
+      this.addLetter({x:position.x,y:720-position.y,char:cell.char,color:cell.color},hit,random,position,shell.quaternion);
+    }
+    // Separate turbulent plumes erupt around the broken sheet instead of one repeated sprite.
+    for(let i=0;i<Math.min(4,pieces.length);i++) {
+      const p=pieces[Math.floor(i*pieces.length/Math.min(4,pieces.length))]!.position;
+      this.impact({...hit,x:p.x,y:720-p.y,radius:32,seed:seed+191+i*31,removed:[]});
+    }
+    if(!reuseSurface)disposeObject(shell);
+  }
+
+  /** A small convex contact hull follows each jagged slab's silhouette, including its depth. */
+  private codeHull(geometry:THREE.BufferGeometry) {
+    const positions=geometry.getAttribute('position'),points:number[]=[];
+    for(let direction=0;direction<12;direction++) {
+      const a=direction*Math.PI/6,dx=Math.cos(a),dy=Math.sin(a);let best=-Infinity,x=0,y=0,z=0;
+      for(let i=0;i<positions.count;i++) {
+        const score=positions.getX(i)*dx+positions.getY(i)*dy;
+        if(score>best){best=score;x=positions.getX(i);y=positions.getY(i);z=Math.abs(positions.getZ(i));}
+      }
+      points.push(x,y,z,x,y,-z);
+    }
+    return new Float32Array(points);
   }
 
   /** Clone real robot assemblies, keeping their current pose and independent assets. */
@@ -101,11 +164,12 @@ export class DebrisPhysics {
     this.impact({x:robot.x,y:robot.y,vx:robot.vx??0,vy:robot.vy??0,radius:80,seed:seed+119,target:'robot'});
   }
 
-  private addRigid(mesh:THREE.Group,halfSize:THREE.Vector3,velocity:THREE.Vector3,random:()=>number,kind:RigidDebris['kind'],life:number) {
+  private addRigid(mesh:THREE.Group,halfSize:THREE.Vector3,velocity:THREE.Vector3,random:()=>number,kind:RigidDebris['kind'],life:number,hull?:Float32Array) {
     while(this.rigid.length>=MAX_BODIES)this.removeRigid(0);
-    const body=this.world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(mesh.position.x,Math.max(FLOOR+halfSize.y+1,mesh.position.y),Math.min(82,Math.max(-70,mesh.position.z))).setLinvel(velocity.x,velocity.y,velocity.z).setAngvel({x:(random()-.5)*9,y:(random()-.5)*9,z:(random()-.5)*12}).setLinearDamping(.12).setAngularDamping(.45).setCanSleep(true).setCcdEnabled(true));
-    this.world.createCollider(RAPIER.ColliderDesc.cuboid(halfSize.x,halfSize.y,halfSize.z).setDensity(.1).setFriction(.65+random()*.3).setRestitution(.22+random()*.22),body);
-    this.scene.add(mesh);this.rigid.push({body,mesh,age:0,life,kind});
+    const body=this.world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(mesh.position.x,Math.max(FLOOR+halfSize.y+1,mesh.position.y),(kind==='code'||kind==='letter'?mesh.position.z:Math.min(82,Math.max(-70,mesh.position.z)))).setRotation(mesh.quaternion).setLinvel(velocity.x,velocity.y,velocity.z).setAngvel({x:(random()-.5)*9,y:(random()-.5)*9,z:(random()-.5)*12}).setLinearDamping(.12).setAngularDamping(.45).setCanSleep(true).setCcdEnabled(true));
+    const shape=(hull&&RAPIER.ColliderDesc.convexHull(hull))||RAPIER.ColliderDesc.cuboid(halfSize.x,halfSize.y,halfSize.z);
+    this.world.createCollider(shape.setDensity(.1).setFriction(.65+random()*.3).setRestitution(.22+random()*.22),body);
+    this.scene.add(mesh);this.rigid.push({body,mesh,age:0,life,kind,lastVelocity:velocity.clone(),crumbled:false,seed:Math.floor(random()*0xffffffff)});
   }
   private addFleck(fleck:Fleck){if(this.flecks.length>=MAX_FLECKS)this.flecks.shift();this.flecks.push(fleck);}
 
@@ -113,9 +177,25 @@ export class DebrisPhysics {
     if(this.disposed||dt<=0)return;
     this.accumulator+=Math.min(dt,.25);
     while(this.accumulator>=1/120){this.world.step();this.stepFlecks(1/120);this.accumulator-=1/120;}
-    for(let i=this.rigid.length-1;i>=0;i--){const item=this.rigid[i]!;item.age+=Math.min(dt,.25);if(item.age>item.life||item.body.translation().y< -150){this.removeRigid(i);continue;}const p=item.body.translation(),q=item.body.rotation();item.mesh.position.set(p.x,p.y,p.z);item.mesh.quaternion.set(q.x,q.y,q.z,q.w);const fade=Math.min(1,(item.life-item.age)*2);item.mesh.scale.setScalar(Math.max(0,fade));}
+    for(let i=this.rigid.length-1;i>=0;i--){const item=this.rigid[i]!;item.age+=Math.min(dt,.25);if(item.age>item.life||item.body.translation().y< -150){this.removeRigid(i);continue;}const p=item.body.translation(),q=item.body.rotation(),v=item.body.linvel();
+      if(item.kind==='code'&&!item.crumbled&&item.age>.12&&item.lastVelocity.y< -95&&v.y-item.lastVelocity.y>70) {
+        item.crumbled=true;this.crumble(item,p);
+      }
+      item.lastVelocity.set(v.x,v.y,v.z);item.mesh.position.set(p.x,p.y,p.z);item.mesh.quaternion.set(q.x,q.y,q.z,q.w);const fade=Math.min(1,(item.life-item.age)*2);item.mesh.scale.setScalar(Math.max(0,fade));}
     this.renderParticles();
   }
+  /** Secondary chips are emitted by an actual collision impulse, not an animation timer. */
+  private crumble(item:RigidDebris,position:{x:number;y:number;z:number}) {
+    const random=debrisRandom(item.seed),energy=Math.min(160,Math.abs(item.lastVelocity.y)*.28);
+    for(let i=0;i<12;i++) {
+      const kind=i<3?'smoke':'shard',size=kind==='smoke'?9+random()*11:1+random()*2.5;
+      this.addFleck({position:new THREE.Vector3(position.x+(random()-.5)*20,Math.max(FLOOR+2,position.y-8),position.z),
+        velocity:new THREE.Vector3((random()-.5)*energy,20+random()*energy*.65,(random()-.5)*80),
+        rotation:new THREE.Quaternion().setFromEuler(new THREE.Euler(random()*6,random()*6,random()*6)),spin:new THREE.Vector3(random()*8,random()*8,random()*8),
+        scale:new THREE.Vector3(size,size*.7,size*.5),color:new THREE.Color(random()<.5?'#345965':'#9bc1b4'),age:0,life:kind==='smoke'?1+random():4+random()*2,phase:random()*6,kind,bounces:0});
+    }
+  }
+
   private stepFlecks(dt:number) {
     for(let i=this.flecks.length-1;i>=0;i--){const p=this.flecks[i]!;p.age+=dt;if(p.age>=p.life){this.flecks.splice(i,1);continue;}
       if(p.kind==='smoke'){
@@ -140,9 +220,9 @@ export class DebrisPhysics {
     for(const mesh of [this.shards,this.sparks,this.smoke]){mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;}this.smokeAlpha.needsUpdate=true;
   }
   get bodySnapshots(){return this.rigid.map(item=>{const p=item.body.translation(),v=item.body.linvel();return {kind:item.kind,x:p.x,y:p.y,z:p.z,vx:v.x,vy:v.y,vz:v.z,sleeping:item.body.isSleeping()};});}
-  get diagnostics(){return{rigidBodies:this.rigid.length,particles:this.flecks.length,settled:this.rigid.filter(item=>item.body.isSleeping()||Math.abs(item.body.linvel().y)<.1&&item.body.translation().y<95).length,letters:this.rigid.filter(item=>item.kind==='letter').length,robotParts:this.rigid.filter(item=>item.kind==='robot').length,impacts:this.totalImpacts,robotDeaths:this.totalRobotDeaths,floorY:FLOOR};}
+  get diagnostics(){return{rigidBodies:this.rigid.length,particles:this.flecks.length,settled:this.rigid.filter(item=>item.body.isSleeping()||Math.abs(item.body.linvel().y)<.1&&item.body.translation().y<95).length,letters:this.rigid.filter(item=>item.kind==='letter').length,robotParts:this.rigid.filter(item=>item.kind==='robot').length,codeParts:this.rigid.filter(item=>item.kind==='code').length,codeDeaths:this.totalCodeDeaths,crumbled:this.rigid.filter(item=>item.kind==='code'&&item.crumbled).length,impacts:this.totalImpacts,robotDeaths:this.totalRobotDeaths,floorY:FLOOR};}
   private removeRigid(index:number){const item=this.rigid[index]!;this.world.removeRigidBody(item.body);this.disposeMesh(item.mesh);this.rigid.splice(index,1);}
   private disposeMesh(mesh:THREE.Object3D){const geometry=new Set<THREE.BufferGeometry>(),materials=new Set<THREE.Material>(),textures=new Set<THREE.Texture>();mesh.traverse(object=>{if(object instanceof THREE.Mesh){geometry.add(object.geometry);for(const material of Array.isArray(object.material)?object.material:[object.material]){materials.add(material);for(const value of Object.values(material))if(value instanceof THREE.Texture)textures.add(value);}}});geometry.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());mesh.removeFromParent();}
-  reset(){while(this.rigid.length)this.removeRigid(this.rigid.length-1);this.flecks.length=0;this.accumulator=0;this.totalImpacts=this.totalRobotDeaths=0;this.renderParticles();}
+  reset(){while(this.rigid.length)this.removeRigid(this.rigid.length-1);this.flecks.length=0;this.accumulator=0;this.totalImpacts=this.totalRobotDeaths=this.totalCodeDeaths=0;this.renderParticles();}
   dispose(){if(this.disposed)return;this.reset();this.disposed=true;for(const mesh of [this.shards,this.sparks,this.smoke])this.disposeMesh(mesh);this.world.free();}
 }

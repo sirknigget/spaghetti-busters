@@ -45,4 +45,45 @@ describe('physical code fracture surfaces',()=>{
     }
     whole.dispose();
   });
+
+  it('compacts dense overlapping holes without changing their union through angled fracture regions',()=>{
+    const holes=Array.from({length:84},(_,i)=>chippedHole(-75+(i%12)*13,-38+Math.floor(i/12)*13,i+735));
+    const mask=fractureMask('x',-10,1,249,bounds);
+    const geometry=perforatedGeometry([slab,mask],holes,16,{x:12,y:-8},root);
+    // Independent numerical cross-sections integrate the intended polygon set. This checks
+    // overlap union and region clipping rather than comparing two calls to the mesher.
+    const crossings=(polygon:Polygon,y:number)=>{
+      const xs:number[]=[];
+      for(let i=0;i<polygon.length;i++){
+        const a=polygon[i]!,b=polygon[(i+1)%polygon.length]!;
+        if((a.y>y)!==(b.y>y))xs.push(a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y));
+      }
+      xs.sort((a,b)=>a-b);const spans:[number,number][]=[];
+      for(let i=0;i<xs.length-1;i+=2)spans.push([xs[i]!,xs[i+1]!]);
+      return spans;
+    };
+    let reference=0;const samples=6000,dy=126/samples;
+    for(let row=0;row<samples;row++){
+      const y=-50+(row+.5)*dy;
+      const missing=holes.flatMap(hole=>crossings(hole,y)).sort((a,b)=>a[0]-b[0]);
+      const union:[number,number][]=[];
+      for(const interval of missing){const last=union[union.length-1];
+        if(last&&interval[0]<=last[1])last[1]=Math.max(last[1],interval[1]);else union.push([...interval]);
+      }
+      for(const [from,to] of crossings(mask,y)){
+        const left=Math.max(-100,from),right=Math.min(100,to);if(right<=left)continue;
+        const removed=union.reduce((sum,[a,b])=>sum+Math.max(0,Math.min(right,b)-Math.max(left,a)),0);
+        reference+=(right-left-removed)*dy;
+      }
+    }
+    expect(area(geometry)).toBeCloseTo(reference,0);
+    // A global cut at every distant chip vertex must not retessellate unchanged spans.
+    expect(geometry.groups[0]!.count).toBeLessThan(holes.length*250);
+    const p=geometry.getAttribute('position'),uv=geometry.getAttribute('uv');
+    for(let i=0;i<geometry.groups[0]!.count;i++){
+      expect(uv.getX(i)).toBeCloseTo((p.getX(i)+12+100)/200,5);
+      expect(uv.getY(i)).toBeCloseTo((p.getY(i)-8+50)/126,5);
+    }
+    geometry.dispose();
+  });
 });

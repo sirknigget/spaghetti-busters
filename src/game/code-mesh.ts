@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Block } from './simulation';
-import { chippedHole, fractureMask, perforatedGeometry, type Polygon } from './fracture-geometry';
+import { clipDeathSolid } from './death-clipping';
+import { chippedHole, fractureMask, fractureNoise, perforatedGeometry, type Polygon } from './fracture-geometry';
 
 interface FractureVisual {
   canvas:HTMLCanvasElement; width:number; height:number; depth:number;
@@ -19,6 +20,84 @@ export function createFragmentMesh(block:Block,parent:THREE.Group,parentBlock:Bl
   addRemovedCells(parentVisual,parentBlock);
   const visual:FractureVisual={...parentVisual,offset:{x:inherited.offset.x+f.offsetX,y:inherited.offset.y-f.offsetY},regions:[...inherited.regions,region],holes:new Map(parentVisual.holes),fractured:true};
   return createCodeMesh(block,undefined,visual);
+}
+
+
+/** Visual-only death fragments. Geometry is centered on each fragment's bounds and position is
+ * that center in SOURCE LOCAL coordinates (identity rotation/scale). Apply source.matrixWorld
+ * to the group before adding it to the scene. The source is untouched. All GPU resources are
+ * independently owned; only the original canvas pixels are shared. */
+export function createDeathFragments(source:THREE.Group,seed:number):THREE.Group[] {
+  const visual=source.userData.fractureVisual as FractureVisual|undefined;
+  const solid=source.getObjectByName('perforated-extruded-code') as THREE.Mesh|undefined;
+  if(!visual||!solid?.geometry||solid.geometry.getAttribute('position').count===0)return [];
+  const rootBounds={left:-visual.width/2-2,right:visual.width/2+2,bottom:-visual.height/2-2,top:visual.height/2+28};
+  const leaves=[{regions:visual.regions,geometry:solid.geometry.clone()}];
+  const desired=8+Math.floor(fractureNoise(seed,100)*7);
+  for(let cutIndex=0;leaves.length<desired&&cutIndex<30;cutIndex++){
+    // Always break the largest surviving piece, so a tiny edge chip cannot monopolize cuts.
+    let selected=-1,largest=0;
+    for(let i=0;i<leaves.length;i++){
+      const leaf=leaves[i]!;leaf.geometry.computeBoundingBox();
+      const size=leaf.geometry.boundingBox!.getSize(new THREE.Vector3());
+      const area=size.x*size.y;
+      if(area>largest&&Math.max(size.x,size.y)>25){selected=i;largest=area;}
+    }
+    if(selected<0)break;
+    const leaf=leaves[selected]!,box=leaf.geometry.boundingBox!,size=box.getSize(new THREE.Vector3());
+    const axis=size.x>size.y*(.8+fractureNoise(seed,cutIndex+200)*.4)?'x':'y';
+    const fraction=.38+fractureNoise(seed,cutIndex+300)*.24;
+    const cut=(axis==='x'?box.min.x+size.x*fraction+visual.offset.x:box.min.y+size.y*fraction+visual.offset.y);
+    const cutSeed=seed+cutIndex*7919;
+    const geometries=clipDeathSolid(leaf.geometry,axis,cut-(axis==='x'?visual.offset.x:visual.offset.y),cutSeed,axis==='x'?rootBounds.bottom-visual.offset.y:rootBounds.left-visual.offset.x,axis==='x'?rootBounds.top-visual.offset.y:rootBounds.right-visual.offset.x);
+    const halves=[-1,1].map((side,index)=>({
+      regions:[...leaf.regions,fractureMask(axis,cut,side,cutSeed,rootBounds)],geometry:geometries[index]!
+    }));
+    if(halves.some(half=>half.geometry.getAttribute('position').count===0)){
+      halves.forEach(half=>half.geometry.dispose());break;
+    }
+    leaf.geometry.dispose();leaves.splice(selected,1,...halves);
+  }
+  return leaves.map((leaf,index)=>{
+    const group=new THREE.Group();group.name=`code-death-fragment-${index}`;
+    leaf.geometry.computeBoundingBox();
+    const center=leaf.geometry.boundingBox!.getCenter(new THREE.Vector3());
+    leaf.geometry.translate(-center.x,-center.y,-center.z);group.position.copy(center);
+    const materials=(Array.isArray(solid.material)?solid.material:[solid.material]).map(cloneOwnedMaterial);
+    const mesh=new THREE.Mesh(leaf.geometry,materials);mesh.name='perforated-extruded-code';mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);
+    const fragmentVisual:FractureVisual={...visual,offset:{x:visual.offset.x+center.x,y:visual.offset.y+center.y},regions:leaf.regions,holes:new Map(visual.holes),fractured:true};
+    if(source.userData.boss){
+      // Root housing is clipped by the same contours, retaining each original bolt/core once.
+      createBossArmor(group,visual.width,visual.height,visual.depth);
+      clipBossArmor(group,fragmentVisual,visual.depth);
+      const originalReactor=source.getObjectByName('factory-boss-reactor'),reactor=group.getObjectByName('factory-boss-reactor');
+      if(originalReactor&&reactor)reactor.quaternion.copy(originalReactor.quaternion);
+    }
+    const face=source.getObjectByName('angry-code-face');
+    if(face&&insideRegions({x:face.position.x+visual.offset.x,y:face.position.y+visual.offset.y},leaf.regions)){
+      const copy=face.clone(true);copy.position.sub(center);
+      copy.traverse(object=>{const part=object as THREE.Mesh;if(part.geometry)part.geometry=part.geometry.clone();if(part.material)part.material=Array.isArray(part.material)?part.material.map(cloneOwnedMaterial):cloneOwnedMaterial(part.material);});
+      group.add(copy);
+    }
+    group.userData.fractureVisual=fragmentVisual;
+    group.userData.sourceCanvas=visual.canvas;
+    group.userData.deathFragmentRootOffset={...fragmentVisual.offset};
+    group.userData.solidDepth=visual.depth*2;
+    group.userData.fragmentArea=frontArea(leaf.geometry);
+    return group;
+  });
+}
+
+function cloneOwnedMaterial(source:THREE.Material):THREE.Material {
+  const material=source.clone(),properties=material as unknown as Record<string,unknown>;
+  for(const [key,value] of Object.entries(source))if(value instanceof THREE.Texture){const texture=value.clone();texture.needsUpdate=true;properties[key]=texture;}
+  return material;
+}
+
+function frontArea(geometry:THREE.BufferGeometry) {
+  const p=geometry.getAttribute('position');let area=0;
+  for(let i=0;i<(geometry.groups[0]?.count??0);i+=3)area+=Math.abs((p.getX(i+1)-p.getX(i))*(p.getY(i+2)-p.getY(i))-(p.getY(i+1)-p.getY(i))*(p.getX(i+2)-p.getX(i)))/2;
+  return area;
 }
 
 

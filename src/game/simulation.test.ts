@@ -835,4 +835,58 @@ describe('arcade simulation', () => {
     expect(sim.blocks).toHaveLength(2);
   });
 
+  it('exports the final visible slab once when a cannon hit destroys a worn fragment', () => {
+    const sim = game(); sim.blocks = [];
+    const block = sim.spawnBlock({ x: 700, y: 350, vx: 0, vy: 0, angle: 0, code: ['x'.repeat(24)] });
+    block.generation = 2;
+    block.cells[0]!.alive = false;
+    block.fracture = { parentId: 100, offsetX: 30, offsetY: -10, axis: 'x', cut: 8, side: 1, seed: 9 };
+    const before = block.cells.map(cell => ({ ...cell }));
+    hitCell(sim, block, block.cells[12]!);
+    const deaths = sim.visualEvents.filter(event => event.type === 'code-death');
+    expect(deaths).toHaveLength(1);
+    const death = deaths[0]!;
+    expect(death.block.cells).toEqual(before);
+    expect(death.block.fracture).toEqual(block.fracture);
+    expect(death.vx).toBe(1080);
+    expect(death.radius).toBe(43);
+    expect(Number.isFinite(death.x) && Number.isFinite(death.y)).toBe(true);
+    const impact = sim.visualEvents.find(event => event.type === 'impact' && event.blockId === block.id);
+    if (!impact || impact.type !== 'impact') throw new Error('Missing final impact');
+    expect(impact.removed).toHaveLength(before.filter((cell, i) => cell.alive && !block.cells[i]!.alive).length);
+    expect(death.seed).toBeGreaterThan(impact.seed);
+    block.cells[1]!.char = '?'; block.fracture.offsetX = 999;
+    expect(death.block.cells[1]!.char).toBe('x');
+    expect(death.block.fracture!.offsetX).toBe(30);
+    expect(sim.blocks).not.toContain(block);
+    expect(sim.blocksDestroyed).toBe(1);
+    sim.update(0.2);
+    expect(sim.visualEvents.filter(event => event.type === 'code-death')).toHaveLength(1);
+  });
+
+  it.each(['lint', 'grenade'] as const)('preserves a full pre-hit surface for %s kills of normal and boss code', type => {
+    for (const boss of [false, true]) {
+      const sim = game(); sim.blocks = [];
+      const block = sim.spawnBlock({ boss, x: 700, y: 350, vx: 0, vy: 0, angle: 0, code: ['x'.repeat(40)] });
+      block.cells.forEach(cell => { cell.health = 1; });
+      block.cells[0]!.alive = false;
+      if (type === 'lint') {
+        sim.selectSpecial('lint'); expect(sim.fireSpecial()).toBe(true);
+      } else {
+        sim.specials.push({ id: 19200, type: 'grenade', x: 700, y: 350, vx: 0, vy: 0, life: 1, angle: 0, fuse: 0 });
+        sim.update(1 / 120);
+      }
+      expect(block.cells.every(cell => !cell.alive)).toBe(true);
+      const deaths = sim.visualEvents.filter(event => event.type === 'code-death');
+      expect(deaths).toHaveLength(1);
+      expect(deaths[0]!.block.cells.filter(cell => cell.alive)).toHaveLength(39);
+      expect(deaths[0]!.block.boss).toBe(boss);
+      expect(deaths[0]!.radius).toBeGreaterThan(100);
+      expect(sim.blocks).not.toContain(block);
+      expect(sim.blocksDestroyed).toBe(1);
+      sim.reset();
+      expect(sim.visualEvents).toHaveLength(0);
+    }
+  });
+
 });

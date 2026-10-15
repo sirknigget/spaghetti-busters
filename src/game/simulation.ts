@@ -114,6 +114,7 @@ export interface Robot {
 export type VisualEvent =
   | { type: 'impact'; target: 'code' | 'robot'; x: number; y: number; vx: number; vy: number; radius: number; seed: number; blockId?: number; robotId?: number; removed?: { x: number; y: number; char: string; color: string }[] }
   | { type: 'split'; parent: Block; children: Block[]; seed: number }
+  | { type: 'code-death'; block: Block; x: number; y: number; vx: number; vy: number; radius: number; seed: number }
   | { type: 'robot-death'; robot: Robot; seed: number };
 
 export interface Explosion { x: number; y: number; radius: number; life: number; maxLife: number; }
@@ -884,6 +885,8 @@ export class Simulation {
   }
 
   private damage(block: Block, x: number, y: number, bullet: Pick<Bullet, "vy"> & Partial<Pick<Bullet, "vx">>, blastRadius?: number, power = 1) {
+    // Keep the last visible surface, including old holes, even when this hit clears every glyph.
+    const surfaceBeforeHit = this.snapshot(block);
     const cos = Math.cos(block.angle), sin = Math.sin(block.angle);
     const radius = blastRadius ?? (block.cells.filter(cell => cell.alive).length < 28 ? 43 : 34);
     let removed = 0;
@@ -930,9 +933,9 @@ export class Simulation {
       vx: bullet.vx ?? block.vx, vy: bullet.vy, radius, seed: ++this.visualSeed, removed: removedGlyphs });
     const remaining = block.cells.filter(cell => cell.alive);
     if (remaining.length < (block.boss ? 8 : 18) || (!block.boss && block.generation > 1 && remaining.length < 32)) {
-      // The last visible glyphs become debris too; this is only a render snapshot.
-      for (const cell of remaining) removedGlyphs.push({ x: block.x + cell.x * cos - cell.y * sin,
-        y: block.y + cell.x * sin + cell.y * cos, char: cell.char, color: cell.color });
+      this.visual({ type: 'code-death', block: surfaceBeforeHit,
+        x: block.x + x * cos - y * sin, y: block.y + x * sin + y * cos,
+        vx: bullet.vx ?? block.vx, vy: bullet.vy, radius, seed: ++this.visualSeed });
       this.blocks = this.blocks.filter(item => item.id !== block.id);
       this.score += 75 + block.generation * 25;
       this.blocksDestroyed++;

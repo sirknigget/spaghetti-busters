@@ -108,14 +108,23 @@ export class WorldRenderer {
   }
 
   private visualEvents(sim:Simulation) {
-    for(const event of sim.visualEvents.splice(0)) {
-      if(event.type==='impact') this.debris.impact(event);
+    const events=sim.visualEvents.splice(0);
+    const dying=new Set(events.filter(event=>event.type==='code-death').map(event=>event.block.id));
+    for(const event of events) {
+      if(event.type==='impact') this.debris.impact(event.target==='code'&&dying.has(event.blockId!)?{...event,removed:[]}:event);
+      else if(event.type==='code-death') {
+        const cached=this.blocks.get(event.block.id);
+        const mesh=cached??createCodeMesh(event.block);
+        if(!cached)this.placeCode(mesh,event.block);
+        this.debris.dismantleCode(mesh,event.block,event.seed,{...event,target:'code'});
+        if(!cached)disposeObject(mesh);
+      }
       else if(event.type==='robot-death') {
         let robot=this.robotMeshes.get(event.robot.id);
         if(!robot) { robot=createRobot(event.robot.brand);robot.position.set(event.robot.x,720-event.robot.y,0);animateRobot(robot,event.robot,false); }
         this.debris.dismantleRobot(robot,event.robot,event.seed);
         if(!this.robotMeshes.has(event.robot.id))disposeObject(robot);
-      } else {
+      } else if(event.type==='split') {
         const old=this.blocks.get(event.parent.id);
         // Rebuild the damaged parent first so fractures retain its new holes and surface.
         const parent=createCodeMesh(event.parent,old);
