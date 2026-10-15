@@ -1,8 +1,8 @@
 import { randomDebrisSpin } from "#root/src/game/debris/debris-spin.ts";
-import { createGlyphTexture } from "#root/src/game/rendering/glyph-texture.ts";
+import { createGlyphTexture } from "#root/src/game/graphics/glyph-texture.ts";
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
-import { loadGeometry } from "#root/src/game/rendering/models/model-assets.ts";
+import { loadGeometry } from "#root/src/game/graphics/model-assets.ts";
 import {
   LETTER,
   IMPACT,

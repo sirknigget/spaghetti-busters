@@ -3,7 +3,7 @@ export type Polygon = Point[];
 export type Edge = { a: Point; b: Point; low: number; high: number };
 export type Interval = { left: Edge; right: Edge };
 
-export interface Bounds {
+interface Bounds {
   left: number;
   right: number;
   bottom: number;
@@ -19,7 +19,7 @@ export interface GeometryOptions {
   offset: Point;
   size: { width: number; height: number };
 }
-export interface HoleBand {
+interface HoleBand {
   edges: Edge[];
   low: number;
   high: number;

@@ -1,6 +1,6 @@
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
-import type { Segment } from "#root/src/game/simulation/blocks/simulation-collision.ts";
-import { segmentDistance } from "#root/src/game/simulation/blocks/simulation-collision.ts";
+import type { Segment } from "#root/src/game/simulation/collision/simulation-collision.ts";
+import { segmentDistance } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { explode } from "#root/src/game/simulation/blocks/simulation-explode.ts";
 import {
   interceptRobot,
@@ -44,7 +44,7 @@ function grenadeFuseExpired(special: SpecialProjectile): boolean {
   return special.type === "grenade" && (special.fuse ?? 0) <= 0;
 }
 
-export function updateSpecial(
+function updateSpecial(
   sim: Simulation,
   special: SpecialProjectile,
   dt: number,
@@ -96,11 +96,7 @@ export function updateSpecials(sim: Simulation, dt: number) {
   );
 }
 
-export function moveSpecial(
-  sim: Simulation,
-  special: SpecialProjectile,
-  dt: number,
-) {
+function moveSpecial(sim: Simulation, special: SpecialProjectile, dt: number) {
   if (special.type === "homing") {
     steerHoming(sim, special, dt);
   } else {
@@ -131,7 +127,8 @@ interface SpecialHitsBlockOptions {
   oldX: number;
   oldY: number;
 }
-export function specialHitsBlock({
+
+function specialHitsBlock({
   block,
   special,
   oldX,

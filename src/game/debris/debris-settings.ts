@@ -1,7 +1,9 @@
 import settings from "#root/src/game/debris/debris-settings.json";
 
 export const HALF = 0.5;
-export const FULL_TURN = 2;
+
+const FULL_TURN = 2;
+
 export const TAU = Math.PI * FULL_TURN;
 export const VIEWPORT = settings.VIEWPORT;
 export const FLOOR_CONTACT = settings.FLOOR_CONTACT;

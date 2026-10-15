@@ -1,7 +1,7 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
 import { damage } from "#root/src/game/simulation/blocks/simulation-damage.ts";
-import { burst } from "#root/src/game/simulation/runtime/simulation-particles.ts";
+import { burst } from "#root/src/game/simulation/effects/simulation-particles.ts";
 import { damageRobot } from "#root/src/game/simulation/enemies/simulation-robots.ts";
 import {
   clamp,

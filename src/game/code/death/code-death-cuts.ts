@@ -4,15 +4,15 @@ import {
   fractureMask,
   fractureNoise,
 } from "#root/src/game/geometry/fracture/fracture-geometry.ts";
-import { type FractureVisual } from "#root/src/game/code/code-visual.ts";
+import { type FractureVisual } from "#root/src/game/code/common/code-visual.ts";
 import { clipDeathSolid } from "#root/src/game/geometry/clipping/death-clipping.ts";
-import { DEATH_FRACTURE } from "#root/src/game/code/code-settings.ts";
+import { DEATH_FRACTURE } from "#root/src/game/code/common/code-settings.ts";
 
 export interface DeathLeaf {
   regions: Polygon[];
   geometry: THREE.BufferGeometry;
 }
-export interface DeathBounds {
+interface DeathBounds {
   left: number;
   right: number;
   bottom: number;

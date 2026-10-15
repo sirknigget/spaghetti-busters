@@ -1,6 +1,6 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
-import { burst } from "#root/src/game/simulation/runtime/simulation-particles.ts";
+import { burst } from "#root/src/game/simulation/effects/simulation-particles.ts";
 import {
   AMMO_CAPACITY_MULTIPLIER,
   bonusType,

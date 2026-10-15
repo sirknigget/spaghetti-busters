@@ -94,7 +94,7 @@ export function updateBoss(sim: Simulation, dt: number) {
   sim.world.events.push("boss-spawn");
 }
 
-export function rewardBoss(sim: Simulation) {
+function rewardBoss(sim: Simulation) {
   sim.runtime.bossRewarded = true;
   sim.progress.score +=
     TUNING.boss.baseReward +
@@ -113,7 +113,7 @@ export function rewardBoss(sim: Simulation) {
   sim.world.events.push("boss-defeated");
 }
 
-export function spawnBossMinion(sim: Simulation, fragments: Block[]) {
+function spawnBossMinion(sim: Simulation, fragments: Block[]) {
   const source = fragments.reduce(
     (largest, block) =>
       block.cells.length > largest.cells.length ? block : largest,
@@ -144,7 +144,7 @@ export function spawnBossMinion(sim: Simulation, fragments: Block[]) {
   minion.bossRoot = sim.runtime.activeBossRoot;
 }
 
-export const BOSS_CODE = [
+const BOSS_CODE = [
   "export class FactoryFactoryFactory<T extends Record<string, any>> {",
   "  private factories = new WeakMap<object, Promise<FactoryFactory<T>>>();",
   "  async createFactoryFactoryFactory(input: T): Promise<any> {",
@@ -163,7 +163,7 @@ export const BOSS_CODE = [
   "  } } // generated 4,096 more services; complexity is a feature",
 ];
 
-export const MINION_CODE = [
+const MINION_CODE = [
   [
     "const service = factory(factory(input));",
     'return service.map((x: any) => eval("x"));',

@@ -13,7 +13,7 @@ const SPECIAL_KEYS = new Map<string, SpecialWeapon>([
   ["Numpad4", "lint"],
 ]);
 
-export function point(scene: PlayScene, event: PointerEvent) {
+function point(scene: PlayScene, event: PointerEvent) {
   const canvas = scene.world.renderer.domElement;
   const box = canvas.getBoundingClientRect();
 

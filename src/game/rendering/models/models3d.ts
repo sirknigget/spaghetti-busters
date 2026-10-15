@@ -1,5 +1,5 @@
 import type * as THREE from "three";
-import { instantiateModel } from "#root/src/game/rendering/models/model-assets.ts";
+import { instantiateModel } from "#root/src/game/graphics/model-assets.ts";
 
 type SpecialType = "homing" | "grenade" | "review" | "lint";
 type PickupType = "double" | "triple" | "quad" | "quint" | SpecialType;

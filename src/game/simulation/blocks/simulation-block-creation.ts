@@ -1,4 +1,4 @@
-import { CODE_SLICES } from "#root/src/game/code/code-library.ts";
+import { CODE_SLICES } from "#root/src/game/content/code-library.ts";
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
 import {
   blockCells,
@@ -91,11 +91,7 @@ const EXTRA_CODE = [
   "// TODO: ticket closed as cannot reproduce",
 ];
 
-export function blockCode(
-  sim: Simulation,
-  id: number,
-  options: SpawnBlockOptions,
-) {
+function blockCode(sim: Simulation, id: number, options: SpawnBlockOptions) {
   if (options.code) {
     return options.code;
   }
@@ -122,7 +118,7 @@ export function blockCode(
   return code;
 }
 
-export function blockToughness(sim: Simulation, options: SpawnBlockOptions) {
+function blockToughness(sim: Simulation, options: SpawnBlockOptions) {
   return options.boss
     ? TUNING.block.bossBaseToughness +
         Math.max(
@@ -135,7 +131,7 @@ export function blockToughness(sim: Simulation, options: SpawnBlockOptions) {
       );
 }
 
-export interface BlockMotionOptions {
+interface BlockMotionOptions {
   options: SpawnBlockOptions;
   width: number;
 }
@@ -157,7 +153,7 @@ function horizontalSpeed(sim: Simulation, options: SpawnBlockOptions) {
     : sim.driftSpeed + sim.random() * TUNING.block.speedRange);
 }
 
-export function blockMotion(sim: Simulation, construction: BlockMotionOptions) {
+function blockMotion(sim: Simulation, construction: BlockMotionOptions) {
   const { options, width } = construction;
 
   return {
@@ -173,7 +169,7 @@ export function blockMotion(sim: Simulation, construction: BlockMotionOptions) {
   };
 }
 
-export function blockIsAngry(
+function blockIsAngry(
   sim: Simulation,
   options: SpawnBlockOptions,
   id: number,

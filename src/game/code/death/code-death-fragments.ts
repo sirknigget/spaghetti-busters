@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { FractureVisual } from "#root/src/game/code/code-visual.ts";
+import type { FractureVisual } from "#root/src/game/code/common/code-visual.ts";
 import type {
   DeathLeaf,
   DeathContext,
@@ -14,7 +14,7 @@ import {
   HALF,
   HEADER_HEIGHT,
   DEATH_FRACTURE,
-} from "#root/src/game/code/code-settings.ts";
+} from "#root/src/game/code/common/code-settings.ts";
 
 /** The original perforated geometry is divided into independently owned visual fragments. */
 export function createDeathFragments(

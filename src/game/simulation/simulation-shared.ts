@@ -59,7 +59,7 @@ export function bonusType(roll: number): Pickup["type"] {
   return BONUS_TYPES.find(([threshold]) => roll < threshold)?.[1] ?? "quint";
 }
 
-export const CODE_KEYWORDS = new Set([
+const CODE_KEYWORDS = new Set([
   "async",
   "await",
   "function",
@@ -82,7 +82,7 @@ export const CODE_KEYWORDS = new Set([
   "undefined",
 ]);
 
-export function quotedTokenEnd(line: string, start: number): number {
+function quotedTokenEnd(line: string, start: number): number {
   for (let end = start + 1; end < line.length; end++) {
     if (line[end] === "\\") {
       end++;

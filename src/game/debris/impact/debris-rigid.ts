@@ -14,11 +14,11 @@ import {
 } from "#root/src/game/debris/debris-settings.ts";
 import { BODY } from "#root/src/game/debris/impact/debris-impact-settings.ts";
 import * as THREE from "three";
-import { disposeObject } from "#root/src/game/rendering/graphics-resources.ts";
+import { disposeObject } from "#root/src/game/graphics/graphics-resources.ts";
 
 const GRAVITY_Y = -640;
 
-export function createDebrisWorld() {
+function createDebrisWorld() {
   const world = new RAPIER.World({ x: 0, y: GRAVITY_Y, z: 0 });
 
   world.timestep = STEP.interval;
@@ -40,7 +40,7 @@ export function createDebrisWorld() {
   return world;
 }
 
-export function rigidBodyDescriptor(spawn: RigidSpawn) {
+function rigidBodyDescriptor(spawn: RigidSpawn) {
   const { mesh, halfSize, velocity, random, kind } = spawn;
 
   return RAPIER.RigidBodyDesc.dynamic()

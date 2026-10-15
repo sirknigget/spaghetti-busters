@@ -3,7 +3,7 @@ import * as THREE from "three";
 import type { Block } from "#root/src/game/simulation/simulation.ts";
 import { HEIGHT, TUMBLE } from "#root/src/game/rendering/world-settings.ts";
 
-export function codeTumble(block: Block) {
+function codeTumble(block: Block) {
   if (block.boss) {
     return block.generation > 0 ? TUMBLE.bossFragment : TUMBLE.boss;
   }

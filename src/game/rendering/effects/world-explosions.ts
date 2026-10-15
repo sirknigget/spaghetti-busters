@@ -1,7 +1,7 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
-import { loadGeometry } from "#root/src/game/rendering/models/model-assets.ts";
+import { loadGeometry } from "#root/src/game/graphics/model-assets.ts";
 import {
   EXPLOSION,
   HEIGHT,

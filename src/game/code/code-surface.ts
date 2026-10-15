@@ -7,8 +7,8 @@ import {
   HEADER_HEIGHT,
   DECIMAL_PRECISION,
   DAMAGE_ENTROPY,
-} from "#root/src/game/code/code-settings.ts";
-import { type FractureVisual } from "#root/src/game/code/code-visual.ts";
+} from "#root/src/game/code/common/code-settings.ts";
+import { type FractureVisual } from "#root/src/game/code/common/code-visual.ts";
 import { chippedHole } from "#root/src/game/geometry/fracture/fracture-geometry.ts";
 
 const HEADER_EDGE_THICKNESS = 1.5;

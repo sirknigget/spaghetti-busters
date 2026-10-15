@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "includeEntryExports": true,
+  "entry": ["src/main.ts!"],
+  "project": [
+    "src/**/*.{js,ts}!",
+    "!src/**/*.test.ts!",
+    "tests/**/*.{js,ts}",
+    "lint/**/*.{js,ts}",
+    "*.{js,ts}"
+  ],
+  "paths": {
+    "/src/*": ["src/*"],
+    "/tests/*": ["tests/*"]
+  },
+  "include": ["nsExports", "nsTypes"]
+}

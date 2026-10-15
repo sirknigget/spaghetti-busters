@@ -3,7 +3,7 @@ import * as THREE from "three";
 import {
   instantiateModel,
   loadGeometry,
-} from "#root/src/game/rendering/models/model-assets.ts";
+} from "#root/src/game/graphics/model-assets.ts";
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
 import {
   HALF,

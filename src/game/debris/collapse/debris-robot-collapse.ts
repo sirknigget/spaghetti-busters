@@ -2,7 +2,7 @@ import * as THREE from "three";
 import {
   cloneMeshResources,
   disposeObject,
-} from "#root/src/game/rendering/graphics-resources.ts";
+} from "#root/src/game/graphics/graphics-resources.ts";
 import { debrisRandom } from "#root/src/game/debris/debris-random.ts";
 import { ROBOT } from "#root/src/game/debris/impact/debris-impact-settings.ts";
 import { VIEWPORT } from "#root/src/game/debris/debris-settings.ts";

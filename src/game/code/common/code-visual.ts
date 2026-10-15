@@ -7,7 +7,7 @@ import {
   HALF,
   HEADER_HEIGHT,
   SLAB,
-} from "#root/src/game/code/code-settings.ts";
+} from "#root/src/game/code/common/code-settings.ts";
 import { createCodeCanvas } from "#root/src/game/code/code-surface.ts";
 import { inside } from "#root/src/game/geometry/fracture/sweep/fracture-intervals.ts";
 

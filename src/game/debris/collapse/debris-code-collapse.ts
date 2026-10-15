@@ -6,7 +6,7 @@ import {
 import { type Block } from "#root/src/game/simulation/simulation.ts";
 import { createCodeMesh } from "#root/src/game/code/code-solid.ts";
 import { createDeathFragments } from "#root/src/game/code/death/code-death-fragments.ts";
-import { disposeObject } from "#root/src/game/rendering/graphics-resources.ts";
+import { disposeObject } from "#root/src/game/graphics/graphics-resources.ts";
 import { debrisRandom } from "#root/src/game/debris/debris-random.ts";
 import { addLetter } from "#root/src/game/debris/impact/debris-impact.ts";
 import { HALF, VIEWPORT } from "#root/src/game/debris/debris-settings.ts";
@@ -17,7 +17,7 @@ import {
 
 const COLLAPSE_IMPACT_RADIUS = 32;
 
-export function codeHull(geometry: THREE.BufferGeometry) {
+function codeHull(geometry: THREE.BufferGeometry) {
   const positions = geometry.getAttribute("position");
   const points: number[] = [];
 

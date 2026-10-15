@@ -1,6 +1,6 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
-import { instantiateModel } from "#root/src/game/rendering/models/model-assets.ts";
+import { instantiateModel } from "#root/src/game/graphics/model-assets.ts";
 import {
   ROBOT_MOTION,
   LABEL_LAYOUT,

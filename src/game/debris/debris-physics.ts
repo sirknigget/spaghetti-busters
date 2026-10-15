@@ -17,7 +17,6 @@ import type {
   DebrisEmitter,
 } from "#root/src/game/debris/debris-types.ts";
 
-export { debrisRandom } from "#root/src/game/debris/debris-random.ts";
 export type { DebrisImpact } from "#root/src/game/debris/debris-types.ts";
 
 /** Render-only collision world: debris never changes gameplay entities or random state. */
