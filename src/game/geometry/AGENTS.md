@@ -1,0 +1,29 @@
+# Geometry foundations
+
+Geometry is a foundation with no dependency on simulation, rendering orchestration,
+code-surface builders, or application state. Three.js geometry types and outputs
+are permitted. Accept explicit geometry inputs rather than importing gameplay
+entities to obtain coordinates.
+
+## Algorithm map
+
+| Area              | Main entry points and responsibilities                                                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fracture/`       | `fracture-geometry.ts` exposes stable entropy, chipped holes, masks, and perforated solids; `fracture-solid.ts` builds the solid               |
+| `fracture/sweep/` | Interval subtraction and strip generation for visible surfaces                                                                                 |
+| `clipping/`       | `death-clipping.ts` clips an existing perforated mesh into complementary pieces; neighboring modules build bands, polygons, walls, and outputs |
+
+Keep generated contours deterministic for identical seeds and inputs. Both
+fragments must share their jagged seam, preserve the source UVs and existing hole
+walls, and avoid overlapping or missing surface area. Distant triangles are
+preserved by the death clipper; do not discard historical damage during a cut.
+Maintain front/side material-group boundaries and valid normals when modifying
+buffer construction.
+
+Runtime fracture calculations belong here; authored model vertex arrays belong
+in the project's GLB assets. Algorithm tolerances/settings live in the existing
+JSON configuration and named constants.
+
+Run the colocated fracture/clipping tests for geometry changes. Use the code
+death tests and `tests/rendering/` integration coverage when changing surface
+ownership, UVs, or the seam representation consumed by presentation.
