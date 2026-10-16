@@ -31,7 +31,7 @@ a new metric.
 | 3     | Coupling and hubs                          | Enforced               |
 | 4     | Dependency instability                     | Enforced               |
 | 5     | Circular dependencies                      | Existing gate verified |
-| 6     | Unused public symbols                      | Pending                |
+| 6     | Unused public symbols                      | Existing gate verified |
 | 7     | Feature envy, excluding lint configuration | Pending                |
 
 ## Validation policy
@@ -225,3 +225,36 @@ exceptions, or extra CI cost. **Limitation:** type-only and lazy-loading cycles
 are not universally forbidden. Directional architecture rules still constrain
 those edges where they matter; treating every such cycle as a runtime defect
 would add noise. This stage intentionally changes only this report.
+
+## 6. Unused public symbols: retain Knip, avoid overlapping dead-symbol rules
+
+The existing normal and production Knip gates already fail unused public
+exports, types, namespace exports, and other unused-code issues with zero
+allowance. Entry exports are included. Its `nsExports`/`nsTypes` additions extend
+the defaults in Knip 6.41.0; they do not restrict reporting to two issue kinds.
+Both real-project passes succeed after the refactors.
+
+A disposable application using the unchanged Knip policy and an unused named
+export fails with exit 1. A second probe with Vitest discovery and an export
+used only by a test passes normal analysis but fails production analysis with
+exit 1. This confirms independent value in retaining both existing CI jobs.
+No additional unused-export enforcer was added.
+
+Public instance methods are a remaining gap: Knip 6.41.0's issue kinds do not
+include class members. An actual implementation-only archlint `dead_symbols`
+trial failed on five supposedly dead commands: `Simulation.spawnBlock`,
+`spawnBoss`, `spawnRobot`, `spawnBonus`, and `spawnHazard`. They are all required
+by `SimulationContext` and are invoked by gameplay systems through that
+contract. The detector looks for method names in direct importers of the
+concrete class; it does not follow structural interface consumers. Deleting
+these methods would break the domain contract and gameplay. The same detector
+also checks the exports already covered by Knip, with no built-in option to
+restrict it to public methods alone.
+
+**Positive impact:** existing proven export reachability remains blocking
+without duplicate diagnostics or damage to the context abstraction introduced
+in stage 3. **Limitation:** unused public instance methods are not generally
+enforced. No claim is made that existing unused-private-member rules cover
+that gap. A future typed member-reachability analyzer would need to understand
+interface calls before it could safely fill it. This stage adds no source or
+policy exception and updates only the report.
