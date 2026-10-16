@@ -354,3 +354,15 @@ unchanged.
 nodes, and 359 graph edges. ESLint, Oxlint (including folder limits), formatting,
 all five duplicate profiles, both Knip modes, all dependency passes, and the
 remaining 91 tests pass. This cleanup changes no gameplay code.
+
+## Latest-main conflict resolution
+
+Merged `main` revision `8cfc30e`, preserving its separation of PR checks in
+`ci.yml` and main-branch deployment in `cd.yml`. The architecture check remains
+in the parallel PR matrix. Resolved the project-guide table to retain both the
+new deployment documentation and the architecture rollout link. No
+implementation code or architectural policy changed.
+
+**Validation:** formatting, Oxlint/folder limits, the implementation architecture
+scan, and all five duplicate profiles pass. Parsed both workflows and verified
+the PR-only check matrix, retained architecture gate, and main-only deployment.

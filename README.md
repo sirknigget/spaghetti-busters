@@ -23,7 +23,8 @@ Open **http://localhost:3000**. The server binds to all interfaces on port 3000.
 
 ## Deploy to Vercel
 
-GitHub Actions deploys production after all CI checks pass on a push to `main`.
+GitHub Actions runs CI on pull requests and deploys production when changes merge
+into protected `main`, without repeating the checks after merge.
 Follow the [Vercel setup guide](docs/vercel-deployment.md) to create a project and
 configure the three GitHub secrets. No MCP connection is required.
 
@@ -149,9 +150,11 @@ The anti-slop dependency is pinned to an immutable Git commit.
 
 GitHub CI checks formatting, ESLint, Oxlint, Stylelint, unit tests, the production
 build, unused code in normal and production modes, dependency integrity, and
-browser tests on pull requests and pushes to `main`. Checks run as
-independent parallel jobs, with browser tests split across two runners and one
-browser worker per runner.
+browser tests on pull requests. Checks run as independent parallel jobs, with
+browser tests split across two runners and one browser worker per runner.
+Branch protection requires passing checks and an up-to-date branch before merge.
+The separate CD workflow builds and deploys pushes to `main` without rerunning
+the lint or test jobs.
 
 `preview` serves the production build on port 3000; stop the development server first. Browser tests reuse a running development server or start one automatically. They run one browser at a time to keep software WebGL rendering responsive in CI. On headless Linux without a GPU, Mesa/EGL libraries (`libegl1`, `libegl-mesa0`, and `mesa-vulkan-drivers`) provide the real WebGL 2 context used by the tests.
 
