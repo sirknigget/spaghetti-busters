@@ -8,3 +8,4 @@ playwright-report/
 .quality-results/
 .vercel/
 .env*.local
+.vercel
