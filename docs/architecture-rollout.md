@@ -32,7 +32,7 @@ a new metric.
 | 4     | Dependency instability                     | Enforced               |
 | 5     | Circular dependencies                      | Existing gate verified |
 | 6     | Unused public symbols                      | Existing gate verified |
-| 7     | Feature envy, excluding lint configuration | Pending                |
+| 7     | Feature envy, excluding lint configuration | Withdrawn after trial  |
 
 ## Validation policy
 
@@ -258,3 +258,49 @@ enforced. No claim is made that existing unused-private-member rules cover
 that gap. A future typed member-reachability analyzer would need to understand
 interface calls before it could safely fill it. This stage adds no source or
 policy exception and updates only the report.
+
+## 7. Feature envy: withdraw the import-ratio gate after refactoring
+
+An implementation-only `feature_envy` trial at high severity and built-in
+`ratio: 3.0` fails with 71 findings. Tests, fixtures, lint code, and lint
+configuration are absent from the scan. Thresholds 5, 10, 15, and 20 still
+report 58, 22, 4, and 2 modules respectively. At 32 nothing reports: that
+would merely accommodate today's largest coordinator rather than establish a
+useful general design standard.
+
+An actual refactor moved rotated bounding extents from simulation collision
+into common math, gave it a structural rectangle input, and updated its three
+consumers. All 98 tests passed. The collision module's ratio fell from 4 to 2
+and its error disappeared; 70 reports remained. That improvement came from
+removing the imported `Block` and `HALF` names, not from eliminating foreign
+object access or improving encapsulation. Bounding extents already had a
+reasonable collision owner. The experiment was restored; no behavior or
+ownership change from this trial remains.
+
+The pinned detector divides the count of referenced imported symbols, including
+types, by referenced internal declarations plus one. Its numerator sums imports
+from every source, yet its message names just one “envied” module. The facade's
+ratio is 31 and the update scheduler's is 21: delegating work to focused systems
+is exactly what makes those import counts high. Independent geometry, audio,
+rendering, and debris algorithms also report simply for using their inputs and
+settings. The heuristic does not measure a method's access to another object's
+data, which is the design question we wanted to enforce.
+
+**Impact:** making these 71 findings blocking would pressure the project toward
+merging focused systems, copying types/settings, or adding artificial internal
+references. The actual trial and threshold sweep provide no defensible generic
+cutoff that separates those cases from poor ownership. The feature-envy rule
+was removed after the experiment, leaving all prior gates passing. This keeps
+modular composition without claiming that real feature envy is statically
+covered. Complexity, cohesion, coupling, and directional boundaries provide
+useful complementary checks, but are not equivalent feature-envy detection.
+
+## Retained outcome
+
+Module cohesion, coupling, hub modules, and dependency instability now fail as
+errors in the implementation-only architecture job. Existing dependency-cruiser
+and Knip jobs remain the sole cycle and unused-export enforcers. LCOM and the
+feature-envy heuristic were withdrawn after actual refactor trials; unused
+public instance methods remain a documented analyzer gap. There are no issue
+baselines, per-finding suppressions, new warning-only gates, or relaxed existing
+policies. Guides describe the new domain and canvas ownership contracts.
