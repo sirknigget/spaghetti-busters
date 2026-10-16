@@ -24,15 +24,15 @@ a new metric.
 
 ## Ordered stages
 
-| Stage | Constraint                                 | Status                |
-| ----- | ------------------------------------------ | --------------------- |
-| 1     | Class cohesion (`lcom`)                    | Withdrawn after trial |
-| 2     | Module cohesion                            | Enforced              |
-| 3     | Coupling and hubs                          | Enforced              |
-| 4     | Dependency instability                     | Enforced              |
-| 5     | Circular dependencies                      | Pending               |
-| 6     | Unused public symbols                      | Pending               |
-| 7     | Feature envy, excluding lint configuration | Pending               |
+| Stage | Constraint                                 | Status                 |
+| ----- | ------------------------------------------ | ---------------------- |
+| 1     | Class cohesion (`lcom`)                    | Withdrawn after trial  |
+| 2     | Module cohesion                            | Enforced               |
+| 3     | Coupling and hubs                          | Enforced               |
+| 4     | Dependency instability                     | Enforced               |
+| 5     | Circular dependencies                      | Existing gate verified |
+| 6     | Unused public symbols                      | Pending                |
+| 7     | Feature envy, excluding lint configuration | Pending                |
 
 ## Validation policy
 
@@ -201,3 +201,27 @@ that produces an SDP error. All retained architecture checks, unused analysis,
 and dependency passes passed. Rendering integration is rerunning for the
 canvas ownership change. The launcher now derives detector selection from the
 configuration's rule keys, avoiding a second hand-maintained enforcement list.
+
+## 5. Circular dependencies: keep dependency-cruiser as the sole enforcer
+
+No archlint cycle detector was added. The existing full graph blocks runtime
+module cycles as errors; its edge filters exclude erased types and dynamic
+imports from that cycle definition. The separate eager runtime graph blocks
+folder cycles while avoiding false cycles assembled from erased type imports.
+A third graph protects runtime architecture through dynamic imports. These
+policies already give more precise coverage than a second mixed-edge cycle
+heuristic would add here.
+
+An isolated three-module probe with no file cycle but an A-folder → B-folder →
+A-folder path failed `no-runtime-folder-cycles` with two errors (exit 2).
+Connecting its last file back to the first failed `no-circular` with one error
+(exit 1). The real project passes all three existing graph passes after the
+prior refactors, as well as the retained archlint gates. No cycle finding needed
+a source fix. No new constraint was applied to tests or lint tooling; existing
+checks retain their existing broader integrity scope.
+
+**Positive impact:** proven blocking coverage with no duplicate rules, new
+exceptions, or extra CI cost. **Limitation:** type-only and lazy-loading cycles
+are not universally forbidden. Directional architecture rules still constrain
+those edges where they matter; treating every such cycle as a runtime defect
+would add noise. This stage intentionally changes only this report.
