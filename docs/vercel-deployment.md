@@ -1,9 +1,12 @@
 # Deploy to Vercel from GitHub Actions
 
-The `Deploy to Vercel` job in `.github/workflows/ci.yml` runs after every check
-and both browser-test shards succeed on a push to `main`. Pull requests run CI
-without deploying or accessing deployment credentials. No Vercel MCP connection
-is required.
+CI in `.github/workflows/ci.yml` runs all checks and both browser-test shards on
+pull requests. Existing branch protection requires passing checks and an
+up-to-date branch before merging into `main`.
+
+The `Deploy to Vercel` job in `.github/workflows/cd.yml` builds and deploys on a
+push to `main`, without repeating the CI checks. Pull requests do not deploy or
+access deployment credentials. No Vercel MCP connection is required.
 
 ## Create or link the Vercel project
 
@@ -64,17 +67,17 @@ variables or external services.
 
 ## First deployment and retries
 
-Merge the workflow into `main` after configuring the secrets. In GitHub's
-**Actions → CI** view, all checks must pass before **Deploy to Vercel** starts.
-The job pulls production project settings, creates Vercel Build Output locally,
-and uploads that output using `vercel deploy --prebuilt --prod --yes`.
+Merge the workflow into `main` after configuring the secrets and passing PR CI.
+In GitHub's **Actions → CD** view, **Deploy to Vercel** starts on the push to
+`main`. The job pulls production project settings, creates Vercel Build Output
+locally, and uploads that output using `vercel deploy --prebuilt --prod --yes`.
 The deployment URL appears in the job summary and the GitHub `production`
 environment. Open it and start a game to confirm assets and audio load.
 
 If secrets were missing during the first run, add them and use **Re-run failed
 jobs** on that `main` run. An expired token requires replacing `VERCEL_TOKEN`.
 For project or authorization errors, check both IDs, token scope, and account
-permissions. A failed CI check prevents deployment; fix it and push through a PR.
+permissions. A failed PR CI check prevents merging; fix it and push through the PR.
 Re-running an older successful `main` run redeploys that older commit, so choose
 the latest run when retrying a release.
 
