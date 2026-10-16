@@ -304,3 +304,32 @@ feature-envy heuristic were withdrawn after actual refactor trials; unused
 public instance methods remain a documented analyzer gap. There are no issue
 baselines, per-finding suppressions, new warning-only gates, or relaxed existing
 policies. Guides describe the new domain and canvas ownership contracts.
+
+## Final integration and validation
+
+Merged the newer `main` revision `e5c71b7` after all seven stage commits. Its
+Vercel deployment workflow and documentation are preserved; the parallel
+architecture job remains part of the checks required before main deployment.
+No deployment is performed by this PR. A pre-existing local `.vercel` ignore
+addition was preserved outside the rollout commits.
+
+On the combined tree, `npm run lint` passed every source, CSS, duplicate
+(all five profiles), normal/production unused, dependency, and architecture
+check. All 98 unit/policy tests passed, as did type-check and production build.
+The existing large bundle-size advisory remains; this rollout does not change
+bundling policy. Formatting and folder limits passed.
+
+Browser validation passed 13 interface/rendering scenarios after the module
+refactor, then all seven rendering scenarios after canvas injection. Additional
+Playwright smoke checks exercised firing, pause, fresh-run reset, portrait touch
+menu, and landscape touch play with zero page/asset errors. Screenshots of
+1440×900 gameplay/pause, 390×844 menu, and 844×390 touch gameplay were inspected:
+code surfaces and glyphs render, HUD/controls remain visible, and pause/menu
+layouts are intact. Local evidence is under
+`.quality-results/architecture-playtest/` (ignored generated output).
+The PR's CI repeats the full suite, including both browser shards, on its
+current head; its checks are the authoritative review-readiness result.
+
+The seven stage commits were pushed individually in the requested order;
+this final integration commit only syncs main, adds guide links, and records
+validation. The cumulative report was updated in every stage commit.
