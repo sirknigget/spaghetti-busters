@@ -3,7 +3,7 @@ import {
   HULL,
   COLLAPSE,
 } from "#root/src/game/debris/impact/debris-impact-settings.ts";
-import { type Block } from "#root/src/game/simulation/simulation.ts";
+import { type Block } from "#root/src/game/simulation/simulation-types.ts";
 import { createCodeMesh } from "#root/src/game/code/code-solid.ts";
 import { createDeathFragments } from "#root/src/game/code/death/code-death-fragments.ts";
 import { disposeObject } from "#root/src/game/graphics/graphics-resources.ts";

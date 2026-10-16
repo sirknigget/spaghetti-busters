@@ -1,6 +1,6 @@
 import crackArtwork from "#root/src/game/code/assets/code-cracks.svg?raw";
 import { PALETTE } from "#root/src/game/palette.ts";
-import { type Block } from "#root/src/game/simulation/simulation.ts";
+import { type Block } from "#root/src/game/simulation/simulation-types.ts";
 import {
   HALF,
   DIAMETER,

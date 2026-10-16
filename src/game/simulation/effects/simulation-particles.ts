@@ -1,4 +1,4 @@
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import { FULL_TURN_RADIANS } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {
@@ -14,7 +14,10 @@ interface BurstOptions {
   color: string;
   count: number;
 }
-export function burst(sim: Simulation, { x, y, color, count }: BurstOptions) {
+export function burst(
+  sim: SimulationContext,
+  { x, y, color, count }: BurstOptions,
+) {
   for (let i = 0; i < count; i++) {
     const angle = sim.random() * FULL_TURN_RADIANS;
     const speed =
@@ -36,7 +39,7 @@ export function burst(sim: Simulation, { x, y, color, count }: BurstOptions) {
   }
 }
 
-export function visual(sim: Simulation, event: VisualEvent) {
+export function visual(sim: SimulationContext, event: VisualEvent) {
   sim.world.visualEvents.push(event);
   if (sim.world.visualEvents.length > TUNING.bounds.visualEventCap) {
     sim.world.visualEvents.splice(

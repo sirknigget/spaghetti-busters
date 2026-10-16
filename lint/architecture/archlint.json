@@ -25,6 +25,17 @@
     },
     "lcom": {
       "exclude": ["**/*"]
+    },
+    "high_coupling": {
+      "severity": "high",
+      "max_cbo": 30,
+      "exclude": ["**/*-types.ts", "**/*-settings.ts", "**/*-config.ts"]
+    },
+    "hub_module": {
+      "severity": "high",
+      "min_fan_in": 8,
+      "min_fan_out": 8,
+      "max_complexity": 5
     }
   },
   "tsconfig": false

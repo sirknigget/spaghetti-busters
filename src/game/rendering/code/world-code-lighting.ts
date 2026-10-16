@@ -1,6 +1,6 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
-import type { Block } from "#root/src/game/simulation/simulation.ts";
+import type { Block } from "#root/src/game/simulation/simulation-types.ts";
 import { HEIGHT, TUMBLE } from "#root/src/game/rendering/world-settings.ts";
 
 function codeTumble(block: Block) {

@@ -1,5 +1,5 @@
 import { PALETTE } from "#root/src/game/palette.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import { triggerMagic } from "#root/src/game/simulation/progression/simulation-bonuses.ts";
 import { split } from "#root/src/game/simulation/blocks/simulation-fragments.ts";
 import {
@@ -38,7 +38,7 @@ function damageContext(options: DamageOptions): DamageContext {
   };
 }
 
-function scoreDamage(sim: Simulation, removed: number) {
+function scoreDamage(sim: SimulationContext, removed: number) {
   sim.progress.combo = Math.min(TUNING.damage.comboCap, sim.progress.combo + 1);
   sim.runtime.comboTimer = COMBO_LIFETIME_SECONDS;
   sim.progress.score +=
@@ -59,7 +59,11 @@ function shouldDestroyBlock(block: Block, remaining: number): boolean {
   return remaining < deathCells || isSpentFragment(block, remaining);
 }
 
-function shouldSplitBlock(sim: Simulation, block: Block, remaining: number) {
+function shouldSplitBlock(
+  sim: SimulationContext,
+  block: Block,
+  remaining: number,
+) {
   const splitHits = block.boss
     ? TUNING.damage.bossBaseSplitHits +
       block.toughness * TUNING.damage.bossSplitHitsPerArmor
@@ -72,7 +76,7 @@ function shouldSplitBlock(sim: Simulation, block: Block, remaining: number) {
   );
 }
 
-function finishDamage(sim: Simulation, hit: DamageContext) {
+function finishDamage(sim: SimulationContext, hit: DamageContext) {
   const { block, x, y } = hit;
   const remaining = block.cells.filter((cell) => cell.alive);
 
@@ -83,7 +87,7 @@ function finishDamage(sim: Simulation, hit: DamageContext) {
   }
 }
 
-export function damage(sim: Simulation, options: DamageOptions) {
+export function damage(sim: SimulationContext, options: DamageOptions) {
   const hit = damageContext(options);
 
   removeGlyphs(sim, hit);
@@ -105,7 +109,7 @@ function impactMotion(hit: DamageContext) {
   };
 }
 
-function showImpact(sim: Simulation, hit: DamageContext) {
+function showImpact(sim: SimulationContext, hit: DamageContext) {
   visual(sim, {
     type: "impact",
     target: "code",
@@ -116,7 +120,7 @@ function showImpact(sim: Simulation, hit: DamageContext) {
   });
 }
 
-function destroyBlock(sim: Simulation, hit: DamageContext) {
+function destroyBlock(sim: SimulationContext, hit: DamageContext) {
   const { block, surfaceBeforeHit } = hit;
 
   visual(sim, {
@@ -185,7 +189,7 @@ export interface DamageContext extends DamageOptions {
   removedGlyphs: RemovedGlyph[];
 }
 
-function glyphParticle(sim: Simulation, glyph: RemovedGlyph) {
+function glyphParticle(sim: SimulationContext, glyph: RemovedGlyph) {
   const life =
     TUNING.particles.glyphBaseLife +
     sim.random() * TUNING.particles.glyphLifeRange;
@@ -204,7 +208,7 @@ function glyphParticle(sim: Simulation, glyph: RemovedGlyph) {
   });
 }
 
-function removeGlyphs(sim: Simulation, hit: DamageContext) {
+function removeGlyphs(sim: SimulationContext, hit: DamageContext) {
   const { block, x, y, radius, cos, sin, power } = hit;
 
   for (const cell of block.cells) {

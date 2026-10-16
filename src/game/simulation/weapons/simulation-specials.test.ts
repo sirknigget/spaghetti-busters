@@ -2,9 +2,9 @@ import { expect, it } from "vitest";
 import { game, hitCell } from "#root/tests/unit/simulation-support.ts";
 import {
   Block,
-  Simulation,
   SPECIAL_BLASTS,
-} from "#root/src/game/simulation/simulation.ts";
+} from "#root/src/game/simulation/simulation-types.ts";
+import { Simulation } from "#root/src/game/simulation/simulation.ts";
 
 it("homing prioritizes the rotated left edge over distance or center and follows changing urgency", () => {
   const sim = game();

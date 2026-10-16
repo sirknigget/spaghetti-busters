@@ -1,5 +1,5 @@
 import { PALETTE } from "#root/src/game/palette.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import { damage } from "#root/src/game/simulation/blocks/simulation-damage.ts";
 import { burst } from "#root/src/game/simulation/effects/simulation-particles.ts";
 import { damageRobot } from "#root/src/game/simulation/enemies/simulation-robots.ts";
@@ -16,7 +16,7 @@ export interface ExplodeOptions {
   power: number;
 }
 export function explode(
-  sim: Simulation,
+  sim: SimulationContext,
   { x, y, radius, power }: ExplodeOptions,
 ) {
   sim.world.explosions.push({
@@ -43,7 +43,10 @@ export function explode(
   blastBlocks(sim, { x, y, radius, power });
 }
 
-function blastRobots(sim: Simulation, { x, y, radius, power }: ExplodeOptions) {
+function blastRobots(
+  sim: SimulationContext,
+  { x, y, radius, power }: ExplodeOptions,
+) {
   for (const robot of sim.world.robots) {
     const nearX = clamp(
       x,
@@ -69,7 +72,10 @@ function blastRobots(sim: Simulation, { x, y, radius, power }: ExplodeOptions) {
   }
 }
 
-function blastBlocks(sim: Simulation, { x, y, radius, power }: ExplodeOptions) {
+function blastBlocks(
+  sim: SimulationContext,
+  { x, y, radius, power }: ExplodeOptions,
+) {
   for (const block of sim.world.blocks) {
     const cos = Math.cos(block.angle);
     const sin = Math.sin(block.angle);

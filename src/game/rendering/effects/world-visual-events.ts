@@ -1,8 +1,6 @@
 import * as THREE from "three";
-import type {
-  Simulation,
-  Block,
-} from "#root/src/game/simulation/simulation.ts";
+import type { Block } from "#root/src/game/simulation/simulation-types.ts";
+import type { SimulationView } from "#root/src/game/simulation/common/simulation-context.ts";
 import {
   createCodeMesh,
   createFragmentMesh,
@@ -17,7 +15,7 @@ import type { WorldCode } from "#root/src/game/rendering/code/world-code.ts";
 import { placeCode } from "#root/src/game/rendering/code/world-code-lighting.ts";
 import { HEIGHT } from "#root/src/game/rendering/world-settings.ts";
 
-type VisualEvent = Simulation["world"]["visualEvents"][number];
+type VisualEvent = SimulationView["world"]["visualEvents"][number];
 type CodeDeath = Extract<VisualEvent, { type: "code-death" }>;
 type RobotDeath = Extract<VisualEvent, { type: "robot-death" }>;
 type Split = Extract<VisualEvent, { type: "split" }>;
@@ -39,7 +37,7 @@ export class WorldVisualEvents {
     this.debris = targets.debris;
   }
 
-  process(sim: Simulation) {
+  process(sim: SimulationView) {
     const events = sim.world.visualEvents.splice(0);
     const dying = new Set(
       events

@@ -2,7 +2,7 @@ import {
   type Polygon,
   type Point,
 } from "#root/src/game/geometry/fracture/fracture-types.ts";
-import { type Block } from "#root/src/game/simulation/simulation.ts";
+import { type Block } from "#root/src/game/simulation/simulation-types.ts";
 import {
   HALF,
   HEADER_HEIGHT,

@@ -2,9 +2,9 @@ import { expect, it } from "vitest";
 import { game, hitCell } from "#root/tests/unit/simulation-support.ts";
 import {
   Robot,
-  Simulation,
   TIMEOUT_METRICS,
-} from "#root/src/game/simulation/simulation.ts";
+} from "#root/src/game/simulation/simulation-types.ts";
+import { Simulation } from "#root/src/game/simulation/simulation.ts";
 
 it("keeps boss drift slow, glyphs armored and fragmentation harder than ordinary code", () => {
   const sim = game();

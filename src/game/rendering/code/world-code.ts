@@ -1,9 +1,7 @@
 import { disposeObjectMap } from "#root/src/game/graphics/graphics-resources.ts";
 import * as THREE from "three";
-import type {
-  Simulation,
-  Block,
-} from "#root/src/game/simulation/simulation.ts";
+import type { Block } from "#root/src/game/simulation/simulation-types.ts";
+import type { SimulationView } from "#root/src/game/simulation/common/simulation-context.ts";
 import {
   createCodeMesh,
   disposeObject,
@@ -29,7 +27,7 @@ export class WorldCode {
     private readonly reducedMotion: boolean,
   ) {}
 
-  update(sim: Simulation, effectsDt: number) {
+  update(sim: SimulationView, effectsDt: number) {
     const alive = new Set(sim.world.blocks.map((b) => b.id));
 
     for (const [id, mesh] of this.blocks) {

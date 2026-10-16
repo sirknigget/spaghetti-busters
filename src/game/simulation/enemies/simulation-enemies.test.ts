@@ -3,9 +3,9 @@ import { game } from "#root/tests/unit/simulation-support.ts";
 import {
   LINT_SMALL_BLOCK_CELLS,
   Robot,
-  Simulation,
   type RobotBrand,
-} from "#root/src/game/simulation/simulation.ts";
+} from "#root/src/game/simulation/simulation-types.ts";
+import { Simulation } from "#root/src/game/simulation/simulation.ts";
 
 it("lets a damaged armored robot survive and finish generating code before leaving", () => {
   const sim = game();

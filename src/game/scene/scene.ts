@@ -1,8 +1,6 @@
 import { preloadModels } from "#root/src/game/graphics/model-assets.ts";
-import type {
-  Simulation,
-  SpecialWeapon,
-} from "#root/src/game/simulation/simulation.ts";
+import type { SpecialWeapon } from "#root/src/game/simulation/simulation-types.ts";
+import type { Simulation } from "#root/src/game/simulation/simulation.ts";
 import { WorldRenderer } from "#root/src/game/rendering/world3d.ts";
 import { PlayScene } from "#root/src/game/scene/play-scene.ts";
 

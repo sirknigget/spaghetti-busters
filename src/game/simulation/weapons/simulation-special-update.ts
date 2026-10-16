@@ -1,4 +1,4 @@
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import type { Segment } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { segmentDistance } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { explode } from "#root/src/game/simulation/blocks/simulation-explode.ts";
@@ -18,7 +18,7 @@ import {
 const GRENADE_BOUNCE_RESTITUTION = -0.65;
 
 function specialHitsRobot(
-  sim: Simulation,
+  sim: SimulationContext,
   special: SpecialProjectile,
   travel: Segment,
 ) {
@@ -42,7 +42,7 @@ function grenadeFuseExpired(special: SpecialProjectile): boolean {
 }
 
 function updateSpecial(
-  sim: Simulation,
+  sim: SimulationContext,
   special: SpecialProjectile,
   dt: number,
 ) {
@@ -76,7 +76,7 @@ function updateSpecial(
   }
 }
 
-export function updateSpecials(sim: Simulation, dt: number) {
+export function updateSpecials(sim: SimulationContext, dt: number) {
   for (const explosion of sim.world.explosions) {
     explosion.life -= dt;
   }
@@ -93,7 +93,11 @@ export function updateSpecials(sim: Simulation, dt: number) {
   );
 }
 
-function moveSpecial(sim: Simulation, special: SpecialProjectile, dt: number) {
+function moveSpecial(
+  sim: SimulationContext,
+  special: SpecialProjectile,
+  dt: number,
+) {
   if (special.type === "homing") {
     steerHoming(sim, special, dt);
   } else {

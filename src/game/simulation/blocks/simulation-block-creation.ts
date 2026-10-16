@@ -1,5 +1,5 @@
 import { CODE_SLICES } from "#root/src/game/content/code-library.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import {
   blockCells,
   type CellLayout,
@@ -28,7 +28,10 @@ interface BlockConstruction extends CellLayout {
   code: string[];
 }
 
-function createBlock(sim: Simulation, construction: BlockConstruction): Block {
+function createBlock(
+  sim: SimulationContext,
+  construction: BlockConstruction,
+): Block {
   const { id, width, height, toughness, options, code } = construction;
 
   return {
@@ -57,7 +60,7 @@ function createBlock(sim: Simulation, construction: BlockConstruction): Block {
 }
 
 export function spawnBlock(
-  sim: Simulation,
+  sim: SimulationContext,
   options: SpawnBlockOptions = {},
 ): Block {
   const id = sim.runtime.nextId++;
@@ -89,7 +92,11 @@ const EXTRA_CODE = [
   "// TODO: ticket closed as cannot reproduce",
 ];
 
-function blockCode(sim: Simulation, id: number, options: SpawnBlockOptions) {
+function blockCode(
+  sim: SimulationContext,
+  id: number,
+  options: SpawnBlockOptions,
+) {
   if (options.code) {
     return options.code;
   }
@@ -116,7 +123,7 @@ function blockCode(sim: Simulation, id: number, options: SpawnBlockOptions) {
   return code;
 }
 
-function blockToughness(sim: Simulation, options: SpawnBlockOptions) {
+function blockToughness(sim: SimulationContext, options: SpawnBlockOptions) {
   return options.boss
     ? TUNING.block.bossBaseToughness +
         Math.max(
@@ -134,7 +141,7 @@ interface BlockMotionOptions {
   width: number;
 }
 
-function verticalSpeed(sim: Simulation) {
+function verticalSpeed(sim: SimulationContext) {
   return (
     (sim.random() - HALF) *
     Math.min(
@@ -145,13 +152,13 @@ function verticalSpeed(sim: Simulation) {
   );
 }
 
-function horizontalSpeed(sim: Simulation, options: SpawnBlockOptions) {
+function horizontalSpeed(sim: SimulationContext, options: SpawnBlockOptions) {
   return -(options.boss
     ? bossDriftSpeed(sim)
     : sim.driftSpeed + sim.random() * TUNING.block.speedRange);
 }
 
-function blockMotion(sim: Simulation, construction: BlockMotionOptions) {
+function blockMotion(sim: SimulationContext, construction: BlockMotionOptions) {
   const { options, width } = construction;
 
   return {
@@ -168,7 +175,7 @@ function blockMotion(sim: Simulation, construction: BlockMotionOptions) {
 }
 
 function blockIsAngry(
-  sim: Simulation,
+  sim: SimulationContext,
   options: SpawnBlockOptions,
   id: number,
 ): boolean {

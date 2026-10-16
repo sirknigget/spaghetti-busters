@@ -2,10 +2,10 @@ import { expect, it } from "vitest";
 import { game, hitCell } from "#root/tests/unit/simulation-support.ts";
 import {
   PRIMARY_AMMO,
-  Simulation,
   SPECIAL_AMMO_CAPS,
   type Pickup,
-} from "#root/src/game/simulation/simulation.ts";
+} from "#root/src/game/simulation/simulation-types.ts";
+import { Simulation } from "#root/src/game/simulation/simulation.ts";
 
 const keywords: [string, Pickup["type"]][] = [
   ["DOUBLE_SHOT", "double"],

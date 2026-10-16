@@ -1,5 +1,5 @@
 import { PALETTE } from "#root/src/game/palette.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import { burst } from "#root/src/game/simulation/effects/simulation-particles.ts";
 import {
   AMMO_CAPACITY_MULTIPLIER,
@@ -28,7 +28,7 @@ interface SpawnBonusOptions {
   y?: number;
 }
 export function spawnBonus(
-  sim: Simulation,
+  sim: SimulationContext,
   {
     type,
     x = BONUS_START_X,
@@ -55,7 +55,7 @@ export function spawnBonus(
   return pickup;
 }
 
-export function collectPickup(sim: Simulation, pickup: Pickup) {
+export function collectPickup(sim: SimulationContext, pickup: Pickup) {
   if (pickup.type in SPECIAL_AMMO_CAPS) {
     // SAFETY: Every key in SPECIAL_AMMO_CAPS is a SpecialWeapon.
     const type = pickup.type as SpecialWeapon;
@@ -93,7 +93,7 @@ interface TriggerMagicOptions {
   worldY: number;
 }
 export function triggerMagic(
-  sim: Simulation,
+  sim: SimulationContext,
   { cell, worldX, worldY }: TriggerMagicOptions,
 ) {
   if (
@@ -117,7 +117,7 @@ export function triggerMagic(
   }
 }
 
-function grantAmmo(sim: Simulation) {
+function grantAmmo(sim: SimulationContext) {
   sim.player.ammo = Math.min(
     sim.player.weapon === "single"
       ? SINGLE_WEAPON_AMMO_CAP
@@ -128,7 +128,7 @@ function grantAmmo(sim: Simulation) {
   grantCacheSpecial(sim);
 }
 
-function grantCacheSpecial(sim: Simulation) {
+function grantCacheSpecial(sim: SimulationContext) {
   if (sim.runtime.ammoCaches % TUNING.damage.cachesPerSpecial === 0) {
     const type: SpecialWeapon = (
       ["homing", "grenade", "review", "lint"] as const

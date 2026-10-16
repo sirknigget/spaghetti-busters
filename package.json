@@ -24,7 +24,7 @@
     "lint:unused": "knip",
     "lint:unused:production": "knip --production",
     "lint:dependencies": "depcruise --config .dependency-cruiser.json src tests lint *.config.ts && depcruise --config lint/dependencies/runtime.json src && depcruise --config lint/dependencies/architecture.json src",
-    "lint:architecture": "archlint scan src --config lint/architecture/archlint.json --detectors module_cohesion,lcom --no-cache --no-git"
+    "lint:architecture": "node lint/architecture/check.js"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",

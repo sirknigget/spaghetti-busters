@@ -1,4 +1,4 @@
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import { extents } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { bossDriftSpeed } from "#root/src/game/simulation/progression/simulation-progression.ts";
 import {
@@ -11,7 +11,7 @@ import { GAME_WIDTH } from "#root/src/game/simulation/simulation-types.ts";
 
 const BOUNCE_SPIN_FACTOR = -0.7;
 
-export function advanceAnger(sim: Simulation, block: Block, dt: number) {
+export function advanceAnger(sim: SimulationContext, block: Block, dt: number) {
   block.age += dt;
   if (block.angry) {
     block.throwTimer -= dt;
@@ -27,7 +27,7 @@ export function advanceAnger(sim: Simulation, block: Block, dt: number) {
   }
 }
 
-function limitBossVelocity(sim: Simulation, block: Block) {
+function limitBossVelocity(sim: SimulationContext, block: Block) {
   if (block.boss) {
     block.vx = clamp(
       block.vx,
@@ -42,7 +42,7 @@ function limitBossVelocity(sim: Simulation, block: Block) {
   }
 }
 
-export function moveBlock(sim: Simulation, block: Block, dt: number) {
+export function moveBlock(sim: SimulationContext, block: Block, dt: number) {
   block.vx +=
     (-(block.boss ? bossDriftSpeed(sim) : sim.driftSpeed) - block.vx) *
     dt *
@@ -63,7 +63,7 @@ export function moveBlock(sim: Simulation, block: Block, dt: number) {
   }
 }
 
-export function checkBlockBoundary(sim: Simulation, block: Block) {
+export function checkBlockBoundary(sim: SimulationContext, block: Block) {
   const extent = extents(block);
 
   if (block.y - extent.y < TUNING.motion.topBoundary) {
@@ -101,7 +101,7 @@ export function checkBlockBoundary(sim: Simulation, block: Block) {
   return true;
 }
 
-function throwException(sim: Simulation, block: Block) {
+function throwException(sim: SimulationContext, block: Block) {
   const labels = [
     ['throw new Error("oops");'],
     ["TypeError: any is not a function"],
@@ -211,7 +211,7 @@ function separate(a: Block, b: Block, hit: Contact) {
   impulse(a, b, hit);
 }
 
-export function collideBlocks(sim: Simulation) {
+export function collideBlocks(sim: SimulationContext) {
   for (let i = 0; i < sim.world.blocks.length; i++) {
     const a = sim.world.blocks[i]!;
 

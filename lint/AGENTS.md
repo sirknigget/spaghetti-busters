@@ -6,19 +6,19 @@ Every enforced policy must run as a blocking CI check.
 
 ## Policy map
 
-| Location                                    | Responsibility                                                                             |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `eslint.config.ts`                          | ESLint composition, scope overrides, built-in color restrictions                           |
-| `.oxlintrc.json`                            | Type-aware Oxlint, anti-slop, built-in import restrictions, custom plugin registration     |
-| `.stylelintrc.json`                         | CSS policy and palette exceptions                                                          |
-| `limits.ts`, `spacing.ts`                   | ESLint size/signature/member limits and readable statement spacing                         |
-| `numeric-policy.ts`, `import-policy.ts`     | Numeric constants and import forms needing ESLint coverage                                 |
-| `project-plugin.js`, `folder-limits.js`     | Oxlint plugin and complete `src`/`tests` folder scan                                       |
-| `tests/`                                    | Lint behavior tests, including limits and spacing                                          |
-| `.jscpd.json`, `package.json` scripts       | Five blocking duplicate profiles                                                           |
-| `architecture/archlint.json`                | Implementation cohesion and graph metrics; `lcom` selection only enables symbol collection |
-| `knip.json`                                 | Normal/production entry discovery, export and dependency reachability                      |
-| `.dependency-cruiser.json`, `dependencies/` | Typed integrity graph, eager folder graph, runtime architecture graph                      |
+| Location                                    | Responsibility                                                                         |
+| ------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `eslint.config.ts`                          | ESLint composition, scope overrides, built-in color restrictions                       |
+| `.oxlintrc.json`                            | Type-aware Oxlint, anti-slop, built-in import restrictions, custom plugin registration |
+| `.stylelintrc.json`                         | CSS policy and palette exceptions                                                      |
+| `limits.ts`, `spacing.ts`                   | ESLint size/signature/member limits and readable statement spacing                     |
+| `numeric-policy.ts`, `import-policy.ts`     | Numeric constants and import forms needing ESLint coverage                             |
+| `project-plugin.js`, `folder-limits.js`     | Oxlint plugin and complete `src`/`tests` folder scan                                   |
+| `tests/`                                    | Lint behavior tests, including limits and spacing                                      |
+| `.jscpd.json`, `package.json` scripts       | Five blocking duplicate profiles                                                       |
+| `architecture/archlint.json`                | Cohesion and graph metrics; `check.js` scans a source snapshot without tests/fixtures  |
+| `knip.json`                                 | Normal/production entry discovery, export and dependency reachability                  |
+| `.dependency-cruiser.json`, `dependencies/` | Typed integrity graph, eager folder graph, runtime architecture graph                  |
 
 Paths above without a local match refer to repository-root configuration.
 
@@ -42,3 +42,8 @@ formatting. Run all duplicate profiles for refactors or new documentation. Keep
 the independent jobs in `.github/workflows/ci.yml` parallel. Cold semantic scans
 download the pinned embedding model and take longer than ordinary syntax lint;
 the CI cache is configured in that workflow.
+
+Archlint 0.17.1 needs `lcom` selected to collect cohesion symbols; its wildcard
+rule exclusion disables LCOM findings. The source snapshot also prevents ignored
+test imports from contributing to graph metrics. Policy tests protect both
+workarounds; keep the pinned analyzer version and detector list aligned.

@@ -1,7 +1,7 @@
 import { $, HUD, specialTypes } from "#root/src/ui-dom.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationView } from "#root/src/game/simulation/common/simulation-context.ts";
 
-export function updateHud(s: Simulation) {
+export function updateHud(s: SimulationView) {
   $("#score").textContent = String(s.progress.score).padStart(
     HUD.scoreDigits,
     "0",
@@ -32,7 +32,7 @@ export function updateHud(s: Simulation) {
   updateStatus(s);
 }
 
-function updateBossHealth(s: Simulation) {
+function updateBossHealth(s: SimulationView) {
   const bossHealth = s.bossHealth;
 
   $("#boss-health").hidden = !bossHealth || bossHealth.current <= 0;
@@ -55,7 +55,7 @@ function updateBossHealth(s: Simulation) {
   }
 }
 
-function updateSpecialWeapons(s: Simulation) {
+function updateSpecialWeapons(s: SimulationView) {
   for (const type of specialTypes) {
     $(`#${type}-ammo`).textContent = String(s.player.specialAmmo[type]);
 
@@ -67,7 +67,7 @@ function updateSpecialWeapons(s: Simulation) {
   }
 }
 
-function updateStatus(s: Simulation) {
+function updateStatus(s: SimulationView) {
   $("#game-screen").classList.toggle("stunned", s.isStunned);
   $("#game-screen").classList.toggle("reviewing", s.player.freezeRemaining > 0);
   if (s.player.freezeRemaining > 0) {

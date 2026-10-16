@@ -9,11 +9,11 @@ through `sim.random()` so deterministic fixtures remain reproducible.
 
 | Path                                                    | Ownership                                                                          |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `simulation.ts`                                         | Public facade delegating to focused systems                                        |
+| `simulation.ts`                                         | Public facade implementing `SimulationContext` and delegating to focused systems   |
 | `simulation-state.ts`                                   | World, player, progress, and runtime state groups                                  |
 | `simulation-types.ts`                                   | Domain contracts and presentation-safe shared constants                            |
 | `simulation-tuning.{ts,json}`, `simulation-values.json` | Tuning access and declarative values                                               |
-| `common/`                                               | Pure math, simulation settings, and authored weapon spread data                    |
+| `common/`                                               | Pure math, settings, weapon spread data, and simulation context/view contracts     |
 | `runtime/`                                              | Reset, bounded substeps, update order, event tests                                 |
 | `blocks/`                                               | Creation, syntax highlighting, code cells, damage, impulses, splitting, explosions |
 | `collision/`                                            | 2D collision calculations                                                          |
@@ -40,3 +40,7 @@ through `sim.random()` so deterministic fixtures remain reproducible.
 Use colocated `*.test.ts` coverage for changed gameplay contracts and
 `tests/unit/simulation-support.ts` for reusable setup. Browser scenarios in
 `tests/gameplay/` cover integration.
+
+Systems depend on `common/simulation-context.ts`, not the concrete facade.
+Presentation uses its smaller `SimulationView`; only scene controllers construct
+or control `Simulation`. Import domain types directly from `simulation-types.ts`.

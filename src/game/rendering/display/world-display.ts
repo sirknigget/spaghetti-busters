@@ -12,7 +12,7 @@ import {
   VIEW,
   WIDTH,
 } from "#root/src/game/rendering/world-settings.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationView } from "#root/src/game/simulation/common/simulation-context.ts";
 
 export class WorldDisplay {
   readonly scene = new THREE.Scene();
@@ -65,7 +65,7 @@ export class WorldDisplay {
     this.renderer.domElement.style.margin = "auto";
   }
 
-  render(sim: Simulation, impact: number) {
+  render(sim: SimulationView, impact: number) {
     this.dangerMaterial.color.set(
       sim.world.blocks.some((b) => b.x < DANGER.threshold)
         ? PALETTE.environment.danger

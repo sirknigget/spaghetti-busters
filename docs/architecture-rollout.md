@@ -28,7 +28,7 @@ a new metric.
 | ----- | ------------------------------------------ | --------------------- |
 | 1     | Class cohesion (`lcom`)                    | Withdrawn after trial |
 | 2     | Module cohesion                            | Enforced              |
-| 3     | Coupling and hubs                          | Pending               |
+| 3     | Coupling and hubs                          | Enforced              |
 | 4     | Dependency instability                     | Pending               |
 | 5     | Circular dependencies                      | Pending               |
 | 6     | Unused public symbols                      | Pending               |
@@ -124,3 +124,51 @@ implementation, connected exports, and excluded tests/fixtures/tooling/data
 roles. Type-check/build, ESLint, Oxlint, normal/production Knip, and all three
 dependency passes passed. Browser rendering/interface checks and duplicate
 profiles are being completed as part of rollout validation below.
+
+## 3. Coupling and hubs: separate contracts from the facade
+
+Default probes reported four coupling errors and three hubs after stage 2.
+High fan-in to palette/tuning/domain declarations is expected reuse, so the
+retained coupling budget is `max_cbo: 30` (incoming plus outgoing internal
+file edges), with declarative `*-types`, `*-settings`, and `*-config` roles
+excluded from this rule. The hub gate requires at least 8 incoming and 8 outgoing
+edges and maximum function complexity 5. Default 5/5 flagged real fracture-solid
+and robot algorithms with focused responsibilities. The stricter traffic
+requirement targets large shared intermediaries without encouraging splitting
+small algorithms or adding complexity to escape the gate.
+
+With these settings, the implementation baseline fails twice on `Simulation`:
+one coupling finding and one hub. Systems now depend on `SimulationContext`,
+a domain-owned state/command contract. Presentation depends on the smaller
+`SimulationView`, which exposes state references and derived values without
+commands. This is a shallow view, not deep immutable state. The facade explicitly
+implements the context. Spawn option types have one owner, and domain clients
+import domain types directly rather than through facade re-exports. Scene
+controllers retain the concrete facade. After this refactor both errors pass.
+
+A second tool limitation surfaced in this experiment: ignored tests are still
+nodes in archlint 0.17.1's dependency graph and inflate implementation fan-in.
+The native scan still reported a facade hub after its only implementation
+consumers were the scene controllers. `check.js` now makes a temporary source
+snapshot with tests, fixtures, and tool config physically absent, then runs the
+native detector and propagates its failure status. Relative tree structure and
+aliases are preserved; failures to copy or run fail the job. No diagnostic is
+filtered. The same snapshot policy reproduced the two pre-refactor errors,
+so the improvement is not merely removal of test edges. The earlier graph
+counts in this report are exploratory; the snapshot is the authoritative scope.
+
+**Positive impact:** systems and renderers no longer depend on the facade's
+implementation or barrel; the production graph loses 22 edges. Future high
+coupling and large simple hubs are blocking errors without making frequently
+used constants a problem. **Costs:** one explicit contract file, maintained
+method signatures checked by TypeScript, and a small source-snapshot launcher
+needed to honor implementation-only scope. Metrics still count type edges
+between runtime files and skip pure-type nodes; they are not runtime-only
+coupling or a proof of abstraction quality.
+
+**Validation:** all 97 tests passed, including native failure probes for
+coupling/hubs and a 31-test-consumer case proving that tests cannot inflate
+coupling. Type-check/build and all dependency passes passed; source lint and
+normal/production unused checks were rerun. Stage 2's 13 rendering/interface
+browser scenarios also passed (controls, touch, restart, holes, fractures,
+physical debris, and context recovery); all five duplicate profiles passed.

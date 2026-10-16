@@ -3,9 +3,9 @@ import { game, hitCell } from "#root/tests/unit/simulation-support.ts";
 import {
   Block,
   Cell,
-  Simulation,
   SPECIAL_BLASTS,
-} from "#root/src/game/simulation/simulation.ts";
+} from "#root/src/game/simulation/simulation-types.ts";
+import { Simulation } from "#root/src/game/simulation/simulation.ts";
 
 it("damages robots once per special blast, including nearby robots in the blast radius", () => {
   for (const type of ["homing", "grenade"] as const) {

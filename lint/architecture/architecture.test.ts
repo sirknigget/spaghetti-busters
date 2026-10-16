@@ -30,18 +30,8 @@ function scan(files: Record<string, string>) {
     }
 
     return spawnSync(
-      resolve("node_modules/.bin/archlint"),
-      [
-        "scan",
-        join(root, "src"),
-        "--config",
-        resolve("lint/architecture/archlint.json"),
-        "--detectors",
-        "module_cohesion,lcom",
-        "--no-cache",
-        "--no-git",
-        "--json",
-      ],
+      process.execPath,
+      [resolve("lint/architecture/check.js"), root],
       { encoding: "utf8" },
     );
   } finally {
@@ -54,7 +44,7 @@ test("disconnected implementation exports fail as errors", () => {
 
   expect(result.error).toBeUndefined();
   expect(result.status).toBe(1);
-  expect(result.stdout).toContain("ScatteredModule");
+  expect(result.stdout).toContain("Scattered Module");
 });
 
 test("shared implementation symbols connect exported operations", () => {
@@ -63,7 +53,7 @@ test("shared implementation symbols connect exported operations", () => {
   });
 
   expect(result.status).toBe(0);
-  expect(result.stdout).toContain('"total_smells": 0');
+  expect(result.stdout).toContain("No smells found matching current filters.");
 });
 
 test("tests, fixtures, lint tools, and declarative files are outside cohesion scope", () => {
@@ -78,5 +68,55 @@ test("tests, fixtures, lint tools, and declarative files are outside cohesion sc
   });
 
   expect(result.status).toBe(0);
-  expect(result.stdout).toContain('"total_smells": 0');
+  expect(result.stdout).toContain("No smells found matching current filters.");
+});
+
+function consumers(folder: string, suffix: string) {
+  return Object.fromEntries(
+    Array.from({ length: 31 }, (_, index) => [
+      `${folder}/consumer${index}${suffix}.ts`,
+      'import { shared } from "#root/src/main.ts"; export const value = shared;',
+    ]),
+  );
+}
+
+test("excessive implementation coupling fails", () => {
+  const result = scan({
+    "src/main.ts": "export const shared = 1;",
+    ...consumers("src", ""),
+  });
+
+  expect(result.status).toBe(1);
+  expect(result.stdout).toContain("High Coupling");
+});
+
+test("test consumers do not inflate implementation coupling", () => {
+  const result = scan({
+    "src/main.ts": "export const shared = 1;",
+    ...consumers("src", ".test"),
+  });
+
+  expect(result.status).toBe(0);
+  expect(result.stdout).toContain("No smells found matching current filters.");
+});
+
+test("a simple module with many producers and consumers fails the hub gate", () => {
+  const providers = Array.from({ length: 8 }, (_, index) => `provider${index}`);
+  const result = scan({
+    "src/main.ts":
+      providers
+        .map((name) => `import { ${name} } from "#root/src/${name}.ts";`)
+        .join("\n") +
+      `\nexport const shared = () => ${providers.map((name) => `${name}()`).join(" + ")};`,
+    ...Object.fromEntries(
+      providers.map((name) => [
+        `src/${name}.ts`,
+        `export const ${name} = () => 1;`,
+      ]),
+    ),
+    ...consumers("src", ""),
+  });
+
+  expect(result.status).toBe(1);
+  expect(result.stdout).toContain("Hub Module");
 });

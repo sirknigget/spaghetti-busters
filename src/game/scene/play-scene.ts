@@ -1,8 +1,8 @@
 import {
-  Simulation,
   type GameEvent,
   type SpecialWeapon,
-} from "#root/src/game/simulation/simulation.ts";
+} from "#root/src/game/simulation/simulation-types.ts";
+import { Simulation } from "#root/src/game/simulation/simulation.ts";
 import type { WorldRenderer } from "#root/src/game/rendering/world3d.ts";
 import type { GameController, Callbacks } from "#root/src/game/scene/scene.ts";
 import { INPUT, MUZZLE_EVENTS } from "#root/src/game/scene/scene-config.ts";

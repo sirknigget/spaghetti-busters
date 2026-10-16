@@ -1,5 +1,8 @@
 import { PALETTE } from "#root/src/game/palette.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type {
+  SimulationContext,
+  HazardOptions,
+} from "#root/src/game/simulation/common/simulation-context.ts";
 import { segmentRectangle } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { burst } from "#root/src/game/simulation/effects/simulation-particles.ts";
 import {
@@ -13,15 +16,7 @@ import { TIMEOUT_METRICS } from "#root/src/game/simulation/simulation-types.ts";
 
 const HAZARD_LIFETIME_SECONDS = 6;
 
-export interface HazardOptions {
-  x?: number;
-  y?: number;
-  durationMs?: number;
-  vx?: number;
-  vy?: number;
-}
-
-function hazardMotion(sim: Simulation, options: HazardOptions) {
+function hazardMotion(sim: SimulationContext, options: HazardOptions) {
   const x = options.x ?? TUNING.hazard.spawnX;
   const y =
     options.y ??
@@ -41,7 +36,7 @@ function hazardMotion(sim: Simulation, options: HazardOptions) {
 }
 
 export function spawnHazard(
-  sim: Simulation,
+  sim: SimulationContext,
   options: HazardOptions = {},
 ): TimeoutHazard {
   const { x, y, vx } = hazardMotion(sim, options);
@@ -74,7 +69,7 @@ export function spawnHazard(
   return hazard;
 }
 
-function stunPlayer(sim: Simulation, hazard: TimeoutHazard) {
+function stunPlayer(sim: SimulationContext, hazard: TimeoutHazard) {
   sim.player.stunRemaining = Math.max(
     sim.player.stunRemaining,
     hazard.durationMs / TUNING.hazard.millisecondsPerSecond,
@@ -89,7 +84,7 @@ function stunPlayer(sim: Simulation, hazard: TimeoutHazard) {
   sim.world.events.push("stun");
 }
 
-export function updateHazards(sim: Simulation, dt: number) {
+export function updateHazards(sim: SimulationContext, dt: number) {
   for (const hazard of sim.world.hazards) {
     if (hazard.life <= 0) {
       continue;
