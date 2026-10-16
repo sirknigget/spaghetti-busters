@@ -18,6 +18,8 @@ vercel link
 Choose the Vercel team that will own the deployment, then create a project named
 `spaghetti-busters` or select an existing project. Use the repository root (`./`)
 as its root directory. Linking creates the project without deploying the app.
+If asked **Detected a repository. Connect it to this project?**, answer **No**.
+GitHub Actions deploys through the CLI, so Vercel's Git integration is unnecessary.
 
 The checked-in `vercel.json` selects Vite, `npm ci`, `npm run build`, and `dist`.
 Set the project's Node.js version to **22.x** in Vercel's build settings to match
