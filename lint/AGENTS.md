@@ -45,5 +45,7 @@ the CI cache is configured in that workflow.
 
 Archlint 0.17.1 needs `lcom` selected to collect cohesion symbols; its wildcard
 rule exclusion disables LCOM findings. The source snapshot also prevents ignored
-test imports from contributing to graph metrics. Policy tests protect both
-workarounds; keep the pinned analyzer version and detector list aligned.
+test imports from contributing to graph metrics. `check.js` comments justify
+these workarounds; Archlint itself enforces the configured rules without an
+additional policy-test suite. Keep the pinned analyzer version aligned with
+the documented workarounds.

@@ -110,8 +110,8 @@ collection for the stale ID `scattered_module`, while the real detector ID is
 `module_cohesion`. Selecting the rule alone incorrectly reports connected
 exports as disconnected. Selecting `lcom` also enables the required collection;
 its per-rule exclusion `**/*` suppresses all LCOM reports. This is an explicit
-parser workaround, not LCOM enforcement. A connected-five-export policy test
-protects this behavior. See the pinned release's
+parser workaround, not LCOM enforcement. A connected-five-export probe
+verified this behavior during rollout. See the pinned release's
 [parser configuration](https://github.com/archlinter/archlint/blob/v0.17.1/crates/archlint/src/parser/types.rs).
 
 `npm run lint:architecture` fails with exit 1 on the two baseline errors and
@@ -333,3 +333,24 @@ current head; its checks are the authoritative review-readiness result.
 The seven stage commits were pushed individually in the requested order;
 this final integration commit only syncs main, adds guide links, and records
 validation. The cumulative report was updated in every stage commit.
+
+## Follow-up: remove redundant enforcement tests
+
+Removed the seven architecture policy tests: Archlint's native detectors and
+exit status are the enforcement. The initial fixture runs above remain historical
+validation evidence, rather than a second maintained test suite. Removed the
+launcher's fixture-project argument and the unused entry-point setting. Removed
+the duplicate ignore list because excluded files are already absent from the
+snapshot.
+
+Retained only the launcher needed to honor implementation-only scope and the
+LCOM selection needed for correct module-cohesion parsing in 0.17.1. Code comments
+in `check.js` explicitly justify the snapshot, alias/package-root handling,
+LCOM workaround, detector selection, disposable-cache/history options, and path
+mapping. Rules, thresholds, exclusions, and native failure propagation are
+unchanged.
+
+**Validation:** the implementation scan still passes with 120 files, 114 runtime
+nodes, and 359 graph edges. ESLint, Oxlint (including folder limits), formatting,
+all five duplicate profiles, both Knip modes, all dependency passes, and the
+remaining 91 tests pass. This cleanup changes no gameplay code.
