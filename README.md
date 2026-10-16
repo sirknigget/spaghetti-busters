@@ -21,6 +21,13 @@ npm run dev
 
 Open **http://localhost:3000**. The server binds to all interfaces on port 3000.
 
+## Deploy to Vercel
+
+GitHub Actions runs CI on pull requests and deploys production when changes merge
+into protected `main`, without repeating the checks after merge.
+Follow the [Vercel setup guide](docs/vercel-deployment.md) to create a project and
+configure the three GitHub secrets. No MCP connection is required.
+
 ## Controls
 
 | Action                           | Control                                      |
@@ -74,21 +81,80 @@ Run `npm run format` to apply Prettier to the project. Formatting uses Prettier'
 standard defaults with LF line endings; generated output, the npm lockfile, and
 vendored brand artwork are excluded.
 
-Run `npm run lint` to check TypeScript, JavaScript, and CSS. The individual commands
-are `npm run lint:eslint`, `npm run lint:oxlint`, and `npm run lint:css`. ESLint
+Run `npm run lint` to check TypeScript, JavaScript, CSS, and duplicate code. The individual commands
+are `npm run lint:eslint`, `npm run lint:oxlint`, `npm run lint:css`, and `npm run lint:duplicates`. ESLint
 covers the supplied SonarJS, Unicorn, React, and stylistic rules; Oxlint runs the
 supplied correctness, security, TypeScript, test, and
 [anti-slop](https://github.com/sirknigget/anti-slop) rules with type information.
+Duplicate detection uses jscpd; see [settings and manual calibration](docs/duplicate-detection.md).
+Knip enforces unused code, exports, types, and packages in normal and production
+runs. dependency-cruiser enforces import integrity, eager runtime cycles,
+production dependency boundaries, source folder cycles, and architectural
+boundaries between simulation, presentation, shared primitives, and audio. See the
+[rule assessment and measured effects](docs/dependency-enforcement.md), including
+discovery wiring, enforced architectural boundaries, and policies deliberately
+left disabled.
 Stylelint checks `src/**/*.css`. Source and colocated unit tests use separate
 rule scopes, and the lint TypeScript project also includes browser tests and
-root configuration files. Cognitive and cyclomatic complexity, file and function
-line counts, argument counts, and union-member counts are deliberately unlimited.
+root configuration files and lint policy modules. All JavaScript and TypeScript,
+including tests and configuration, are limited to **300 physical lines per file**,
+**40 physical lines per function**, **3 declared parameters per function/method**,
+and **30 directly declared members per class, interface, or object type**.
+Line counts include comments and blank lines. Member counts include both fields
+and methods; inherited members are not combined. TypeScript method, call, and
+construct signatures share the parameter limit. Oxlint enforces a maximum
+cognitive complexity of **8** and cyclomatic complexity of **6** using anti-slop.
+Union-alternative counts remain unlimited.
+
+The custom Oxlint `project/folder-limits` rule checks `src` and `tests`, including
+both roots and every nested folder. Each folder may contain at most **10 direct
+files** and **10 direct subfolders**. Files of every type count, including tests,
+JSON, assets, and hidden files; a child's contents count only against that child.
+The rule scans the complete trees once per lint invocation, including folders
+without JavaScript or TypeScript. Symlinks count as files and are not traversed.
+Diagnostics name the offending folder and appear on the first linted file.
+
+Oxlint’s built-in `no-restricted-imports` rule applies to all linted JavaScript
+and TypeScript, including configuration and lint modules. Local imports use
+`#root/...` with explicit extensions, resolved from the project root by the
+`package.json` imports map. Package and Node built-in imports remain unchanged;
+browser-evaluated test imports use `/src/...` or `/tests/...` URLs. Relative
+imports and re-exports are errors, including dynamic imports, `require`, and
+TypeScript import forms. ESLint’s built-in `no-restricted-syntax` covers
+`require`, import-type expressions, and computed paths that Oxlint does not
+inspect. Computed specifiers are rejected so paths can be checked statically.
+Both linters run in their existing parallel CI jobs.
+
+Readability rules require braces for control flow, one statement per line,
+separate variable declarations, and blank lines after blocks, before returns,
+and between methods. Declaration groups (`const`, `let`, and `var`) must be
+separated from other statements by a blank line. Consecutive declarations may
+stay together unless a declaration ends in a block. Prettier retains its
+80-column layout. Run ESLint with `--fix` followed
+by `npm run format` to apply spacing fixes. These rules discourage compressing
+statements to evade the size limits.
+
+Runtime numeric literals, including defaults, class fields, object properties,
+and assignments, must use named scalar constants or declarative JSON tuning.
+Only `0`, `1`, and `-1` are allowed inline; numeric enum members and literal types
+remain semantic declarations. Existing browser and unit test fixtures retain
+their numeric exemption. ESLint enforces this source policy.
+Authored 3D geometry stays in glTF/GLB assets; the authored 2D crack paths use SVG.
+
+Literal colors belong in `src/game/palette.ts` or CSS custom-property definitions
+in `src/palette.css`. Built-in ESLint restrictions reject hex and CSS color-function strings.
+Built-in Stylelint rules reject hex colors, named colors, and color functions
+outside the CSS palette. Existing CI lint jobs enforce both policies.
+
 The anti-slop dependency is pinned to an immutable Git commit.
 
 GitHub CI checks formatting, ESLint, Oxlint, Stylelint, unit tests, the production
-build, and browser tests on pull requests and pushes to `main`. Checks run as
-independent parallel jobs, with browser tests split across two runners and one
-browser worker per runner.
+build, unused code in normal and production modes, dependency integrity, and
+browser tests on pull requests. Checks run as independent parallel jobs, with
+browser tests split across two runners and one browser worker per runner.
+Branch protection requires passing checks and an up-to-date branch before merge.
+The separate CD workflow builds and deploys pushes to `main` without rerunning
+the lint or test jobs.
 
 `preview` serves the production build on port 3000; stop the development server first. Browser tests reuse a running development server or start one automatically. They run one browser at a time to keep software WebGL rendering responsive in CI. On headless Linux without a GPU, Mesa/EGL libraries (`libegl1`, `libegl-mesa0`, and `mesa-vulkan-drivers`) provide the real WebGL 2 context used by the tests.
 
@@ -96,11 +162,12 @@ The deterministic simulation tests cover damage, splitting, impulses and bounces
 
 ## Project
 
-- `src/game/simulation.ts`: renderer-independent gameplay and collision simulation, with small fixed substeps.
-- `src/game/scene.ts`: native pointer/keyboard input, frame loop, and simulation-to-renderer adapter.
-- `src/game/world3d.ts`, `model-assets.ts`, `models3d.ts`, `robot3d.ts`, `code-mesh.ts`: Three.js scene, perspective camera, glTF model loading, perforated code geometry, shadows, and GPU resource cleanup.
-- `src/game/debris-physics.ts`, `fracture-geometry.ts`, `death-clipping.ts`: independent Rapier debris, pooled smoke/sparks, compact perforated surfaces, and direct triangle clipping for final disintegration.
-- `src/game/audio.ts`: original Web Audio music and effects; opening theme, seamless menu/game transitions, and four crossfading scores.
+- `src/game/simulation/`: renderer-independent gameplay facade, grouped world/player/progress state, and focused collision/wave/weapon systems with small fixed substeps.
+- `src/game/scene/`: native pointer/keyboard input, frame loop, and simulation-to-renderer adapter.
+- `src/game/graphics/` and `src/game/content/`: shared model/glyph/resource primitives and authored code samples, independent of world orchestration.
+- `src/game/rendering/` and `src/game/code/`: Three.js scene, perspective camera, glTF model loading, perforated code geometry, shadows, and GPU resource cleanup.
+- `src/game/debris/` and `src/game/geometry/`: independent Rapier debris, pooled smoke/sparks, compact perforated surfaces, and direct triangle clipping for final disintegration.
+- `src/game/audio/`: Web Audio routing, synthesis, effect scores, and music transport; opening theme, seamless menu/game transitions, and four crossfading scores.
 - `src/main.ts` and `src/style.css`: responsive menus, HUD, dialogs, and accessibility.
 - `public/assets`: original cartoon SVG artwork and a locally bundled opening-screen photograph.
 - `public/assets/models/arcade-models.glb`: editable glTF 2.0 library for the specialist, robots, weapons, city, effects, armor, and debris. [Model editing and validation](docs/models/README.md).

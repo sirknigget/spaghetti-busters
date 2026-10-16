@@ -11,17 +11,29 @@
     "test:e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "npm run lint:oxlint && npm run lint:eslint && npm run lint:css",
+    "lint": "npm run lint:oxlint && npm run lint:eslint && npm run lint:css && npm run lint:duplicates && npm run lint:unused && npm run lint:unused:production && npm run lint:dependencies && npm run lint:architecture",
     "lint:oxlint": "oxlint --type-aware --tsconfig tsconfig.lint.json .",
     "lint:eslint": "eslint . --max-warnings 0",
-    "lint:css": "stylelint \"src/**/*.css\" --max-warnings 0"
+    "lint:css": "stylelint \"src/**/*.css\" --max-warnings 0",
+    "lint:duplicates": "npm run lint:duplicates:exact && npm run lint:duplicates:identifiers && npm run lint:duplicates:renamed && npm run lint:duplicates:similar && npm run lint:duplicates:semantic",
+    "lint:duplicates:exact": "jscpd --config .jscpd.json --kind exact --min-tokens 53 --min-lines 9 --report-name exact",
+    "lint:duplicates:identifiers": "jscpd --config .jscpd.json --kind renamed --ignore-identifiers --min-tokens 53 --min-lines 16 --report-name identifiers",
+    "lint:duplicates:renamed": "jscpd --config .jscpd.json --kind renamed --ignore-identifiers --ignore-literals --ignore-annotations --min-tokens 204 --min-lines 1 --report-name renamed",
+    "lint:duplicates:similar": "jscpd --config .jscpd.json --kind similar,gap,ast --similarity 0.90 --min-nodes 1 --max-gap-lines 12 --min-tokens 19 --min-lines 5 --report-name similar",
+    "lint:duplicates:semantic": "jscpd --config .jscpd.json --kind semantic --semantic --semantic-download CodeRankEmbed --semantic-model CodeRankEmbed --semantic-scope all --semantic-same-threshold 0.84 --semantic-threshold 0.84 --min-tokens 36 --min-lines 1 --report-name semantic",
+    "lint:unused": "knip",
+    "lint:unused:production": "knip --production",
+    "lint:dependencies": "depcruise --config .dependency-cruiser.json src tests lint *.config.ts && depcruise --config lint/dependencies/runtime.json src && depcruise --config lint/dependencies/architecture.json src",
+    "lint:architecture": "node lint/architecture/check.js"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@archlinter/cli": "0.17.1",
     "@eslint-react/eslint-plugin": "5.27.2",
+    "@oxlint/plugins": "1.88.0",
     "@playwright/test": "^1.56.0",
     "@stylistic/eslint-plugin": "5.10.0",
     "@stylistic/stylelint-plugin": "5.3.1",
@@ -29,10 +41,13 @@
     "@types/three": "^0.186.0",
     "@typescript-eslint/parser": "8.71.2",
     "@typescript-eslint/utils": "8.71.2",
+    "dependency-cruiser": "18.6.0",
     "eslint": "10.12.0",
     "eslint-plugin-sonarjs": "4.2.2",
     "eslint-plugin-unicorn": "78.0.0",
     "jiti": "2.7.0",
+    "jscpd": "5.4.1",
+    "knip": "6.41.0",
     "oxlint": "1.88.0",
     "oxlint-plugin-anti-slop": "git+https://github.com/sirknigget/anti-slop.git#aa6fd941330b4e73a59bff0570344cba35ff0f4d",
     "oxlint-tsgolint": "7.0.2004",
@@ -44,5 +59,8 @@
   },
   "engines": {
     "node": "^22.13.0 || >=24"
+  },
+  "imports": {
+    "#root/*": "./*"
   }
 }

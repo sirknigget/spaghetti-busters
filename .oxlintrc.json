@@ -9,6 +9,10 @@
     {
       "name": "sonarjs",
       "specifier": "eslint-plugin-sonarjs"
+    },
+    {
+      "name": "project",
+      "specifier": "./lint/project-plugin.js"
     }
   ],
   "options": {
@@ -25,8 +29,8 @@
     "**/*.d.ts"
   ],
   "rules": {
-    "anti-slop/cognitive-complexity": "off",
-    "anti-slop/cyclomatic-complexity": "off",
+    "anti-slop/cognitive-complexity": ["error", 8],
+    "anti-slop/cyclomatic-complexity": ["error", { "threshold": 6 }],
     "anti-slop/max-lines": "off",
     "anti-slop/max-lines-per-function": "off",
     "react/rules-of-hooks": "error",
@@ -63,28 +67,35 @@
     "typescript/prefer-return-this-type": "off",
     "typescript/no-redundant-type-constituents": "off",
     "typescript/prefer-optional-chain": "off",
-    "typescript/no-mixed-enums": "off"
+    "typescript/no-mixed-enums": "off",
+    "project/folder-limits": [
+      "error",
+      {
+        "maxFiles": 10,
+        "maxSubfolders": 10
+      }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "regex": "^\\.",
+            "message": "Use a #root/... project-root import instead of a relative import."
+          }
+        ]
+      }
+    ]
   },
   "overrides": [
     {
       "files": ["**/*"],
-      "excludeFiles": ["tests/**", "src/**/*.test.ts"],
+      "excludeFiles": ["tests/**", "**/*.test.ts"],
       "rules": {
         "no-empty-function": [
           "error",
           {
             "allow": ["arrowFunctions", "constructors", "privateConstructors"]
-          }
-        ],
-        "no-magic-numbers": [
-          "error",
-          {
-            "ignore": [0, 1, -1, 24, 60],
-            "ignoreDefaultValues": true,
-            "ignoreClassFieldInitialValues": true,
-            "ignoreEnums": true,
-            "ignoreNumericLiteralTypes": true,
-            "ignoreReadonlyClassProperties": true
           }
         ],
         "no-dupe-class-members": "error",
@@ -547,7 +558,7 @@
         "node_modules/**",
         "tests/**/*-snapshots/**",
         ".quality-results/**",
-        "src/**/*.test.ts"
+        "**/*.test.ts"
       ],
       "rules": {
         "sonarjs/no-collapsible-if": "error",
@@ -697,7 +708,7 @@
       }
     },
     {
-      "files": ["tests/**/*.{ts,tsx,js,jsx}", "src/**/*.test.ts"],
+      "files": ["tests/**/*.{ts,tsx,js,jsx}", "**/*.test.ts"],
       "excludeFiles": [
         "**/*.d.ts",
         "dist/**",
@@ -729,7 +740,7 @@
       }
     },
     {
-      "files": ["**/*.spec.ts", "tests/**/*.ts", "src/**/*.test.ts"],
+      "files": ["**/*.spec.ts", "tests/**/*.ts", "**/*.test.ts"],
       "rules": {
         "anti-slop/require-safety-comment-for-type-assertion": "off"
       }

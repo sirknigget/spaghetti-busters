@@ -1,3 +1,4 @@
+@import "./palette.css";
 @font-face {
   font-family: Barlow;
   src: url("/fonts/barlow-condensed-extrabold-italic.ttf");
@@ -19,11 +20,6 @@
   font-display: swap;
 }
 :root {
-  --ink: #173e35;
-  --mint: #d9eddd;
-  --paper: #f4f4e8;
-  --yellow: #f9db48;
-  --muted: #698074;
   font-family: Space, Arial, sans-serif;
   color: var(--ink);
   background: var(--mint);
@@ -37,7 +33,7 @@ body {
 }
 button,
 a {
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: var(--transparent);
 }
 button {
   font: inherit;
@@ -47,7 +43,7 @@ button {
 }
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid #ed9757;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 5px;
 }
 button:disabled {
@@ -72,7 +68,7 @@ button:active {
   place-items: center;
   isolation: isolate;
   position: relative;
-  background: #dfebd9;
+  background: var(--menu-background);
 }
 .prelude-screen:before {
   content: "";
@@ -80,7 +76,7 @@ button:active {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(#dfebd9ed, #dfebd9ed),
+    linear-gradient(var(--prelude-wash), var(--prelude-wash)),
     url("/assets/server-room.jpg") center/cover;
 }
 .entry-button {
@@ -110,7 +106,7 @@ button:active {
   height: 100svh;
   overflow: hidden;
   isolation: isolate;
-  background: #dfebd9;
+  background: var(--menu-background);
 }
 .photo-backdrop {
   position: absolute;
@@ -128,10 +124,10 @@ button:active {
   z-index: -3;
   background: linear-gradient(
     90deg,
-    rgba(233, 239, 218, 0.98) 0%,
-    rgba(229, 237, 215, 0.94) 36%,
-    rgba(218, 233, 211, 0.55) 70%,
-    rgba(212, 232, 214, 0.6)
+    var(--menu-wash-start) 0%,
+    var(--menu-wash-middle) 36%,
+    var(--menu-wash-fade) 70%,
+    var(--menu-wash-end)
   );
   pointer-events: none;
 }
@@ -151,7 +147,7 @@ button:active {
   justify-content: space-between;
   position: relative;
   z-index: 5;
-  border-bottom: 1px solid #244c3430;
+  border-bottom: 1px solid var(--header-border);
 }
 .brand {
   display: flex;
@@ -192,13 +188,13 @@ button:active {
 .edition {
   font-size: 10px;
   letter-spacing: 1.8px;
-  color: #4e6a58;
+  color: var(--edition-text);
 }
 .sound-button {
   display: flex;
   gap: 10px;
   align-items: center;
-  background: transparent;
+  background: var(--transparent);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -270,7 +266,7 @@ button:active {
 .hero-description {
   font-size: 14px;
   line-height: 1.8;
-  color: #526856;
+  color: var(--hero-description);
   margin-top: 17px;
   letter-spacing: -0.2px;
 }
@@ -324,7 +320,7 @@ button:active {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #48664f;
+  border: 1px solid var(--help-icon-border);
   border-radius: 50%;
   width: 19px;
   height: 19px;
@@ -337,7 +333,7 @@ button:active {
   margin-top: 29px;
   font-size: 8px;
   letter-spacing: 0.7px;
-  color: #5f7863;
+  color: var(--hero-meta-text);
 }
 .hero-meta > span:first-child {
   display: flex;
@@ -348,7 +344,7 @@ button:active {
   width: 6px;
   height: 6px;
   display: inline-block;
-  background: #3f8064;
+  background: var(--live-indicator);
   border-radius: 50%;
 }
 .hero-meta b {
@@ -395,7 +391,7 @@ button:active {
   bottom: 0;
   left: 0;
   width: 100%;
-  border-top: 1px solid #173e3535;
+  border-top: 1px solid var(--footer-border);
   height: 72px;
   display: flex;
   align-items: center;
@@ -403,10 +399,10 @@ button:active {
   padding: 0 5.2%;
   font-size: 10px;
   letter-spacing: 1px;
-  background: #e4ecdab0;
+  background: var(--footer-background);
 }
 .footer-pill {
-  border: 1px solid #254632;
+  border: 1px solid var(--footer-pill-border);
   padding: 7px 10px;
   font-size: 8px;
 }
@@ -418,7 +414,7 @@ button:active {
   margin-left: auto;
   font-size: 8px;
   letter-spacing: 1px;
-  color: #647360;
+  color: var(--footer-version);
 }
 .footer-version > span {
   margin: 0 9px;
@@ -428,7 +424,7 @@ button:active {
   width: 100%;
   height: 100svh;
   overflow: hidden;
-  background: #dcead7;
+  background: var(--game-background);
   touch-action: none;
 }
 #game-canvas {
@@ -450,7 +446,7 @@ button:active {
   padding: 25px 3.5%;
   gap: 45px;
   pointer-events: none;
-  background: linear-gradient(#e8efdf 70%, #e8efdf00);
+  background: linear-gradient(var(--hud-background) 70%, var(--hud-fade));
   min-height: 107px;
 }
 .hud-brand {
@@ -479,7 +475,7 @@ button:active {
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 1.5px;
-  color: #667d67;
+  color: var(--hud-label);
 }
 .score-group strong {
   font-size: 25px;
@@ -489,7 +485,7 @@ button:active {
 .combo {
   font-size: 7px;
   letter-spacing: 0.6px;
-  color: #749078;
+  color: var(--combo);
 }
 .wave-group strong {
   font-size: 25px;
@@ -506,8 +502,8 @@ button:active {
   pointer-events: auto;
 }
 .icon-button {
-  background: #eef2e5b0;
-  border: 1px solid #173e3555;
+  background: var(--icon-background);
+  border: 1px solid var(--icon-border);
   width: 40px;
   height: 40px;
   display: grid;
@@ -525,8 +521,8 @@ button:active {
   display: flex;
   gap: 13px;
   align-items: center;
-  background: #f2f4e5e8;
-  border: 1px solid #173e352b;
+  background: var(--weapon-background);
+  border: 1px solid var(--weapon-border);
   padding: 13px 20px;
   pointer-events: none;
 }
@@ -553,14 +549,14 @@ button:active {
 }
 .weapon-hud #ammo {
   font-size: 8px;
-  color: #638267;
+  color: var(--ammo-text);
 }
 .game-instruction {
   position: absolute;
   right: 3.5%;
   font-size: 8px;
   letter-spacing: 1px;
-  color: #50715b;
+  color: var(--instruction-text);
   pointer-events: none;
   bottom: 45px;
   max-width: 260px;
@@ -572,7 +568,7 @@ button:active {
 }
 kbd {
   font: inherit;
-  border: 1px solid #86947c;
+  border: 1px solid var(--key-border);
   border-radius: 3px;
   padding: 2px 4px;
 }
@@ -590,7 +586,7 @@ kbd {
   transition: 0.2s;
   pointer-events: none;
   white-space: nowrap;
-  box-shadow: 3px 3px 0 #f9db4880;
+  box-shadow: 3px 3px 0 var(--toast-shadow);
 }
 .game-toast.visible {
   opacity: 1;
@@ -602,7 +598,7 @@ kbd {
   z-index: 10;
   display: grid;
   place-items: center;
-  background: #133c32a1;
+  background: var(--overlay-backdrop);
   backdrop-filter: blur(8px);
 }
 .overlay-card {
@@ -625,7 +621,7 @@ dialog h2 {
 .overlay-card p {
   font-size: 12px;
   line-height: 1.7;
-  color: #64735d;
+  color: var(--overlay-description);
   margin-bottom: 24px;
 }
 .overlay-card button {
@@ -678,7 +674,7 @@ dialog {
   box-shadow: 8px 8px 0 var(--yellow);
 }
 dialog::backdrop {
-  background: #163e35b8;
+  background: var(--dialog-backdrop);
   backdrop-filter: blur(7px);
 }
 dialog h2 {
@@ -691,7 +687,7 @@ dialog .eyebrow {
 dialog .help-intro {
   font-size: 12px;
   line-height: 1.6;
-  color: #61735c;
+  color: var(--help-intro);
 }
 .close-button {
   position: absolute;
@@ -703,13 +699,13 @@ dialog .help-intro {
 .help-steps > div {
   display: flex;
   gap: 17px;
-  border-top: 1px solid #d3d9c8;
+  border-top: 1px solid var(--help-step-border);
   padding: 15px 0;
 }
 .help-steps > div > span {
   font-family: Barlow, sans-serif;
   font-size: 29px;
-  color: #728e6d;
+  color: var(--help-step-number);
 }
 .help-steps p {
   font-size: 11px;
@@ -723,12 +719,12 @@ dialog .help-intro {
 }
 .help-steps code {
   font-size: 10px;
-  color: #426d4c;
-  background: #e1e8d6;
+  color: var(--help-code-text);
+  background: var(--help-code-background);
   padding: 2px 3px;
 }
 .help-bottom {
-  border-top: 1px solid #d3d9c8;
+  border-top: 1px solid var(--help-step-border);
   padding-top: 20px;
   display: flex;
   align-items: center;
@@ -737,7 +733,7 @@ dialog .help-intro {
 .help-bottom > span {
   font-size: 10px;
   line-height: 1.6;
-  color: #64735d;
+  color: var(--overlay-description);
 }
 .help-bottom .primary-button {
   font-size: 10px;
@@ -1062,7 +1058,7 @@ dialog .help-intro {
     align-items: center;
     gap: 13px;
     white-space: nowrap;
-    color: #4d7059;
+    color: var(--orientation-text);
     font-size: 9px;
     letter-spacing: 1px;
   }
@@ -1184,7 +1180,7 @@ dialog .help-intro {
   letter-spacing: 1px;
   margin-bottom: 8px;
   text-align: center;
-  color: #52715c;
+  color: var(--special-caption);
 }
 .special-caption > span {
   margin: 0 4px;
@@ -1202,9 +1198,9 @@ dialog .help-intro {
 .special-slot {
   display: flex;
   align-items: center;
-  background: #f1f4e6e8;
-  border: 1px solid #173e3538;
-  box-shadow: 0 3px 0 #173e3523;
+  background: var(--special-background);
+  border: 1px solid var(--special-border);
+  box-shadow: 0 3px 0 var(--special-shadow);
   transition:
     background 0.15s,
     border-color 0.15s;
@@ -1247,7 +1243,7 @@ dialog .help-intro {
   margin-left: 1px;
 }
 .special-slot.selected {
-  background: #f9db48;
+  background: var(--yellow);
   border-color: var(--ink);
   box-shadow: 0 3px 0 var(--ink);
 }
@@ -1263,17 +1259,17 @@ dialog .help-intro {
   bottom: 21px;
   font-size: 7px;
   letter-spacing: 0.8px;
-  color: #688371;
+  color: var(--now-playing);
 }
 #fire-special {
   display: none;
 }
 .stunned .weapon-hud {
-  border-color: #c46344;
-  background: #faead5;
+  border-color: var(--stunned-border);
+  background: var(--stunned-background);
 }
 .stunned #combo {
-  color: #ad4c30;
+  color: var(--stunned-text);
 }
 .stunned .special-slot {
   filter: saturate(0.3);
@@ -1321,7 +1317,7 @@ dialog .help-bottom {
     bottom: 32px;
   }
   .hero-meta {
-    background: #e3ecd9e8;
+    background: var(--mobile-meta-background);
     padding: 4px 5px;
     margin-left: -5px;
     width: fit-content;
@@ -1338,8 +1334,8 @@ dialog .help-bottom {
     color: var(--yellow);
     font-size: 7px;
     padding: 7px 12px;
-    border: 1px solid #173e35;
-    box-shadow: 0 3px 0 #173e3545;
+    border: 1px solid var(--ink);
+    box-shadow: 0 3px 0 var(--special-fire-shadow);
   }
   #fire-special svg {
     width: 22px;
@@ -1407,10 +1403,10 @@ dialog .help-bottom {
 }
 /* Four special tools stay along the lower edge, clear of the flight path. */
 .reviewing #combo {
-  color: #287e9a;
+  color: var(--review-text);
 }
 .reviewing .weapon-hud {
-  border-color: #50a3bd;
+  border-color: var(--review-border);
 }
 @media (max-width: 1100px) {
   .special-name {
@@ -1517,20 +1513,24 @@ dialog .help-bottom {
   font-weight: 700;
   letter-spacing: 0.3px;
   margin-bottom: 5px;
-  color: #8e353b;
+  color: var(--boss-label);
 }
 .boss-health-meter {
   height: 7px;
-  background: #ecc6bdbd;
-  border: 1px solid #76343d;
-  box-shadow: 0 2px 0 #173e3520;
+  background: var(--boss-meter-background);
+  border: 1px solid var(--boss-meter-border);
+  box-shadow: 0 2px 0 var(--boss-meter-shadow);
   overflow: hidden;
 }
 .boss-health-meter > span {
   display: block;
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #bd3a4c, #ed8862);
+  background: linear-gradient(
+    90deg,
+    var(--boss-meter-start),
+    var(--boss-meter-end)
+  );
 }
 .boss-announcement {
   position: absolute;
@@ -1544,9 +1544,9 @@ dialog .help-bottom {
 .boss-announcement-card {
   width: min(1040px, 100%);
   padding: clamp(14px, 2.3vw, 30px);
-  background: #f9db48f5;
+  background: var(--boss-announcement-background);
   border: 2px solid var(--ink);
-  box-shadow: 7px 8px 0 #173e35b3;
+  box-shadow: 7px 8px 0 var(--boss-announcement-shadow);
   text-align: center;
 }
 .boss-announcement-card:before {
@@ -1555,7 +1555,7 @@ dialog .help-bottom {
   font-size: clamp(7px, 0.9vw, 11px);
   font-weight: 700;
   letter-spacing: 3px;
-  border-bottom: 1px solid #173e3570;
+  border-bottom: 1px solid var(--boss-announcement-divider);
   padding: 0 9px 8px;
 }
 .boss-announcement h2 {
@@ -1571,7 +1571,7 @@ dialog .help-bottom {
   display: block;
   font-size: clamp(24px, 7vw, 96px);
   font-weight: 800;
-  color: #97313c;
+  color: var(--boss-announcement-text);
   overflow-wrap: anywhere;
   margin: 4px 0;
 }
@@ -1591,7 +1591,7 @@ dialog .help-bottom {
     margin-top: 12px;
   }
   .boss-announcement-card {
-    box-shadow: 4px 5px 0 #173e35b3;
+    box-shadow: 4px 5px 0 var(--boss-announcement-shadow);
   }
   .boss-announcement-card:before {
     content: "PRODUCTION INCIDENT";

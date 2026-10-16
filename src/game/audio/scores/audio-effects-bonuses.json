@@ -1,0 +1,44 @@
+{
+  "bonus": {
+    "notes": [79, 86, 83, 91],
+    "tone": {
+      "spacing": 0.07,
+      "duration": 0.19,
+      "volume": 0.07
+    }
+  },
+  "pickup": {
+    "notes": [69, 72, 76, 81, 84],
+    "tone": {
+      "spacing": 0.055,
+      "duration": 0.14,
+      "volume": 0.085
+    }
+  },
+  "ammo": {
+    "notes": [76, 81, 88],
+    "tone": {
+      "spacing": 0.045,
+      "duration": 0.1,
+      "volume": 0.19
+    }
+  },
+  "wave": {
+    "notes": [57, 64, 69, 72, 76, 81],
+    "tone": {
+      "spacing": 0.075,
+      "duration": 0.2,
+      "volume": 0.07
+    }
+  },
+  "gameover": {
+    "notes": [69, 67, 64, 60, 57, 45],
+    "tone": {
+      "spacing": 0.14,
+      "finalNoteIndex": 5,
+      "finalDuration": 0.65,
+      "duration": 0.22,
+      "volume": 0.2
+    }
+  }
+}

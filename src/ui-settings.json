@@ -1,0 +1,8 @@
+{
+  "scoreDigits": 6,
+  "waveDigits": 2,
+  "bossAnnouncementMs": 1000,
+  "toastMs": 2500,
+  "percent": 100,
+  "lastWaveNameIndex": 4
+}

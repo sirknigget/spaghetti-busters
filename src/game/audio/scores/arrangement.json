@@ -1,0 +1,46 @@
+{
+  "sixteenthsPerBar": 16,
+  "stereoPeriod": 2,
+  "octave": 12,
+  "quiet": {
+    "startBar": 8,
+    "endBar": 12,
+    "endingBar": 11,
+    "endingBeat": 12,
+    "alternateDownbeat": 8
+  },
+  "chord": {
+    "quietVolume": 0.034,
+    "volume": 0.028,
+    "titleSpacing": 0.09,
+    "spacing": 0.03,
+    "duration": 18,
+    "titleVolume": 0.024
+  },
+  "lead": {
+    "titleBeatModulo": 4,
+    "titleAccentBeat": 7,
+    "octaveStartBar": 12,
+    "octaveStartBeat": 8,
+    "quietDuration": 3.4,
+    "duration": 2.1,
+    "quietVolume": 0.07,
+    "volume": 0.1,
+    "titleDuration": 4.2,
+    "titleVolume": 0.085,
+    "pan": 0.24,
+    "glassTrack": 2,
+    "overtoneDuration": 1.4,
+    "overtoneVolume": 0.02,
+    "overtonePan": 0.35
+  },
+  "arpeggio": {
+    "alternateOffset": 3,
+    "titleBeatModulo": 3,
+    "titleDuration": 3,
+    "duration": 1.7,
+    "titleVolume": 0.035,
+    "volume": 0.055,
+    "pan": -0.4
+  }
+}

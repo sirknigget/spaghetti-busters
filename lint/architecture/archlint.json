@@ -1,0 +1,38 @@
+{
+  "aliases": {
+    "#root/*": "./*"
+  },
+  "rules": {
+    "module_cohesion": {
+      "severity": "high",
+      "min_exports": 5,
+      "max_components": 2,
+      "exclude": [
+        "**/*-types.ts",
+        "**/*-settings.ts",
+        "**/*-config.ts",
+        "**/audio-effect-score.ts"
+      ]
+    },
+    "lcom": {
+      "exclude": ["**/*"]
+    },
+    "high_coupling": {
+      "severity": "high",
+      "max_cbo": 30,
+      "exclude": ["**/*-types.ts", "**/*-settings.ts", "**/*-config.ts"]
+    },
+    "hub_module": {
+      "severity": "high",
+      "min_fan_in": 8,
+      "min_fan_out": 8,
+      "max_complexity": 5
+    },
+    "sdp_violation": {
+      "severity": "high",
+      "min_fan_total": 5,
+      "instability_diff": 0.3
+    }
+  },
+  "tsconfig": false
+}

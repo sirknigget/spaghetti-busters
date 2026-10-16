@@ -1,0 +1,68 @@
+{
+  "robot": {
+    "notes": [52, 64, 59, 76],
+    "delays": [0, 0.07, 0.21, 0.34],
+    "tone": {
+      "duration": 0.13,
+      "volume": 0.055
+    }
+  },
+  "generate": {
+    "notes": [48, 55, 62, 70, 79, 86],
+    "tone": {
+      "spacing": 0.014,
+      "duration": 0.16,
+      "volume": 0.075
+    },
+    "noise": {
+      "delay": 0.3,
+      "duration": 0.17,
+      "volume": 0.09,
+      "cutoff": 2300
+    }
+  },
+  "exception": {
+    "tone": {
+      "baseFrequency": 970,
+      "frequencyRange": 220,
+      "duration": 0.13,
+      "volume": 0.045,
+      "endFrequency": 340
+    },
+    "accent": {
+      "frequency": 470,
+      "delay": 0.055,
+      "duration": 0.09,
+      "volume": 0.09,
+      "endFrequency": 690
+    }
+  },
+  "absorb": {
+    "tone": {
+      "baseFrequency": 170,
+      "frequencyRange": 55,
+      "duration": 0.09,
+      "volume": 0.09,
+      "endFrequency": 80
+    },
+    "noise": {
+      "duration": 0.045,
+      "volume": 0.045,
+      "cutoff": 2800
+    }
+  },
+  "robotDestroy": {
+    "noise": {
+      "duration": 0.48,
+      "volume": 0.2,
+      "cutoff": 1100
+    },
+    "tone": {
+      "spacing": 0.065,
+      "duration": 0.25,
+      "volume": 0.12,
+      "endFrequencyRatio": 0.45
+    },
+    "frequencies": [210, 150, 92, 55]
+  }
+}

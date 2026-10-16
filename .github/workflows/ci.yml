@@ -2,8 +2,6 @@ name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
@@ -13,89 +11,56 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  format:
-    name: Formatting
+  checks:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Formatting
+            command: npm run format:check
+          - name: ESLint
+            command: npm run lint:eslint
+          - name: Oxlint
+            command: npm run lint:oxlint
+          - name: Stylelint
+            command: npm run lint:css
+          - name: Build
+            command: npm run build
+          - name: Unit tests
+            command: npm test
+          - name: Duplicate detection
+            command: npm run lint:duplicates
+          - name: Unused code
+            command: npm run lint:unused
+          - name: Production unused code
+            command: npm run lint:unused:production
+          - name: Architecture metrics
+            command: npm run lint:architecture
+          - name: Dependency graph
+            command: npm run lint:dependencies
+    env:
+      JSCPD_CACHE_DIR: ${{ github.workspace }}/.quality-results/jscpd-cache
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup
+      - uses: actions/cache@v4
+        if: matrix.name == 'Duplicate detection'
         with:
-          node-version: 22
-          cache: npm
-      - run: npm install --global pnpm@10.33.0
-      - run: npm ci
-      - run: npm run format:check
-
-  eslint:
-    name: ESLint
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+          path: .quality-results/jscpd-cache
+          key: jscpd-5.4.1-CodeRankEmbed-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('src/**/*.ts', 'tests/**/*.ts', '*.config.ts', 'lint/**/*.ts') }}
+          restore-keys: |
+            jscpd-5.4.1-CodeRankEmbed-${{ runner.os }}-${{ runner.arch }}-
+      - run: ${{ matrix.command }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && matrix.name == 'Duplicate detection' }}
         with:
-          node-version: 22
-          cache: npm
-      - run: npm install --global pnpm@10.33.0
-      - run: npm ci
-      - run: npm run lint:eslint
-
-  oxlint:
-    name: Oxlint
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm install --global pnpm@10.33.0
-      - run: npm ci
-      - run: npm run lint:oxlint
-
-  stylelint:
-    name: Stylelint
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm install --global pnpm@10.33.0
-      - run: npm ci
-      - run: npm run lint:css
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm install --global pnpm@10.33.0
-      - run: npm ci
-      - run: npm run build
-
-  unit-tests:
-    name: Unit tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm install --global pnpm@10.33.0
-      - run: npm ci
-      - run: npm test
+          name: duplicate-reports
+          path: .quality-results/jscpd/*.json
+          if-no-files-found: error
+          retention-days: 7
 
   browser-tests:
     name: Browser tests (${{ matrix.shard }}/2)
@@ -107,12 +72,7 @@ jobs:
         shard: [1, 2]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm install --global pnpm@10.33.0
-      - run: npm ci
+      - uses: ./.github/actions/setup
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e -- --shard=${{ matrix.shard }}/2
       - uses: actions/upload-artifact@v4

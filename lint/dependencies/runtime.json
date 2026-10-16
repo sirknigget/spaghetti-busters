@@ -1,0 +1,24 @@
+{
+  "extends": "../../.dependency-cruiser.json",
+  "forbidden": [
+    {
+      "name": "no-runtime-folder-cycles",
+      "severity": "error",
+      "scope": "folder",
+      "from": {
+        "path": "^src/"
+      },
+      "to": {
+        "path": "^src/",
+        "circular": true
+      }
+    }
+  ],
+  "options": {
+    "tsPreCompilationDeps": false,
+    "exclude": {
+      "path": "^(dist|coverage|playwright-report|test-results|\\.quality-results)/|\\.(test|spec)\\.ts$|^(tests|lint)/",
+      "dynamic": true
+    }
+  }
+}
