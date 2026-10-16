@@ -32,18 +32,21 @@ import type {
   Block,
   Pickup,
   Robot,
-  RobotBrand,
   SpawnBlockOptions,
   SpecialWeapon,
   TimeoutHazard,
 } from "#root/src/game/simulation/simulation-types.ts";
 
+import type {
+  SimulationContext,
+  RobotSpawnOptions,
+  HazardOptions,
+} from "#root/src/game/simulation/common/simulation-context.ts";
+
 const BONUS_START_X = 1000;
 
-export * from "#root/src/game/simulation/simulation-types.ts";
-
 /** Deterministic gameplay facade; systems own updates and state groups own data. */
-export class Simulation {
+export class Simulation implements SimulationContext {
   world = new WorldState();
   player = new PlayerState();
   progress = new ProgressState();
@@ -53,11 +56,11 @@ export class Simulation {
     this.reset();
   }
 
-  get waveRemaining() {
+  get waveRemaining(): number {
     return waveRemainingSystem(this);
   }
 
-  get isBossWave() {
+  get isBossWave(): boolean {
     return isBossWaveSystem(this);
   }
 
@@ -65,19 +68,19 @@ export class Simulation {
     return bossHealthSystem(this);
   }
 
-  get waveTotal() {
+  get waveTotal(): number {
     return waveTotalSystem(this);
   }
 
-  get isStunned() {
+  get isStunned(): boolean {
     return isStunnedSystem(this);
   }
 
-  get driftSpeed() {
+  get driftSpeed(): number {
     return driftSpeedSystem(this);
   }
 
-  get waveLabel() {
+  get waveLabel(): string {
     return waveLabelSystem(this);
   }
 
@@ -105,9 +108,7 @@ export class Simulation {
     return fireSpecialSystem(this);
   }
 
-  spawnRobot(
-    options: { x?: number; y?: number; brand?: RobotBrand } = {},
-  ): Robot {
+  spawnRobot(options: RobotSpawnOptions = {}): Robot {
     return spawnRobotSystem(this, options);
   }
 
@@ -120,15 +121,7 @@ export class Simulation {
     return spawnBonusSystem(this, { type, x, y });
   }
 
-  spawnHazard(
-    options: {
-      x?: number;
-      y?: number;
-      durationMs?: number;
-      vx?: number;
-      vy?: number;
-    } = {},
-  ): TimeoutHazard {
+  spawnHazard(options: HazardOptions = {}): TimeoutHazard {
     return spawnHazardSystem(this, options);
   }
 

@@ -1,9 +1,7 @@
 import { createGlyphTexture } from "#root/src/game/graphics/glyph-texture.ts";
 import * as THREE from "three";
-import type {
-  Simulation,
-  Particle,
-} from "#root/src/game/simulation/simulation.ts";
+import type { Particle } from "#root/src/game/simulation/simulation-types.ts";
+import type { SimulationView } from "#root/src/game/simulation/common/simulation-context.ts";
 import { loadGeometry } from "#root/src/game/graphics/model-assets.ts";
 import { HEIGHT, PARTICLE } from "#root/src/game/rendering/world-settings.ts";
 
@@ -16,7 +14,7 @@ export class WorldParticles {
 
   constructor(private readonly scene: THREE.Scene) {}
 
-  update(sim: Simulation) {
+  update(sim: SimulationView) {
     // Detached letters now belong to the independent 3D debris world.
     const particles = sim.world.particles
       .filter((p) => !p.char)

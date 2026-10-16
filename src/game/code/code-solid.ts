@@ -1,12 +1,13 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
-import type { Block } from "#root/src/game/simulation/simulation.ts";
-import { perforatedGeometry } from "#root/src/game/geometry/fracture/fracture-geometry.ts";
+import type { Block } from "#root/src/game/simulation/simulation-types.ts";
+import { perforatedGeometry } from "#root/src/game/geometry/fracture/fracture-solid.ts";
 import {
   createVisual,
   type FractureVisual,
 } from "#root/src/game/code/common/code-visual.ts";
 import {
+  createCodeCanvas,
   addRemovedCells,
   addDamageScars,
   codePalette,
@@ -39,7 +40,7 @@ export function createCodeMesh(
     (previous?.userData.fractureVisual as FractureVisual | undefined);
   const visual = prior
     ? { ...prior, holes: new Map(prior.holes) }
-    : createVisual(block);
+    : createVisual(block, createCodeCanvas(block));
 
   addRemovedCells(visual, block);
   addDamageScars(visual, block);

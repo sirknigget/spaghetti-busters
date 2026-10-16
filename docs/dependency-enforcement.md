@@ -226,3 +226,17 @@ duplicate-dependency-section warnings are explicitly disabled as well.
 All enabled blocking analyses must pass with zero errors. There are no issue
 allowances or baselines. The original report's external documentation links
 remain the references for the supplied rule conditions and Knip modes.
+
+## Complementary implementation metrics
+
+The [architecture rollout](architecture-rollout.md) adds blocking module
+cohesion, coupling/hub, and dependency-instability checks in a separate
+implementation-only job. Tests, fixtures, and lint tooling do not contribute
+to those metrics. Domain systems now use an explicit simulation context, while
+presentation uses a view without command methods. Concrete scene controllers
+still own the facade. The report records the thresholds, native analyzer
+limitations, experiments, and architectural tradeoffs.
+
+Cycle and unused-export enforcement remains with dependency-cruiser and Knip;
+no overlapping archlint cycle or dead-export gate was added. Existing typed,
+eager-runtime, and dynamic-inclusive graph scopes are preserved.

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationView } from "#root/src/game/simulation/common/simulation-context.ts";
 import {
   createBullet,
   createSpecial,
@@ -18,13 +18,19 @@ import {
 } from "#root/src/game/rendering/world-settings.ts";
 
 export class WorldEntities {
-  readonly robots: EntityCache<Simulation["world"]["robots"][number]>;
-  private readonly bullets: EntityCache<Simulation["world"]["bullets"][number]>;
-  private readonly pickups: EntityCache<Simulation["world"]["pickups"][number]>;
-  private readonly specials: EntityCache<
-    Simulation["world"]["specials"][number]
+  readonly robots: EntityCache<SimulationView["world"]["robots"][number]>;
+  private readonly bullets: EntityCache<
+    SimulationView["world"]["bullets"][number]
   >;
-  private readonly hazards: EntityCache<Simulation["world"]["hazards"][number]>;
+  private readonly pickups: EntityCache<
+    SimulationView["world"]["pickups"][number]
+  >;
+  private readonly specials: EntityCache<
+    SimulationView["world"]["specials"][number]
+  >;
+  private readonly hazards: EntityCache<
+    SimulationView["world"]["hazards"][number]
+  >;
 
   constructor(scene: THREE.Scene) {
     this.robots = new EntityCache(scene);
@@ -34,7 +40,7 @@ export class WorldEntities {
     this.hazards = new EntityCache(scene);
   }
 
-  update(sim: Simulation) {
+  update(sim: SimulationView) {
     this.robotsUpdate(sim);
     this.bulletsUpdate(sim);
     this.pickupsUpdate(sim);
@@ -42,7 +48,7 @@ export class WorldEntities {
     this.hazardsUpdate(sim);
   }
 
-  private robotsUpdate(sim: Simulation) {
+  private robotsUpdate(sim: SimulationView) {
     this.robots.sync(sim.world.robots, {
       create: (r) => createRobot(r.brand),
       update: (mesh, r) =>
@@ -50,7 +56,7 @@ export class WorldEntities {
     });
   }
 
-  private bulletsUpdate(sim: Simulation) {
+  private bulletsUpdate(sim: SimulationView) {
     this.bullets.sync(sim.world.bullets, {
       create: () => createBullet(),
       update: (mesh, b) => {
@@ -59,7 +65,7 @@ export class WorldEntities {
     });
   }
 
-  private pickupsUpdate(sim: Simulation) {
+  private pickupsUpdate(sim: SimulationView) {
     this.pickups.sync(sim.world.pickups, {
       create: (p) => createPickup(p.type),
       update: (mesh, p) => {
@@ -72,7 +78,7 @@ export class WorldEntities {
     });
   }
 
-  private specialsUpdate(sim: Simulation) {
+  private specialsUpdate(sim: SimulationView) {
     this.specials.sync(sim.world.specials, {
       create: (p) => createSpecial(p.type),
       update: (mesh, p) => {
@@ -89,7 +95,7 @@ export class WorldEntities {
     });
   }
 
-  private hazardsUpdate(sim: Simulation) {
+  private hazardsUpdate(sim: SimulationView) {
     this.hazards.sync(sim.world.hazards, {
       create: (h) => createTimeoutMesh(h),
       update: (mesh, h) => {

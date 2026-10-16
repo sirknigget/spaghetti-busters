@@ -2,11 +2,9 @@ import { createDeathFragments } from "#root/src/game/code/death/code-death-fragm
 import * as THREE from "three";
 import { expect, it } from "vitest";
 import { disposeObject } from "#root/src/game/code/code-mesh.ts";
-import {
-  chippedHole,
-  perforatedGeometry,
-  type Polygon,
-} from "#root/src/game/geometry/fracture/fracture-geometry.ts";
+import { chippedHole } from "#root/src/game/geometry/fracture/fracture-geometry.ts";
+import { perforatedGeometry } from "#root/src/game/geometry/fracture/fracture-solid.ts";
+import { type Polygon } from "#root/src/game/geometry/fracture/fracture-types.ts";
 
 const area = (geometry: THREE.BufferGeometry) => {
   const p = geometry.getAttribute("position");

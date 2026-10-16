@@ -7,19 +7,20 @@ through `sim.random()` so deterministic fixtures remain reproducible.
 
 ## Where changes belong
 
-| Path                                                    | Ownership                                                     |
-| ------------------------------------------------------- | ------------------------------------------------------------- |
-| `simulation.ts`                                         | Public facade delegating to focused systems                   |
-| `simulation-state.ts`                                   | World, player, progress, and runtime state groups             |
-| `simulation-types.ts`                                   | Domain contracts and presentation-safe shared constants       |
-| `simulation-tuning.{ts,json}`, `simulation-values.json` | Tuning access and declarative values                          |
-| `runtime/`                                              | Reset, bounded substeps, update order, event tests            |
-| `blocks/`                                               | Creation, code cells, damage, impulses, splitting, explosions |
-| `collision/`                                            | 2D collision calculations                                     |
-| `weapons/`                                              | Primary/special fire, targeting, projectiles, patterns        |
-| `enemies/`                                              | Robots, timeout hazards, domain-owned robot pose/brand types  |
-| `progression/`                                          | Wave progression, factory bosses, pickups and ammo            |
-| `effects/`                                              | Gameplay particle updates and visual-event payload creation   |
+| Path                                                    | Ownership                                                                          |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `simulation.ts`                                         | Public facade implementing `SimulationContext` and delegating to focused systems   |
+| `simulation-state.ts`                                   | World, player, progress, and runtime state groups                                  |
+| `simulation-types.ts`                                   | Domain contracts and presentation-safe shared constants                            |
+| `simulation-tuning.{ts,json}`, `simulation-values.json` | Tuning access and declarative values                                               |
+| `common/`                                               | Pure math, settings, weapon spread data, and simulation context/view contracts     |
+| `runtime/`                                              | Reset, bounded substeps, update order, event tests                                 |
+| `blocks/`                                               | Creation, syntax highlighting, code cells, damage, impulses, splitting, explosions |
+| `collision/`                                            | 2D collision calculations                                                          |
+| `weapons/`                                              | Primary/special fire, targeting, projectiles, patterns                             |
+| `enemies/`                                              | Robots, timeout hazards, domain-owned robot pose/brand types                       |
+| `progression/`                                          | Wave progression, factory bosses, bonus rolls, pickups and ammo                    |
+| `effects/`                                              | Gameplay particle updates and visual-event payload creation                        |
 
 ## Contracts to preserve
 
@@ -39,3 +40,7 @@ through `sim.random()` so deterministic fixtures remain reproducible.
 Use colocated `*.test.ts` coverage for changed gameplay contracts and
 `tests/unit/simulation-support.ts` for reusable setup. Browser scenarios in
 `tests/gameplay/` cover integration.
+
+Systems depend on `common/simulation-context.ts`, not the concrete facade.
+Presentation uses its smaller `SimulationView`; only scene controllers construct
+or control `Simulation`. Import domain types directly from `simulation-types.ts`.

@@ -28,3 +28,7 @@ before destroying the source resources.
 Check `death/code-death-fragments.test.ts`, geometry unit tests, and the browser
 code-death/physics scenarios for changes to fracture or disintegration. Confirm
 the rendered letters, holes, depth, and falling fragments remain recognizable.
+
+`code-solid.ts` composes canvas creation with the common visual state factory.
+The common factory accepts its canvas so it does not depend on surface drawing
+or artwork loading.

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { perforatedGeometry } from "#root/src/game/geometry/fracture/fracture-geometry.ts";
+import { perforatedGeometry } from "#root/src/game/geometry/fracture/fracture-solid.ts";
 import type { FractureVisual } from "#root/src/game/code/common/code-visual.ts";
 import { insideRegions } from "#root/src/game/code/common/code-visual.ts";
 import { HALF, DIAMETER } from "#root/src/game/code/common/code-settings.ts";

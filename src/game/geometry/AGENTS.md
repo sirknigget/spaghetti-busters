@@ -5,11 +5,11 @@ and Three.js geometry outputs.
 
 ## Algorithm map
 
-| Area              | Main entry points and responsibilities                                                                                                         |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fracture/`       | `fracture-geometry.ts` exposes stable entropy, chipped holes, masks, and perforated solids; `fracture-solid.ts` builds the solid               |
-| `fracture/sweep/` | Interval subtraction and strip generation for visible surfaces                                                                                 |
-| `clipping/`       | `death-clipping.ts` clips an existing perforated mesh into complementary pieces; neighboring modules build bands, polygons, walls, and outputs |
+| Area              | Main entry points and responsibilities                                                                                                                           |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fracture/`       | `fracture-geometry.ts` provides stable entropy, chipped holes, and masks; import solids directly from `fracture-solid.ts` and contracts from `fracture-types.ts` |
+| `fracture/sweep/` | Interval subtraction and strip generation for visible surfaces                                                                                                   |
+| `clipping/`       | `death-clipping.ts` clips an existing perforated mesh into complementary pieces; neighboring modules build bands, polygons, walls, and outputs                   |
 
 Keep generated contours deterministic for identical seeds and inputs. Both
 fragments must share their jagged seam, preserve the source UVs and existing hole

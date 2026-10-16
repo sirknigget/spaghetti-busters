@@ -4,7 +4,7 @@ import {
   instantiateModel,
   loadGeometry,
 } from "#root/src/game/graphics/model-assets.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationView } from "#root/src/game/simulation/common/simulation-context.ts";
 import {
   HALF,
   HEIGHT,
@@ -39,7 +39,7 @@ export class WorldPulses {
     scene.add(this.reviewBeam);
   }
 
-  update(sim: Simulation) {
+  update(sim: SimulationView) {
     for (const [effect, remaining, duration] of [
       [this.reviewEffect, sim.player.reviewPulse, PULSE.reviewDuration],
       [this.lintEffect, sim.player.lintPulse, PULSE.lintDuration],
@@ -55,7 +55,7 @@ export class WorldPulses {
     this.updateBeam(sim);
   }
 
-  private updateBeam(sim: Simulation) {
+  private updateBeam(sim: SimulationView) {
     this.reviewBeam.visible = sim.player.reviewPulse > PULSE.beamCutoff;
     if (this.reviewBeam.visible) {
       const a = new THREE.Vector3(

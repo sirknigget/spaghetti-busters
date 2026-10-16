@@ -1,5 +1,5 @@
 import { DebrisPhysics } from "#root/src/game/debris/debris-physics.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationView } from "#root/src/game/simulation/common/simulation-context.ts";
 import { WorldDisplay } from "#root/src/game/rendering/display/world-display.ts";
 import { WorldCode } from "#root/src/game/rendering/code/world-code.ts";
 import { WorldEntities } from "#root/src/game/rendering/display/world-entities.ts";
@@ -65,7 +65,7 @@ export class WorldRenderer {
     });
   }
 
-  render(sim: Simulation, muzzle: number, impact: number) {
+  render(sim: SimulationView, muzzle: number, impact: number) {
     const effectsDt = Math.max(
       0,
       Math.min(

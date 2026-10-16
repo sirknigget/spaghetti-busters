@@ -1,7 +1,7 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
 import { loadGeometry } from "#root/src/game/graphics/model-assets.ts";
-import type { Block } from "#root/src/game/simulation/simulation.ts";
+import type { Block } from "#root/src/game/simulation/simulation-types.ts";
 import type { FractureVisual } from "#root/src/game/code/common/code-visual.ts";
 import {
   HALF,

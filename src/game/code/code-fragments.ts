@@ -1,5 +1,5 @@
 import type * as THREE from "three";
-import type { Block } from "#root/src/game/simulation/simulation.ts";
+import type { Block } from "#root/src/game/simulation/simulation-types.ts";
 import type { FractureVisual } from "#root/src/game/code/common/code-visual.ts";
 import { createCodeMesh } from "#root/src/game/code/code-solid.ts";
 import { addRemovedCells } from "#root/src/game/code/code-surface.ts";

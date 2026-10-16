@@ -1,6 +1,6 @@
 import type { PlayScene } from "#root/src/game/scene/play-scene.ts";
 import { INPUT } from "#root/src/game/scene/scene-config.ts";
-import type { SpecialWeapon } from "#root/src/game/simulation/simulation.ts";
+import type { SpecialWeapon } from "#root/src/game/simulation/simulation-types.ts";
 
 const SPECIAL_KEYS = new Map<string, SpecialWeapon>([
   ["Digit1", "homing"],

@@ -33,3 +33,7 @@ For changes to camera, lighting, text readability, or meshes, inspect the actual
 WebGL output and relevant `tests/rendering/` scenarios. Model edits also follow
 [the model workflow](../../../docs/models/README.md). Gameplay must stay the same
 when visual detail, entropy, or rendering frame rate changes.
+
+Rendering reads gameplay through `SimulationView` from
+`simulation/common/simulation-context.ts`. It does not need the concrete gameplay
+facade or its command methods. Import domain types from `simulation-types.ts`.

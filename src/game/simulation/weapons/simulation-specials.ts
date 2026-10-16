@@ -1,9 +1,9 @@
 import { weaponAim } from "#root/src/game/simulation/weapons/weapon-aim.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import { extents } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { damage } from "#root/src/game/simulation/blocks/simulation-damage.ts";
 import { split } from "#root/src/game/simulation/blocks/simulation-fragments.ts";
-import { clamp } from "#root/src/game/simulation/simulation-shared.ts";
+import { clamp } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {
   GAME_WIDTH,
@@ -16,7 +16,7 @@ const REVIEW_PULSE_SECONDS = 0.65;
 const SPECIAL_LAUNCH_SPEED = 600;
 const GRENADE_FUSE_SECONDS = 1.05;
 
-function instantSpecial(sim: Simulation, type: "review" | "lint") {
+function instantSpecial(sim: SimulationContext, type: "review" | "lint") {
   sim.player.specialAmmo[type]--;
   sim.runtime.specialCooldown = INSTANT_SPECIAL_DURATION_SECONDS;
   if (type === "review") {
@@ -30,7 +30,7 @@ function instantSpecial(sim: Simulation, type: "review" | "lint") {
   }
 }
 
-function specialUnavailable(sim: Simulation): boolean {
+function specialUnavailable(sim: SimulationContext): boolean {
   const type = sim.player.specialWeapon;
 
   return (
@@ -41,7 +41,7 @@ function specialUnavailable(sim: Simulation): boolean {
   );
 }
 
-export function fireSpecial(sim: Simulation): boolean {
+export function fireSpecial(sim: SimulationContext): boolean {
   const type = sim.player.specialWeapon;
 
   if (specialUnavailable(sim)) {
@@ -61,7 +61,7 @@ type MovingSpecial = "homing" | "grenade";
 
 const LAUNCH = { speed: SPECIAL_LAUNCH_SPEED, fuse: GRENADE_FUSE_SECONDS };
 
-function grenadeVelocity(sim: Simulation) {
+function grenadeVelocity(sim: SimulationContext) {
   const x = clamp(
     sim.player.aimX,
     TUNING.weapon.grenadeMinX,
@@ -86,7 +86,11 @@ function grenadeVelocity(sim: Simulation) {
   };
 }
 
-function launchVelocity(sim: Simulation, type: MovingSpecial, angle: number) {
+function launchVelocity(
+  sim: SimulationContext,
+  type: MovingSpecial,
+  angle: number,
+) {
   return type === "grenade"
     ? grenadeVelocity(sim)
     : {
@@ -95,7 +99,7 @@ function launchVelocity(sim: Simulation, type: MovingSpecial, angle: number) {
       };
 }
 
-function launchSpecial(sim: Simulation, type: MovingSpecial) {
+function launchSpecial(sim: SimulationContext, type: MovingSpecial) {
   const angle = weaponAim(sim.player);
 
   sim.world.specials.push({
@@ -117,7 +121,7 @@ function launchSpecial(sim: Simulation, type: MovingSpecial) {
   sim.world.events.push(type === "homing" ? "missile" : "grenade");
 }
 
-function lintBlocks(sim: Simulation) {
+function lintBlocks(sim: SimulationContext) {
   // Each original block is handled once; new halves wait for the next bomb.
   for (const block of sim.world.blocks) {
     const extent = extents(block);

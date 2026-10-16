@@ -1,4 +1,4 @@
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import {
   advanceAnger,
   checkBlockBoundary,
@@ -18,7 +18,7 @@ import {
   spawnPendingBlocks,
 } from "#root/src/game/simulation/progression/simulation-progression.ts";
 import { updateRobots } from "#root/src/game/simulation/enemies/simulation-robots.ts";
-import { clamp } from "#root/src/game/simulation/simulation-shared.ts";
+import { clamp } from "#root/src/game/simulation/common/simulation-math.ts";
 import { updateSpecials } from "#root/src/game/simulation/weapons/simulation-special-update.ts";
 import {
   PlayerState,
@@ -35,7 +35,7 @@ const INITIAL_BLOCK_Y = 330;
 const INITIAL_BLOCK_VERTICAL_SPEED = 22;
 const INITIAL_BLOCK_ANGLE = -0.035;
 
-function advanceBlocks(sim: Simulation, dt: number) {
+function advanceBlocks(sim: SimulationContext, dt: number) {
   if (dt <= 0) {
     return true;
   }
@@ -54,7 +54,7 @@ function advanceBlocks(sim: Simulation, dt: number) {
   return true;
 }
 
-function step(sim: Simulation, dt: number) {
+function step(sim: SimulationContext, dt: number) {
   advancePlayer(sim, dt);
 
   const enemyDt = advanceFreeze(sim, dt);
@@ -81,7 +81,7 @@ function step(sim: Simulation, dt: number) {
   advanceParticles(sim, dt);
 }
 
-function spawnTimedRobot(sim: Simulation, enemyDt: number) {
+function spawnTimedRobot(sim: SimulationContext, enemyDt: number) {
   sim.runtime.robotTimer -= enemyDt;
   if (
     !sim.isBossWave &&
@@ -100,7 +100,7 @@ function spawnTimedRobot(sim: Simulation, enemyDt: number) {
   }
 }
 
-function spawnTimedBonus(sim: Simulation, dt: number) {
+function spawnTimedBonus(sim: SimulationContext, dt: number) {
   sim.runtime.bonusTimer -= dt;
   if (sim.runtime.bonusTimer <= 0) {
     sim.spawnBonus();
@@ -110,7 +110,7 @@ function spawnTimedBonus(sim: Simulation, dt: number) {
   }
 }
 
-function spawnTimedHazard(sim: Simulation, enemyDt: number) {
+function spawnTimedHazard(sim: SimulationContext, enemyDt: number) {
   sim.runtime.hazardTimer -= enemyDt;
   if (!sim.isBossWave && enemyDt > 0 && sim.runtime.hazardTimer <= 0) {
     sim.spawnHazard();
@@ -124,7 +124,7 @@ function spawnTimedHazard(sim: Simulation, enemyDt: number) {
   }
 }
 
-function advancePickups(sim: Simulation, dt: number) {
+function advancePickups(sim: SimulationContext, dt: number) {
   for (const pickup of sim.world.pickups) {
     pickup.age += dt;
     pickup.life -= dt;
@@ -149,7 +149,11 @@ function advancePickups(sim: Simulation, dt: number) {
   sim.world.pickups = sim.world.pickups.filter((pickup) => pickup.life > 0);
 }
 
-function advanceProjectiles(sim: Simulation, dt: number, enemyDt: number) {
+function advanceProjectiles(
+  sim: SimulationContext,
+  dt: number,
+  enemyDt: number,
+) {
   for (const bullet of sim.world.bullets) {
     updateBullet(sim, bullet, dt);
   }
@@ -166,7 +170,7 @@ function advanceProjectiles(sim: Simulation, dt: number, enemyDt: number) {
   sim.world.hazards = sim.world.hazards.filter((hazard) => hazard.life > 0);
 }
 
-function advanceParticles(sim: Simulation, dt: number) {
+function advanceParticles(sim: SimulationContext, dt: number) {
   for (const particle of sim.world.particles) {
     particle.life -= dt;
     particle.x += particle.vx * dt;
@@ -181,7 +185,7 @@ function advanceParticles(sim: Simulation, dt: number) {
     .slice(TUNING.particles.capacity);
 }
 
-export function reset(sim: Simulation) {
+export function reset(sim: SimulationContext) {
   sim.world = new WorldState();
   sim.player = new PlayerState();
   sim.progress = new ProgressState();
@@ -197,7 +201,7 @@ export function reset(sim: Simulation) {
   });
 }
 
-export function update(sim: Simulation, dt: number) {
+export function update(sim: SimulationContext, dt: number) {
   if (!Number.isFinite(dt) || dt <= 0 || sim.progress.status !== "playing") {
     return;
   }

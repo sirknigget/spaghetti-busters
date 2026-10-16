@@ -1,9 +1,9 @@
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import {
   snapshot,
   visual,
 } from "#root/src/game/simulation/effects/simulation-particles.ts";
-import { HALF } from "#root/src/game/simulation/simulation-shared.ts";
+import { HALF } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import type {
   Block,
@@ -13,7 +13,7 @@ import type {
 const FRACTURE_REWARD = 50;
 const FRAGMENT_THROW_DELAY_SECONDS = 3;
 
-export function split(sim: Simulation, options: SplitOptions) {
+export function split(sim: SimulationContext, options: SplitOptions) {
   const { block, cells } = options;
   const horizontal =
     block.height > block.width * TUNING.split.horizontalAspectRatio;
@@ -75,7 +75,7 @@ function fragmentIdentity(block: Block) {
 }
 
 function createFragment(
-  sim: Simulation,
+  sim: SimulationContext,
   plan: FracturePlan,
   part: FragmentPart,
 ): Block {

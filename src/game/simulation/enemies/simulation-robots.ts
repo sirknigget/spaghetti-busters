@@ -1,7 +1,10 @@
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type {
+  SimulationContext,
+  RobotSpawnOptions,
+} from "#root/src/game/simulation/common/simulation-context.ts";
 import { segmentRectangle } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { visual } from "#root/src/game/simulation/effects/simulation-particles.ts";
-import { clamp } from "#root/src/game/simulation/simulation-shared.ts";
+import { clamp } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {
   type Robot,
@@ -13,12 +16,8 @@ const ROBOT_HIT_FLASH_SECONDS = 0.2;
 const ROBOT_IMPACT_RADIUS = 19;
 
 export function spawnRobot(
-  sim: Simulation,
-  options: {
-    x?: number;
-    y?: number;
-    brand?: RobotBrand;
-  } = {},
+  sim: SimulationContext,
+  options: RobotSpawnOptions = {},
 ): Robot {
   const brands: RobotBrand[] = [
     "openai",
@@ -60,7 +59,7 @@ interface DamageRobotOptions {
   vy: number;
 }
 export function damageRobot(
-  sim: Simulation,
+  sim: SimulationContext,
   { robot, power, x, y, vx, vy }: DamageRobotOptions,
 ) {
   if (robot.health <= 0) {
@@ -126,7 +125,7 @@ interface InterceptRobotOptions {
   by: number;
 }
 export function interceptRobot(
-  sim: Simulation,
+  sim: SimulationContext,
   { ax, ay, bx, by }: InterceptRobotOptions,
 ): Robot | undefined {
   return [...sim.world.robots]
@@ -170,7 +169,7 @@ function advanceRunningRobot(robot: Robot, dt: number) {
   }
 }
 
-function advanceRobotState(sim: Simulation, robot: Robot, dt: number) {
+function advanceRobotState(sim: SimulationContext, robot: Robot, dt: number) {
   if (robot.state === "running") {
     advanceRunningRobot(robot, dt);
   } else if (
@@ -183,7 +182,7 @@ function advanceRobotState(sim: Simulation, robot: Robot, dt: number) {
   }
 }
 
-export function updateRobots(sim: Simulation, dt: number) {
+export function updateRobots(sim: SimulationContext, dt: number) {
   for (const robot of sim.world.robots) {
     robot.age += dt;
     robot.stateTime += dt;
@@ -196,7 +195,7 @@ export function updateRobots(sim: Simulation, dt: number) {
   );
 }
 
-function generateRobotCode(sim: Simulation, robot: Robot) {
+function generateRobotCode(sim: SimulationContext, robot: Robot) {
   const generated = sim.spawnBlock({
     x: robot.x + TUNING.robot.generatedOffsetX,
     y: clamp(

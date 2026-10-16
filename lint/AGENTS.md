@@ -16,6 +16,7 @@ Every enforced policy must run as a blocking CI check.
 | `project-plugin.js`, `folder-limits.js`     | Oxlint plugin and complete `src`/`tests` folder scan                                   |
 | `tests/`                                    | Lint behavior tests, including limits and spacing                                      |
 | `.jscpd.json`, `package.json` scripts       | Five blocking duplicate profiles                                                       |
+| `architecture/archlint.json`                | Cohesion and graph metrics; `check.js` scans a source snapshot without tests/fixtures  |
 | `knip.json`                                 | Normal/production entry discovery, export and dependency reachability                  |
 | `.dependency-cruiser.json`, `dependencies/` | Typed integrity graph, eager folder graph, runtime architecture graph                  |
 
@@ -41,3 +42,10 @@ formatting. Run all duplicate profiles for refactors or new documentation. Keep
 the independent jobs in `.github/workflows/ci.yml` parallel. Cold semantic scans
 download the pinned embedding model and take longer than ordinary syntax lint;
 the CI cache is configured in that workflow.
+
+Archlint 0.17.1 needs `lcom` selected to collect cohesion symbols; its wildcard
+rule exclusion disables LCOM findings. The source snapshot also prevents ignored
+test imports from contributing to graph metrics. `check.js` comments justify
+these workarounds; Archlint itself enforces the configured rules without an
+additional policy-test suite. Keep the pinned analyzer version aligned with
+the documented workarounds.

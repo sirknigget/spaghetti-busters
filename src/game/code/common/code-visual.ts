@@ -1,14 +1,13 @@
 import {
   type Polygon,
   type Point,
-} from "#root/src/game/geometry/fracture/fracture-geometry.ts";
-import { type Block } from "#root/src/game/simulation/simulation.ts";
+} from "#root/src/game/geometry/fracture/fracture-types.ts";
+import { type Block } from "#root/src/game/simulation/simulation-types.ts";
 import {
   HALF,
   HEADER_HEIGHT,
   SLAB,
 } from "#root/src/game/code/common/code-settings.ts";
-import { createCodeCanvas } from "#root/src/game/code/code-surface.ts";
 import { inside } from "#root/src/game/geometry/fracture/sweep/fracture-intervals.ts";
 
 export interface FractureVisual {
@@ -23,9 +22,11 @@ export interface FractureVisual {
   fractured: boolean;
 }
 
-export function createVisual(block: Block): FractureVisual {
+export function createVisual(
+  block: Block,
+  canvas: HTMLCanvasElement,
+): FractureVisual {
   const { width: w, height: h } = block;
-  const canvas = createCodeCanvas(block);
   const top = h * HALF + HEADER_HEIGHT;
   const bottom = -h * HALF;
 

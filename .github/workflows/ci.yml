@@ -37,6 +37,8 @@ jobs:
             command: npm run lint:unused
           - name: Production unused code
             command: npm run lint:unused:production
+          - name: Architecture metrics
+            command: npm run lint:architecture
           - name: Dependency graph
             command: npm run lint:dependencies
     env:

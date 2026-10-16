@@ -1,6 +1,6 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationView } from "#root/src/game/simulation/common/simulation-context.ts";
 import { loadGeometry } from "#root/src/game/graphics/model-assets.ts";
 import {
   EXPLOSION,
@@ -21,7 +21,7 @@ export class WorldExplosions {
     scene.add(this.explosionLight);
   }
 
-  update(sim: Simulation, impact: number) {
+  update(sim: SimulationView, impact: number) {
     while (this.explosionMeshes.length < sim.world.explosions.length) {
       const mesh = new THREE.Mesh(
         loadGeometry("explosion-ring"),
@@ -54,7 +54,7 @@ export class WorldExplosions {
     }
   }
 
-  private animate(sim: Simulation) {
+  private animate(sim: SimulationView) {
     for (const [i, mesh] of this.explosionMeshes.entries()) {
       const explosion = sim.world.explosions[i];
 

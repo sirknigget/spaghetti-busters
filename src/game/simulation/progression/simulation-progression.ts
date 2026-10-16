@@ -1,9 +1,9 @@
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 
 const BOSS_INITIAL_SPAWN_DELAY_SECONDS = 4;
 
-export function waveTotal(sim: Simulation) {
+export function waveTotal(sim: SimulationContext) {
   return sim.isBossWave
     ? 1
     : Math.min(
@@ -13,12 +13,12 @@ export function waveTotal(sim: Simulation) {
       );
 }
 
-export function isBossWave(sim: Simulation) {
+export function isBossWave(sim: SimulationContext) {
   return sim.progress.wave % TUNING.wave.bossInterval === 0;
 }
 
 export function bossHealth(
-  sim: Simulation,
+  sim: SimulationContext,
 ): { current: number; max: number } | undefined {
   if (sim.runtime.activeBossRoot === undefined || sim.runtime.bossRewarded) {
     return undefined;
@@ -45,7 +45,7 @@ export function bossHealth(
   return { current, max: sim.runtime.bossMaxHealth };
 }
 
-export function bossDriftSpeed(sim: Simulation) {
+export function bossDriftSpeed(sim: SimulationContext) {
   return Math.min(
     TUNING.wave.bossSpeedCap,
     TUNING.wave.bossBaseSpeed +
@@ -54,7 +54,7 @@ export function bossDriftSpeed(sim: Simulation) {
   );
 }
 
-export function driftSpeed(sim: Simulation) {
+export function driftSpeed(sim: SimulationContext) {
   return Math.min(
     TUNING.wave.speedCap,
     TUNING.wave.baseSpeed +
@@ -63,22 +63,22 @@ export function driftSpeed(sim: Simulation) {
   );
 }
 
-export function waveRemaining(sim: Simulation) {
+export function waveRemaining(sim: SimulationContext) {
   return sim.world.blocks.length + sim.runtime.pendingBlocks;
 }
 
-export function waveLabel(sim: Simulation) {
+export function waveLabel(sim: SimulationContext) {
   return `WAVE ${String(sim.progress.wave).padStart(TUNING.wave.labelDigits, "0")}`;
 }
 
-export function advanceCombo(sim: Simulation, dt: number) {
+export function advanceCombo(sim: SimulationContext, dt: number) {
   sim.runtime.comboTimer -= dt;
   if (sim.runtime.comboTimer <= 0) {
     sim.progress.combo = 0;
   }
 }
 
-export function spawnPendingBlocks(sim: Simulation, enemyDt: number) {
+export function spawnPendingBlocks(sim: SimulationContext, enemyDt: number) {
   sim.runtime.spawnTimer -= enemyDt;
   if (
     enemyDt > 0 &&
@@ -101,7 +101,7 @@ export function spawnPendingBlocks(sim: Simulation, enemyDt: number) {
   }
 }
 
-export function advanceWave(sim: Simulation, dt: number) {
+export function advanceWave(sim: SimulationContext, dt: number) {
   if (sim.world.blocks.length === 0 && sim.runtime.pendingBlocks === 0) {
     sim.runtime.waveTimer += dt;
     if (sim.runtime.waveTimer > 1.0) {

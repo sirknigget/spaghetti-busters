@@ -1,6 +1,9 @@
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import { extents } from "#root/src/game/simulation/collision/simulation-collision.ts";
-import { clamp, SQUARED } from "#root/src/game/simulation/simulation-shared.ts";
+import {
+  clamp,
+  SQUARED,
+} from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {
   type Block,
@@ -14,7 +17,7 @@ interface Target {
   id: number;
 }
 
-function urgentBlock(sim: Simulation) {
+function urgentBlock(sim: SimulationContext) {
   let target: Block | undefined;
   let leftEdge = Infinity;
 
@@ -64,7 +67,7 @@ function nearestGlyph(block: Block, special: SpecialProjectile) {
 }
 
 export function steerHoming(
-  sim: Simulation,
+  sim: SimulationContext,
   special: SpecialProjectile,
   dt: number,
 ) {

@@ -1,5 +1,5 @@
 import { PALETTE } from "#root/src/game/palette.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import { collectPickup } from "#root/src/game/simulation/progression/simulation-bonuses.ts";
 import type { Segment } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { segmentDistance } from "#root/src/game/simulation/collision/simulation-collision.ts";
@@ -11,7 +11,7 @@ import {
   interceptRobot,
   robotContact,
 } from "#root/src/game/simulation/enemies/simulation-robots.ts";
-import { HALF } from "#root/src/game/simulation/simulation-shared.ts";
+import { HALF } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import type {
   Block,
@@ -20,7 +20,11 @@ import type {
 
 const HAZARD_DESTRUCTION_REWARD = 60;
 
-export function updateBullet(sim: Simulation, bullet: Bullet, dt: number) {
+export function updateBullet(
+  sim: SimulationContext,
+  bullet: Bullet,
+  dt: number,
+) {
   bullet.life -= dt;
 
   const oldX = bullet.x;
@@ -82,7 +86,11 @@ function hitCell(block: Block, travel: Segment) {
   );
 }
 
-function bulletHitsBlock(sim: Simulation, bullet: Bullet, travel: Segment) {
+function bulletHitsBlock(
+  sim: SimulationContext,
+  bullet: Bullet,
+  travel: Segment,
+) {
   // Ascending distance ensures the frontmost block absorbs each projectile.
   const candidates = [...sim.world.blocks].sort((a, b) => a.x - b.x);
 
@@ -99,7 +107,11 @@ function bulletHitsBlock(sim: Simulation, bullet: Bullet, travel: Segment) {
   return false;
 }
 
-function bulletHitsRobot(sim: Simulation, bullet: Bullet, travel: Segment) {
+function bulletHitsRobot(
+  sim: SimulationContext,
+  bullet: Bullet,
+  travel: Segment,
+) {
   const robot = interceptRobot(sim, travel);
 
   if (!robot) {
@@ -120,7 +132,7 @@ function bulletHitsRobot(sim: Simulation, bullet: Bullet, travel: Segment) {
   return true;
 }
 
-function bulletHitsHazard(sim: Simulation, travel: Segment) {
+function bulletHitsHazard(sim: SimulationContext, travel: Segment) {
   const hazard = sim.world.hazards.find(
     (candidate) =>
       candidate.life > 0 && hitsHazard({ ...travel, hazard: candidate }),
@@ -143,7 +155,7 @@ function bulletHitsHazard(sim: Simulation, travel: Segment) {
   return true;
 }
 
-function bulletHitsPickup(sim: Simulation, travel: Segment) {
+function bulletHitsPickup(sim: SimulationContext, travel: Segment) {
   const pickup = sim.world.pickups.find(
     (candidate) =>
       candidate.life > 0 &&

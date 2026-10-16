@@ -6,7 +6,7 @@ import {
   createSpecialist,
 } from "#root/src/game/rendering/models/models3d.ts";
 import { createReticle } from "#root/src/game/rendering/display/world-environment.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationView } from "#root/src/game/simulation/common/simulation-context.ts";
 import {
   HALF,
   HEIGHT,
@@ -45,7 +45,7 @@ export class WorldPlayer {
     this.stun.add(this.stunLabel);
   }
 
-  update(sim: Simulation, muzzle: number) {
+  update(sim: SimulationView, muzzle: number) {
     const t = sim.progress.elapsed;
     const angle = -Math.atan2(
       sim.player.aimY - sim.player.playerY,
@@ -65,7 +65,7 @@ export class WorldPlayer {
     this.updateStun(sim);
   }
 
-  private updateMuzzle(angle: number, muzzle: number, sim: Simulation) {
+  private updateMuzzle(angle: number, muzzle: number, sim: SimulationView) {
     this.muzzleLight.position.set(
       PLAYER.cannonX + Math.cos(angle) * PLAYER.muzzleRadius,
       HEIGHT - sim.player.playerY + Math.sin(angle) * PLAYER.muzzleRadius,
@@ -80,7 +80,7 @@ export class WorldPlayer {
     }
   }
 
-  private updateStun(sim: Simulation) {
+  private updateStun(sim: SimulationView) {
     const t = sim.progress.elapsed;
 
     this.reticle.position.set(sim.player.aimX, HEIGHT - sim.player.aimY, 0);
@@ -100,7 +100,7 @@ export class WorldPlayer {
     }
   }
 
-  private drawStunLabel(sim: Simulation) {
+  private drawStunLabel(sim: SimulationView) {
     // SAFETY: the constructor creates this sprite texture from a label canvas.
     const canvas = this.stunLabel.material.map!.image as HTMLCanvasElement;
     const c = canvas.getContext("2d")!;

@@ -1,8 +1,8 @@
 import {
   COLORS,
-  HALF,
   highlightLine,
-} from "#root/src/game/simulation/simulation-shared.ts";
+} from "#root/src/game/simulation/blocks/simulation-highlight.ts";
+import { HALF } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {
   type Cell,

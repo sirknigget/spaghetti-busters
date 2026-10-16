@@ -1,6 +1,6 @@
 import * as THREE from "three";
+import { type Polygon } from "#root/src/game/geometry/fracture/fracture-types.ts";
 import {
-  type Polygon,
   fractureMask,
   fractureNoise,
 } from "#root/src/game/geometry/fracture/fracture-geometry.ts";

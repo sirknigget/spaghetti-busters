@@ -1,6 +1,9 @@
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
 import { bossDriftSpeed } from "#root/src/game/simulation/progression/simulation-progression.ts";
-import { clamp, HALF } from "#root/src/game/simulation/simulation-shared.ts";
+import {
+  clamp,
+  HALF,
+} from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import { type Block } from "#root/src/game/simulation/simulation-types.ts";
 
@@ -11,7 +14,7 @@ const BOSS_INITIAL_ANGLE = -0.015;
 const BOSS_INITIAL_SPIN = 0.008;
 const BOSS_INITIAL_SPAWN_DELAY_SECONDS = 4;
 
-export function spawnBoss(sim: Simulation): Block {
+export function spawnBoss(sim: SimulationContext): Block {
   const existing = sim.world.blocks.find(
     (block) => block.boss && block.bossRoot === sim.runtime.activeBossRoot,
   );
@@ -47,13 +50,13 @@ export function spawnBoss(sim: Simulation): Block {
   return boss;
 }
 
-function bossProductionBlocked(sim: Simulation, dt: number): boolean {
+function bossProductionBlocked(sim: SimulationContext, dt: number): boolean {
   sim.runtime.bossSpawnTimer -= dt;
 
   return dt <= 0 || sim.runtime.bossSpawnTimer > 0;
 }
 
-export function updateBoss(sim: Simulation, dt: number) {
+export function updateBoss(sim: SimulationContext, dt: number) {
   if (sim.runtime.activeBossRoot === undefined || sim.runtime.bossRewarded) {
     return;
   }
@@ -94,7 +97,7 @@ export function updateBoss(sim: Simulation, dt: number) {
   sim.world.events.push("boss-spawn");
 }
 
-function rewardBoss(sim: Simulation) {
+function rewardBoss(sim: SimulationContext) {
   sim.runtime.bossRewarded = true;
   sim.progress.score +=
     TUNING.boss.baseReward +
@@ -113,7 +116,7 @@ function rewardBoss(sim: Simulation) {
   sim.world.events.push("boss-defeated");
 }
 
-function spawnBossMinion(sim: Simulation, fragments: Block[]) {
+function spawnBossMinion(sim: SimulationContext, fragments: Block[]) {
   const source = fragments.reduce(
     (largest, block) =>
       block.cells.length > largest.cells.length ? block : largest,

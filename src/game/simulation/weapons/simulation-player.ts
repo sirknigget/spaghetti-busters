@@ -1,9 +1,7 @@
 import { weaponAim } from "#root/src/game/simulation/weapons/weapon-aim.ts";
-import type { Simulation } from "#root/src/game/simulation/simulation.ts";
-import {
-  WEAPON_SPREADS,
-  clamp,
-} from "#root/src/game/simulation/simulation-shared.ts";
+import type { SimulationContext } from "#root/src/game/simulation/common/simulation-context.ts";
+import { WEAPON_SPREADS } from "#root/src/game/simulation/common/simulation-settings.ts";
+import { clamp } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {
   type SpecialWeapon,
@@ -13,13 +11,13 @@ import {
 const BULLET_LIFETIME_SECONDS = 1.5;
 const SHOT_COOLDOWN_SECONDS = 0.135;
 
-function prepareWeapon(sim: Simulation) {
+function prepareWeapon(sim: SimulationContext) {
   if (sim.player.weapon !== "single" && sim.player.ammo <= 0) {
     sim.player.weapon = "single";
   }
 }
 
-function fireSpread(sim: Simulation) {
+function fireSpread(sim: SimulationContext) {
   const angle = weaponAim(sim.player);
   const spreads = WEAPON_SPREADS[sim.player.weapon];
 
@@ -38,7 +36,7 @@ function fireSpread(sim: Simulation) {
   }
 }
 
-export function fire(sim: Simulation): boolean {
+export function fire(sim: SimulationContext): boolean {
   if (
     sim.progress.status !== "playing" ||
     sim.isStunned ||
@@ -61,7 +59,7 @@ export function fire(sim: Simulation): boolean {
   return true;
 }
 
-export function selectSpecial(sim: Simulation, type: SpecialWeapon) {
+export function selectSpecial(sim: SimulationContext, type: SpecialWeapon) {
   if (
     sim.progress.status === "playing" &&
     !sim.isStunned &&
@@ -71,11 +69,11 @@ export function selectSpecial(sim: Simulation, type: SpecialWeapon) {
   }
 }
 
-export function isStunned(sim: Simulation) {
+export function isStunned(sim: SimulationContext) {
   return sim.player.stunRemaining > 0;
 }
 
-export function advancePlayer(sim: Simulation, dt: number) {
+export function advancePlayer(sim: SimulationContext, dt: number) {
   sim.progress.elapsed += dt;
   sim.runtime.cooldown = Math.max(0, sim.runtime.cooldown - dt);
   sim.runtime.specialCooldown = Math.max(0, sim.runtime.specialCooldown - dt);
@@ -96,7 +94,7 @@ export function advancePlayer(sim: Simulation, dt: number) {
   }
 }
 
-export function advanceFreeze(sim: Simulation, dt: number) {
+export function advanceFreeze(sim: SimulationContext, dt: number) {
   const enemyDt = Math.min(dt, Math.max(0, dt - sim.player.freezeRemaining));
 
   sim.player.freezeRemaining = Math.max(0, sim.player.freezeRemaining - dt);
