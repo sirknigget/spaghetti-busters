@@ -29,7 +29,7 @@ a new metric.
 | 1     | Class cohesion (`lcom`)                    | Withdrawn after trial |
 | 2     | Module cohesion                            | Enforced              |
 | 3     | Coupling and hubs                          | Enforced              |
-| 4     | Dependency instability                     | Pending               |
+| 4     | Dependency instability                     | Enforced              |
 | 5     | Circular dependencies                      | Pending               |
 | 6     | Unused public symbols                      | Pending               |
 | 7     | Feature envy, excluding lint configuration | Pending               |
@@ -172,3 +172,32 @@ coupling. Type-check/build and all dependency passes passed; source lint and
 normal/production unused checks were rerun. Stage 2's 13 rendering/interface
 browser scenarios also passed (controls, touch, restart, holes, fractures,
 physical debris, and context recovery); all five duplicate profiles passed.
+
+## 4. Dependency instability: retain the defaults and invert canvas creation
+
+Enabled `sdp_violation` at high severity with the built-in `min_fan_total: 5`
+and `instability_diff: 0.3`. On the implementation snapshot after stage 3,
+it fails on one edge: shared `code-visual.ts` (instability 0.31) imports surface
+canvas creation from `code-surface.ts` (0.62). Stage 3's domain contracts already
+removed the facade's earlier instability findings; they are not fixed twice.
+
+`createVisual` now accepts the canvas it needs. The existing mesh composer
+creates that canvas with its already-imported surface module, then passes it
+to the common visual state factory. This removes the common-to-surface edge
+without new modules, wrappers, or configurable exceptions. It preserves lazy
+creation for new visuals and reuse of inherited surfaces. The gate now passes.
+No threshold adjustment was necessary after this actual refactor.
+
+**Positive impact:** stable visual contracts/state creation no longer depend on
+drawing details or loading crack artwork. The existing runtime dependency
+passes still protect larger boundaries. **Cost:** one explicit factory parameter
+and call-site responsibility. Graph instability measures incoming/outgoing file
+edges, not observed frequency of code changes; the detector's prose about
+frequent changes must not be mistaken for churn evidence. A gap below 0.3 or a
+source with fewer than five total edges is intentionally tolerated.
+
+**Validation:** 98 tests passed, including an injected stable-to-unstable graph
+that produces an SDP error. All retained architecture checks, unused analysis,
+and dependency passes passed. Rendering integration is rerunning for the
+canvas ownership change. The launcher now derives detector selection from the
+configuration's rule keys, avoiding a second hand-maintained enforcement list.

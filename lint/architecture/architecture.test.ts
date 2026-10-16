@@ -120,3 +120,23 @@ test("a simple module with many producers and consumers fails the hub gate", () 
   expect(result.status).toBe(1);
   expect(result.stdout).toContain("Hub Module");
 });
+
+test("widely consumed modules cannot depend on substantially less stable implementations", () => {
+  const result = scan({
+    "src/main.ts":
+      'import { implementation } from "#root/src/implementation.ts"; export const shared = implementation;',
+    "src/implementation.ts": [
+      'import { a } from "#root/src/a.ts";',
+      'import { b } from "#root/src/b.ts";',
+      'import { c } from "#root/src/c.ts";',
+      "export const implementation = a + b + c;",
+    ].join("\n"),
+    "src/a.ts": "export const a = 1;",
+    "src/b.ts": "export const b = 1;",
+    "src/c.ts": "export const c = 1;",
+    ...consumers("src", ""),
+  });
+
+  expect(result.status).toBe(1);
+  expect(result.stdout).toContain("SDP Violation");
+});

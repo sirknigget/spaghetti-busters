@@ -1,3 +1,4 @@
+import policy from "#root/lint/architecture/archlint.json" with { type: "json" };
 import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
@@ -31,7 +32,7 @@ try {
       "--config",
       join(policyRoot, "lint/architecture/archlint.json"),
       "--detectors",
-      "module_cohesion,high_coupling,hub_module,lcom",
+      Object.keys(policy.rules).join(","),
       "--no-cache",
       "--no-git",
     ],

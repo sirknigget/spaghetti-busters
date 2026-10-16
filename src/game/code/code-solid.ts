@@ -7,6 +7,7 @@ import {
   type FractureVisual,
 } from "#root/src/game/code/common/code-visual.ts";
 import {
+  createCodeCanvas,
   addRemovedCells,
   addDamageScars,
   codePalette,
@@ -39,7 +40,7 @@ export function createCodeMesh(
     (previous?.userData.fractureVisual as FractureVisual | undefined);
   const visual = prior
     ? { ...prior, holes: new Map(prior.holes) }
-    : createVisual(block);
+    : createVisual(block, createCodeCanvas(block));
 
   addRemovedCells(visual, block);
   addDamageScars(visual, block);
