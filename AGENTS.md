@@ -35,7 +35,7 @@ file with local contracts and verification advice.
 | `tests/`               | Browser scenarios and shared browser/unit fixtures                              | [Tests](tests/AGENTS.md)                                                                                     |
 | `lint/`                | Lint policy modules, custom Oxlint plugin, policy tests, graph passes           | [Lint tooling](lint/AGENTS.md)                                                                               |
 | `public/`              | Locally shipped models, images, brand marks, audio, fonts                       | [Model workflow](docs/models/README.md), asset credits in `README.md`                                        |
-| `.github/`             | Parallel CI matrix and shared dependency setup                                  | `.github/workflows/ci.yml`                                                                                   |
+| `.github/`             | Parallel CI matrix, shared dependency setup, and Vercel production deployment   | `.github/workflows/ci.yml`, [Deployment setup](docs/vercel-deployment.md)                                    |
 | `docs/`                | Dependency policy assessment, duplicate calibration, model editing, screenshots | [Dependency enforcement](docs/dependency-enforcement.md), [Duplicate detection](docs/duplicate-detection.md) |
 
 ## Enforced policies
