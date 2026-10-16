@@ -11,7 +11,7 @@ import {
   interceptRobot,
   robotContact,
 } from "#root/src/game/simulation/enemies/simulation-robots.ts";
-import { HALF } from "#root/src/game/simulation/simulation-shared.ts";
+import { HALF } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import type {
   Block,

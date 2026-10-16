@@ -3,7 +3,7 @@ import {
   snapshot,
   visual,
 } from "#root/src/game/simulation/effects/simulation-particles.ts";
-import { HALF } from "#root/src/game/simulation/simulation-shared.ts";
+import { HALF } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import type {
   Block,

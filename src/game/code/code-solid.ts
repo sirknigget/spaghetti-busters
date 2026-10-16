@@ -1,7 +1,7 @@
 import { PALETTE } from "#root/src/game/palette.ts";
 import * as THREE from "three";
 import type { Block } from "#root/src/game/simulation/simulation.ts";
-import { perforatedGeometry } from "#root/src/game/geometry/fracture/fracture-geometry.ts";
+import { perforatedGeometry } from "#root/src/game/geometry/fracture/fracture-solid.ts";
 import {
   createVisual,
   type FractureVisual,

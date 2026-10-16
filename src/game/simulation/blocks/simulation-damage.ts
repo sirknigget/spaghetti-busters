@@ -10,8 +10,7 @@ import {
 import {
   clamp,
   HALF,
-  isSpentFragment,
-} from "#root/src/game/simulation/simulation-shared.ts";
+} from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import type {
   Block,
@@ -231,4 +230,12 @@ function removeGlyphs(sim: Simulation, hit: DamageContext) {
       triggerMagic(sim, { cell, worldX, worldY });
     }
   }
+}
+
+function isSpentFragment(block: Block, remaining: number): boolean {
+  return (
+    !block.boss &&
+    block.generation > 1 &&
+    remaining < TUNING.damage.fragmentDeathCells
+  );
 }

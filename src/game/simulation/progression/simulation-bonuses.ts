@@ -3,10 +3,10 @@ import type { Simulation } from "#root/src/game/simulation/simulation.ts";
 import { burst } from "#root/src/game/simulation/effects/simulation-particles.ts";
 import {
   AMMO_CAPACITY_MULTIPLIER,
-  bonusType,
-  HALF,
   HOMING_AMMO_PER_PICKUP,
-} from "#root/src/game/simulation/simulation-shared.ts";
+} from "#root/src/game/simulation/common/simulation-settings.ts";
+import { bonusType } from "#root/src/game/simulation/progression/simulation-bonus-rolls.ts";
+import { HALF } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {
   type Cell,

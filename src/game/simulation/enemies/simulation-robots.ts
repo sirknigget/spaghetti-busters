@@ -1,7 +1,7 @@
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
 import { segmentRectangle } from "#root/src/game/simulation/collision/simulation-collision.ts";
 import { visual } from "#root/src/game/simulation/effects/simulation-particles.ts";
-import { clamp } from "#root/src/game/simulation/simulation-shared.ts";
+import { clamp } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {
   type Robot,

@@ -1,9 +1,7 @@
 import { weaponAim } from "#root/src/game/simulation/weapons/weapon-aim.ts";
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
-import {
-  WEAPON_SPREADS,
-  clamp,
-} from "#root/src/game/simulation/simulation-shared.ts";
+import { WEAPON_SPREADS } from "#root/src/game/simulation/common/simulation-settings.ts";
+import { clamp } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {
   type SpecialWeapon,

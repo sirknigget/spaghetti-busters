@@ -18,7 +18,7 @@ import {
   spawnPendingBlocks,
 } from "#root/src/game/simulation/progression/simulation-progression.ts";
 import { updateRobots } from "#root/src/game/simulation/enemies/simulation-robots.ts";
-import { clamp } from "#root/src/game/simulation/simulation-shared.ts";
+import { clamp } from "#root/src/game/simulation/common/simulation-math.ts";
 import { updateSpecials } from "#root/src/game/simulation/weapons/simulation-special-update.ts";
 import {
   PlayerState,

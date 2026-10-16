@@ -27,7 +27,7 @@ a new metric.
 | Stage | Constraint                                 | Status                |
 | ----- | ------------------------------------------ | --------------------- |
 | 1     | Class cohesion (`lcom`)                    | Withdrawn after trial |
-| 2     | Module cohesion                            | Pending               |
+| 2     | Module cohesion                            | Enforced              |
 | 3     | Coupling and hubs                          | Pending               |
 | 4     | Dependency instability                     | Pending               |
 | 5     | Circular dependencies                      | Pending               |
@@ -78,3 +78,49 @@ fixtures, and lint code are excluded. Subsequent graph trials use alias
 `#root/* -> ./*` (archlint resolves against the repository root even with
 `scan src`) and disable automatic tsconfig discovery. The earlier `../*`
 experiment could not resolve internal imports and is not used as graph evidence.
+
+## 2. Module cohesion: retain a focused implementation gate
+
+Retained `module_cohesion` at high severity, `min_exports: 5` and
+`max_components: 2`. The complete baseline has 12 reports. Ten are declarative
+contracts/settings: domain types, rendering/debris/fracture settings, robot
+configuration, and the effect-score type grammar. The per-rule exclusions
+`*-types.ts`, `*-settings.ts`, `*-config.ts`, and the existing pure-type
+`audio-effect-score.ts` keep these roles together. These exclusions apply only
+to cohesion, not other graph constraints. Tests, fixtures, and config files are
+excluded globally; the scan target is `src`, so lint tooling cannot enter it.
+
+The two remaining errors were `simulation-shared.ts` (9 export components)
+and the mixed fracture helper/barrel (3). The first now has domain owners:
+syntax highlighting in blocks, bonus selection in progression, pure math and
+settings in common. The two single-consumer predicates are private to damage
+and special-projectile updates. The weapon-pattern JSON moved with its shared
+settings to preserve the existing acyclic folder graph. Fracture clients now
+import solids and contracts directly from their owning modules; the geometry
+helper no longer re-exports them. No gameplay formulas or thresholds changed.
+
+**Positive impact:** removes a real catch-all module and an unnecessary barrel
+hop, makes ownership clearer, and prevents larger disconnected implementation
+modules from returning. **Cost:** three additional source files overall and more
+explicit imports. Small modules, pure declarations, and semantic relationships
+without shared symbols remain outside the metric's useful coverage.
+
+archlint 0.17.1 has an important parsing defect: its parser enables symbol
+collection for the stale ID `scattered_module`, while the real detector ID is
+`module_cohesion`. Selecting the rule alone incorrectly reports connected
+exports as disconnected. Selecting `lcom` also enables the required collection;
+its per-rule exclusion `**/*` suppresses all LCOM reports. This is an explicit
+parser workaround, not LCOM enforcement. A connected-five-export policy test
+protects this behavior. See the pinned release's
+[parser configuration](https://github.com/archlinter/archlint/blob/v0.17.1/crates/archlint/src/parser/types.rs).
+
+`npm run lint:architecture` fails with exit 1 on the two baseline errors and
+passes after the refactor. It is included in aggregate lint and an independent
+blocking CI job. Native CLI error behavior is tested; no extra runner or custom
+architectural detector is needed.
+
+**Validation:** 94 tests passed, including three policy probes for failing
+implementation, connected exports, and excluded tests/fixtures/tooling/data
+roles. Type-check/build, ESLint, Oxlint, normal/production Knip, and all three
+dependency passes passed. Browser rendering/interface checks and duplicate
+profiles are being completed as part of rollout validation below.

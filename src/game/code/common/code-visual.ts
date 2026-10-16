@@ -1,7 +1,7 @@
 import {
   type Polygon,
   type Point,
-} from "#root/src/game/geometry/fracture/fracture-geometry.ts";
+} from "#root/src/game/geometry/fracture/fracture-types.ts";
 import { type Block } from "#root/src/game/simulation/simulation.ts";
 import {
   HALF,

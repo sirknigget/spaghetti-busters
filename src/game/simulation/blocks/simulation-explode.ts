@@ -3,10 +3,8 @@ import type { Simulation } from "#root/src/game/simulation/simulation.ts";
 import { damage } from "#root/src/game/simulation/blocks/simulation-damage.ts";
 import { burst } from "#root/src/game/simulation/effects/simulation-particles.ts";
 import { damageRobot } from "#root/src/game/simulation/enemies/simulation-robots.ts";
-import {
-  clamp,
-  EXPLOSION_IMPULSE_FACTOR,
-} from "#root/src/game/simulation/simulation-shared.ts";
+import { clamp } from "#root/src/game/simulation/common/simulation-math.ts";
+import { EXPLOSION_IMPULSE_FACTOR } from "#root/src/game/simulation/common/simulation-settings.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 
 const EXPLOSION_LIFETIME_SECONDS = 0.42;

@@ -5,8 +5,8 @@ import { burst } from "#root/src/game/simulation/effects/simulation-particles.ts
 import {
   clamp,
   HALF,
-  HAZARD_DURATIONS_MS,
-} from "#root/src/game/simulation/simulation-shared.ts";
+} from "#root/src/game/simulation/common/simulation-math.ts";
+import { HAZARD_DURATIONS_MS } from "#root/src/game/simulation/common/simulation-settings.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import type { TimeoutHazard } from "#root/src/game/simulation/simulation-types.ts";
 import { TIMEOUT_METRICS } from "#root/src/game/simulation/simulation-types.ts";

@@ -2,9 +2,9 @@ import { expect, it } from "vitest";
 import {
   chippedHole,
   fractureMask,
-  perforatedGeometry,
-  type Polygon,
 } from "#root/src/game/geometry/fracture/fracture-geometry.ts";
+import { perforatedGeometry } from "#root/src/game/geometry/fracture/fracture-solid.ts";
+import { type Polygon } from "#root/src/game/geometry/fracture/fracture-types.ts";
 
 const root = { width: 200, height: 100 };
 const bounds = { left: -100, right: 100, bottom: -50, top: 76 };

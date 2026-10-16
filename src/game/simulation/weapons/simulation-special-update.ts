@@ -6,10 +6,7 @@ import {
   interceptRobot,
   robotContact,
 } from "#root/src/game/simulation/enemies/simulation-robots.ts";
-import {
-  clamp,
-  withinProjectileBounds,
-} from "#root/src/game/simulation/simulation-shared.ts";
+import { clamp } from "#root/src/game/simulation/common/simulation-math.ts";
 import { steerHoming } from "#root/src/game/simulation/weapons/simulation-steer-homing.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {
@@ -161,5 +158,14 @@ function specialHitsBlock({
         px: cell.x,
         py: cell.y,
       }) < TUNING.weapon.specialHitRadius,
+  );
+}
+
+function withinProjectileBounds(projectile: SpecialProjectile): boolean {
+  return (
+    projectile.x > TUNING.bounds.specialMinX &&
+    projectile.x < TUNING.bounds.specialMaxX &&
+    projectile.y > TUNING.bounds.specialMinY &&
+    projectile.y < TUNING.bounds.specialMaxY
   );
 }

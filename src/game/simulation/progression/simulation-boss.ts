@@ -1,6 +1,9 @@
 import type { Simulation } from "#root/src/game/simulation/simulation.ts";
 import { bossDriftSpeed } from "#root/src/game/simulation/progression/simulation-progression.ts";
-import { clamp, HALF } from "#root/src/game/simulation/simulation-shared.ts";
+import {
+  clamp,
+  HALF,
+} from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import { type Block } from "#root/src/game/simulation/simulation-types.ts";
 

@@ -7,11 +7,6 @@ import type {
   MaskOptions,
 } from "#root/src/game/geometry/fracture/fracture-types.ts";
 
-export type {
-  Point,
-  Polygon,
-} from "#root/src/game/geometry/fracture/fracture-types.ts";
-export { perforatedGeometry } from "#root/src/game/geometry/fracture/fracture-solid.ts";
 /** Stable entropy: geometry never flickers as the simulation advances. */
 export function fractureNoise(seed: number, index: number) {
   let v = seed ^ Math.imul(index + 1, FRACTURE.hashMultiplier);

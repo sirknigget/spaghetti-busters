@@ -5,10 +5,8 @@ import {
   type CellLayout,
 } from "#root/src/game/simulation/blocks/simulation-block-cells.ts";
 import { bossDriftSpeed } from "#root/src/game/simulation/progression/simulation-progression.ts";
-import {
-  bonusKeyword,
-  HALF,
-} from "#root/src/game/simulation/simulation-shared.ts";
+import { bonusKeyword } from "#root/src/game/simulation/progression/simulation-bonus-rolls.ts";
+import { HALF } from "#root/src/game/simulation/common/simulation-math.ts";
 import { TUNING } from "#root/src/game/simulation/simulation-tuning.ts";
 import {
   CELL_HEIGHT,

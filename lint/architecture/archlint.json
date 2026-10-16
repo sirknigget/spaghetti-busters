@@ -1,0 +1,31 @@
+{
+  "aliases": {
+    "#root/*": "./*"
+  },
+  "entry_points": ["src/main.ts"],
+  "ignore": [
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/__tests__/**",
+    "**/tests/**",
+    "**/fixtures/**",
+    "**/*.config.*"
+  ],
+  "rules": {
+    "module_cohesion": {
+      "severity": "high",
+      "min_exports": 5,
+      "max_components": 2,
+      "exclude": [
+        "**/*-types.ts",
+        "**/*-settings.ts",
+        "**/*-config.ts",
+        "**/audio-effect-score.ts"
+      ]
+    },
+    "lcom": {
+      "exclude": ["**/*"]
+    }
+  },
+  "tsconfig": false
+}

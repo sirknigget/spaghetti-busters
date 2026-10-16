@@ -1,10 +1,8 @@
 import * as THREE from "three";
 import { expect, it } from "vitest";
 import { clipDeathSolid } from "#root/src/game/geometry/clipping/death-clipping.ts";
-import {
-  chippedHole,
-  perforatedGeometry,
-} from "#root/src/game/geometry/fracture/fracture-geometry.ts";
+import { chippedHole } from "#root/src/game/geometry/fracture/fracture-geometry.ts";
+import { perforatedGeometry } from "#root/src/game/geometry/fracture/fracture-solid.ts";
 
 const volume = (geometry: THREE.BufferGeometry) => {
   const p = geometry.getAttribute("position");

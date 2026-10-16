@@ -11,7 +11,7 @@
     "test:e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "npm run lint:oxlint && npm run lint:eslint && npm run lint:css && npm run lint:duplicates && npm run lint:unused && npm run lint:unused:production && npm run lint:dependencies",
+    "lint": "npm run lint:oxlint && npm run lint:eslint && npm run lint:css && npm run lint:duplicates && npm run lint:unused && npm run lint:unused:production && npm run lint:dependencies && npm run lint:architecture",
     "lint:oxlint": "oxlint --type-aware --tsconfig tsconfig.lint.json .",
     "lint:eslint": "eslint . --max-warnings 0",
     "lint:css": "stylelint \"src/**/*.css\" --max-warnings 0",
@@ -23,13 +23,15 @@
     "lint:duplicates:semantic": "jscpd --config .jscpd.json --kind semantic --semantic --semantic-download CodeRankEmbed --semantic-model CodeRankEmbed --semantic-scope all --semantic-same-threshold 0.84 --semantic-threshold 0.84 --min-tokens 36 --min-lines 1 --report-name semantic",
     "lint:unused": "knip",
     "lint:unused:production": "knip --production",
-    "lint:dependencies": "depcruise --config .dependency-cruiser.json src tests lint *.config.ts && depcruise --config lint/dependencies/runtime.json src && depcruise --config lint/dependencies/architecture.json src"
+    "lint:dependencies": "depcruise --config .dependency-cruiser.json src tests lint *.config.ts && depcruise --config lint/dependencies/runtime.json src && depcruise --config lint/dependencies/architecture.json src",
+    "lint:architecture": "archlint scan src --config lint/architecture/archlint.json --detectors module_cohesion,lcom --no-cache --no-git"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@archlinter/cli": "0.17.1",
     "@eslint-react/eslint-plugin": "5.27.2",
     "@oxlint/plugins": "1.88.0",
     "@playwright/test": "^1.56.0",
