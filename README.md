@@ -21,6 +21,12 @@ npm run dev
 
 Open **http://localhost:3000**. The server binds to all interfaces on port 3000.
 
+## Deploy to Vercel
+
+GitHub Actions deploys production after all CI checks pass on a push to `main`.
+Follow the [Vercel setup guide](docs/vercel-deployment.md) to create a project and
+configure the three GitHub secrets. No MCP connection is required.
+
 ## Controls
 
 | Action                           | Control                                      |
