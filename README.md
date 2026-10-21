@@ -66,7 +66,7 @@ npm run test:e2e
 
 Each pull request runs formatting, ESLint, type-aware Oxlint, Stylelint, a TypeScript check and production build, unit tests, and Chromium browser tests. Other checks find duplicates and unused code and check dependencies and architecture. Branch protection requires passing checks and an up-to-date branch before merge. Deployment starts after merge without running the PR checks again.
 
-Here is how the gates changed, **oldest to newest by merge order**. Only merged PRs that changed a check or its place in the delivery flow appear here:
+Here is how the gates changed, **oldest to newest by merge order**. Only merged PRs that added or changed quality checks appear here:
 
 - [PR #1](https://github.com/sirknigget/spaghetti-busters/pull/1) added Prettier formatting, build and unit-test checks, and browser-test shards in CI.
 - [PR #2](https://github.com/sirknigget/spaghetti-busters/pull/2) added ESLint, type-aware Oxlint, and Stylelint checks.
@@ -77,9 +77,7 @@ Here is how the gates changed, **oldest to newest by merge order**. Only merged 
 - [PR #7](https://github.com/sirknigget/spaghetti-busters/pull/7) made five duplicate-code scans blocking, with no accepted duplicate baseline.
 - [PR #9](https://github.com/sirknigget/spaghetti-busters/pull/9) limited files and subfolders per folder and required project-root imports.
 - [PR #11](https://github.com/sirknigget/spaghetti-busters/pull/11) added unused-code checks for development and production, plus dependency and architecture-boundary checks.
-- [PR #14](https://github.com/sirknigget/spaghetti-busters/pull/14) initially required CI checks to pass before production deployment on `main`.
-- [PR #15](https://github.com/sirknigget/spaghetti-busters/pull/15) kept CI on PRs and moved deployment to a separate workflow after a protected merge, without repeating the checks.
-- [PR #13](https://github.com/sirknigget/spaghetti-busters/pull/13) added a dedicated architecture check for module cohesion, coupling, and dependency instability. It merged after PR #15.
+- [PR #13](https://github.com/sirknigget/spaghetti-busters/pull/13) added a dedicated architecture check for module cohesion, coupling, and dependency instability.
 
 For detailed rules and calibration, see [duplicate detection](docs/duplicate-detection.md), [dependency checks](docs/dependency-enforcement.md), and [architecture metrics](docs/architecture-rollout.md).
 
